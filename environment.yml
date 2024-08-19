@@ -3,14 +3,11 @@ channels:
   - conda-forge
 dependencies:
   - python >= 3.10
+  - pip
   - SQLAlchemy
   - pyodbc
   - pandas
-  - yaml
-  - pip
 
-# # https://pip.pypa.io/en/stable/cli/pip_install/
-- pip:
-  - seabird
-#   - -e git+https://github.com/smwoodman/pyglider.git@return-nan#egg=pyglider'
-
+  - pip:
+    - dbdreader
+    - git+https://github.com/smwoodman/pyglider.git@return-nan
