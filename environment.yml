@@ -10,4 +10,5 @@ dependencies:
 
   - pip:
     - dbdreader
-    - git+https://github.com/smwoodman/pyglider.git@return-nan
+    - git+https://github.com/c-proof/pyglider.git@main
+    # - git+https://github.com/smwoodman/pyglider.git@return-nan
