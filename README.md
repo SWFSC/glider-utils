@@ -1,4 +1,4 @@
-# esd-glider-utils
+# glider-utils
 
 Utility functions for ESD glider processing
 
