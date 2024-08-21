@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='esdgliderutils',
-      version='0.1a',
+      version='0.1a.9000',
       description='Utility functions for processing ESD glider data',
       url='http://github.com/swfsc/glider-utils',
       author='Sam Woodman',
@@ -13,7 +13,8 @@ setup(name='esdgliderutils',
             # 'google-crc32c==1.1',
             # 'google-cloud-secret-manager==2.12',
             'pandas', 
-            # 'numpy', 
+            'numpy', 
+            'scipy', 
             'SQLAlchemy'
       ],
       zip_safe=False)

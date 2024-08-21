@@ -4,9 +4,13 @@ channels:
 dependencies:
   - python >= 3.10
   - pip
+  - ipykernel #for running things in GCP Jupyter notebooks
   - SQLAlchemy
   - pyodbc
+  - numpy
   - pandas
+  - xarray
+  - scipy
 
   - pip:
     - dbdreader
