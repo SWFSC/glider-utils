@@ -63,7 +63,7 @@ def main(args):
     #         return
 
     cacdir = os.path.join(deployments_path, 'cache')
-    binarydir = os.path.join(glider_path, 'data', 'binary',mode)
+    binarydir = os.path.join(glider_path, 'data', 'binary', mode)
     deploymentyaml = os.path.join(glider_path, 'data', 'data-config', 
         f"{deployment_mode}.yml")
 
@@ -78,14 +78,28 @@ def main(args):
         logging.info(f'Creating directory at: {l1tsdir}')
         os.makedirs(l1tsdir)
 
-    l1ts_outname = slocum.binary_to_timeseries(
+    l1ts_outname_sci = slocum.binary_to_timeseries(
         binarydir, cacdir, l1tsdir, deploymentyaml,
-        search='*.[d|e]bd', fnamesuffix='',
+        search='*.[d|e]bd', fnamesuffix='-sci',
         # search='*.[D|E]BD', fnamesuffix='',
         time_base='sci_water_temp', profile_filt_time=100,
         profile_min_time=300, maxgap=300)
 
-    logging.info(f'Wrote L1 timeseries file: {l1ts_outname}')
+    l1ts_outname_oxy = slocum.binary_to_timeseries(
+        binarydir, cacdir, l1tsdir, deploymentyaml,
+        search='*.[d|e]bd', fnamesuffix='-oxy',
+        # search='*.[D|E]BD', fnamesuffix='',
+        time_base='oxygen_concentration', profile_filt_time=100,
+        profile_min_time=300, maxgap=300)
+
+    l1ts_outname_eng = slocum.binary_to_timeseries(
+        binarydir, cacdir, l1tsdir, deploymentyaml,
+        search='*.[d|e]bd', fnamesuffix='-eng',
+        # search='*.[D|E]BD', fnamesuffix='',
+        time_base='m_depth', profile_filt_time=100,
+        profile_min_time=300, maxgap=300)
+
+    # logging.info(f'Wrote L1 timeseries file: {l1ts_outname}')
 
 
 
