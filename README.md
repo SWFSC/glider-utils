@@ -1,6 +1,8 @@
 # glider-utils
 
-Utility functions for ESD glider processing
+Utility functions for ESD glider processing.
+
+This repo was inspired by [cproofutils](https://github.com/c-proof/cproofutils) and [utility_scripts](https://github.com/voto-ocean-knowledge/utility_scripts), as well as informed by experiences developing [amlr-gliders](https://github.com/us-amlr/amlr-gliders).
 
 ## Disclaimer
 
