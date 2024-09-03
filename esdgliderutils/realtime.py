@@ -7,6 +7,9 @@ import logging
 import re
 from subprocess import call, run
 
+from google.cloud import secretmanager
+import google_crc32c
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,10 +20,6 @@ def access_secret_version(project_id, secret_id, version_id = 'latest'):
     
     https://github.com/googleapis/python-secret-manager/blob/main/samples/snippets/access_secret_version.py
     """
-
-    # Import the Secret Manager client library.
-    from google.cloud import secretmanager
-    import google_crc32c
 
     # Create the Secret Manager client.
     client = secretmanager.SecretManagerServiceClient()
@@ -77,7 +76,7 @@ def rt_files_mgmt(sfmc_ext_all, ext_regex, subdir_name, local_path, bucket_path)
 
         logging.info(f'Rsyncing {subdir_name} subdirectory with bucket directory')
         logging.debug(f'Bucket directory: {bucket_path}')
-        retcode = run(['gsutil', '-m', 'rsync', subdir_path, bucket_path], 
+        retcode = run(['gcloud', 'storage', 'rsync', subdir_path, bucket_path], 
             capture_output = True)
         if retcode.returncode != 0:
             logging.error(f'Error copying {subdir_name} files to bucket')
