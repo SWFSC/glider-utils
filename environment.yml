@@ -4,7 +4,10 @@ channels:
 dependencies:
   - python >= 3.10
   - pip
-  - ipykernel #for running things in GCP Jupyter notebooks
+  - ipykernel #for running things in GCP Jupyter notebooks  
+  - google-crc32c
+  - google-cloud-secret-manager
+
   - SQLAlchemy
   - pyodbc
   - numpy
