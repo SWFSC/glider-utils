@@ -8,7 +8,7 @@ import logging
 from subprocess import run
 
 from esdgliderutils.paths import year_path, find_extensions
-from esdgliderutils.scrape_sfmc import access_secret_version, rt_files_mgmt
+from esdgliderutils.realtime import access_secret_version, rt_files_mgmt
 
 
 def main(args):
@@ -48,8 +48,8 @@ def main(args):
         year = year_path(project, deployment_split)
 
     if not os.path.isdir(sfmc_path):
-        logging.error(f'sfmc_path ({sfmc_path}) does not exist')
-        return
+        logging.info(f'sfmc_path ({sfmc_path}) does not exist - creating now')
+        os.mkdir(sfmc_path)
 
 
     #--------------------------------------------
@@ -123,12 +123,12 @@ def main(args):
     logging.info('Starting file management')
     bucket_deployment = f'gs://{bucket}/{project}/{year}/{deployment}'
     bucket_stbd = os.path.join(bucket_deployment, 'data', 'binary', 'rt')
-    # TODO: update to acoustics bucket
-    bucket_ad2 = os.path.join(bucket_deployment, 'sensors', 'nortek', 'data', 'in', 'rt')
+    # TODO: update to acoustics bucket, and uncomment
+    # bucket_ad2 = os.path.join(bucket_deployment, 'sensors', 'nortek', 'data', 'in', 'rt')
     # bucket_cam = os.path.join(bucket_deployment, 'sensors', 'glidercam', 'data', 'in', 'rt')
     logging.debug(f"GCP bucket deployment folder: {bucket_deployment}")
     logging.debug(f"GCP bucket stbd folder: {bucket_stbd}")
-    logging.debug(f"GCP bucket ad2 folder: {bucket_ad2}")
+    # logging.debug(f"GCP bucket ad2 folder: {bucket_ad2}")
     # logging.debug(f"GCP bucket cam folder: {bucket_cam}")
 
 
@@ -138,10 +138,10 @@ def main(args):
 
     # sbd/tbd files
     # TODO: add in support for compressed files
-    rt_files_mgmt(sfmc_file_ext, '.[st]bd', name_stbd, sfmc_local_path, bucket_stbd)
+    rt_files_mgmt(sfmc_file_ext, '.[SsTt]bd', name_stbd, sfmc_local_path, bucket_stbd)
 
-    # ad2 files
-    rt_files_mgmt(sfmc_file_ext, '.ad2', name_ad2, sfmc_local_path, bucket_ad2)
+    # # ad2 files
+    # rt_files_mgmt(sfmc_file_ext, '.ad2', name_ad2, sfmc_local_path, bucket_ad2)
 
     # # cam files TODO
     # rt_files_mgmt(sfmc_file_ext, '.cam', name_cam, sfmc_local_path, bucket_cam)
