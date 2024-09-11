@@ -5,7 +5,7 @@ import sys
 import logging
 import argparse
 
-from esdgliderutils.paths import year_path
+from esdglider.paths import year_path
 
 import pyglider.slocum as slocum
 # import pyglider.ncprocess as ncprocess
