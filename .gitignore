@@ -163,3 +163,7 @@ cython_debug/
 
 # Ignore database ~DSN files
 db/
+
+# Ignore cache files - don't need those in another place
+resources/example-data/cache
+resources/example-data/out

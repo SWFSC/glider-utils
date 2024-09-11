@@ -1,101 +1,3 @@
-metadata:
-  
-  # https://github.com/ioos/ioosngdac/wiki/NGDAC-NetCDF-File-Format-Version-2
-  acknowledgment: 'This work was supported by funding from NOAA.'
-  comment: 'TrajectoryProfile'  
-  contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Cossio, George Cutter, Samuel Woodman'
-  contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Data Manager'
-  creator_email: christian.reiss at noaa.gov
-  creator_institution: 'NOAA SWFSC Antarctic Ecosystem Research Division'
-  creator_name: 'Christian Reiss'
-  creator_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center
-  # R: real time. P: provisional
-  data_mode: 'P'
-  # date_created etc: added automatically
-  # numbers must be eenclosed by strings so YAML keeps as strings
-  deployment_id: '1'
-  deployment_name: 'amlr08-20220513T1817'
-  format_version: IOOS_Glider_NetCDF_v2.0.nc
-  # id filled automatically...
-  glider_name: 'amlr08'
-  glider_serial: 'amlr08'
-  glider_model: 'Teledyne Webb Research Slocum G3 glider'
-  glider_instrument_name: 'slocum'
-  institution: C-PROOF
-  keywords: "AUVS, Autonomous Underwater Vehicles, Oceans, Ocean Pressure,
-             Water Pressure, Oceans, Ocean Temperature, Water Temperature,
-             Oceans, Salinity/Density, Conductivity, Oceans,
-             Salinity/Density, Density, Oceans, Salinity/Density, Salinity"
-  keywords_vocabulary: GCMD Science Keywords
-  license: 'This data may be redistributed and used without restriction. 
-            Data provided as is with no expressed or implied assurance of quality assurance or quality control.'
-  metadata_link: " "
-  Metadata_Conventions: CF-1.6, Unidata Dataset Discovery v1.0
-  naming_authority:   gov.noaa.fisheries
-  platform_type:    "Slocum Glider"
-  processing_level: "No QC has been done to this delayed data.
-                     Data provided as is with no expressed or implied
-                     assurance of quality assurance or quality control."
-  program: U.S. Antarctic Marine Living Resources Program
-  project: FREEBYRD
-  publisher_email: christian.reiss@noaa.gov
-  publisher_institution: 'NOAA SWFSC Antarctic Ecosystem Research Division'
-  publisher_name: Christian Reiss
-  publisher_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center (external link)
-  references: 
-  # https://www.nodc.noaa.gov/General/NODC-Archive/seanamelist.txt
-  sea_name: 'Pacific Ocean'
-  source: 'Observational data from a profiling glider'
-  standard_name_vocabulary: CF STandard Name Table v49
-  summary: 'These data are part of the U.S. Antarctic Marine Living Resources (AMLR) Program Operation SANDIEGO. 
-            SANDIEGO is for test deployments off San Diego in the 
-            Southern California waters of the Pacific Ocean.
-            This deployment is to test a new shadowgraph, along with a new Nortek echosounder.'
-  transmission_system: "IRIDIUM"
-  wmo_id: " "
-
-
-
-glider_devices:
-  ctd:
-    serial: '9714'
-    long_name: 'Conductivity, Temperature, Depth (CTD) Sensor'
-    make_model: 'Sea-Bird GPCTD'
-    factory_calibrated: '2021-07-30'
-    calibration_date: '2021-07-30'
-    calibration_report: ""
-    comment: "Pumped"
-  optics:
-    make_model: 'WET Labs ECO Puck FLBBCD'
-    serial: '6982'
-    calibration_date: "2021-08-02"
-    calibration_report: ""
-    comment: ""
-    factory_calibrated: "2021-08-02"
-  oxygen:
-    make_model: 'Aanderaa Oxygen Optode 4831'
-    serial: '953'
-    calibration_date: "2021-02-14"
-    calibration_report: ""
-    comment: ""
-    factory_calibrated: "2021-02-14"
-  acoustics:
-    make_model: 'NORTEK Inc Signature 100 Compact Echsounder'
-    serial_number: "1778"
-    calibration_date: 
-    calibration_report: ""
-    comment: ""
-    factory_calibrated: 
-  imagery:
-    make_model: 'Williamson and Associates Shadowgraph Camera (11cm)'
-    serial_number: "001"
-    calibration_date: 
-    calibration_report: ""
-    comment: ""
-    factory_calibrated: 
-
-# map between glider variables and netcdf variables.  This shouldn't
-# change too much.
 netcdf_variables:
   # Time and Place:
   time:
@@ -140,6 +42,14 @@ netcdf_variables:
     valid_min:    "-180.0"
     coordinate_reference_frame:  urn:ogc:crs:EPSG::4326
 
+  m_depth:
+    source:  m_depth
+    long_name:    glider measured depth
+    standard_name: m_depth
+    observation_type: measured
+    units:        m
+    coordinates:  time 
+    
   heading:
     source:  m_heading
     long_name:    glider heading angle
@@ -176,52 +86,52 @@ netcdf_variables:
     units:        degree_east
     coordinates:  time depth latitude longitude
 
-#   # data parameters
-#   conductivity:
-#     source:  sci_water_cond
-#     long_name:    water conductivity
-#     standard_name: sea_water_electrical_conductivity
-#     units:        S m-1
-#     coordinates:  time depth latitude longitude
-#     instrument:    instrument_ctd
-#     valid_min:    "0."
-#     valid_max:    "10."
-#     observation_type: "measured"
-#     accuracy:      "0.0003"
-#     precision:     "0.0001"
-#     resolution:     "0.00002"
+  # data parameters
+  conductivity:
+    source:  sci_water_cond
+    long_name:    water conductivity
+    standard_name: sea_water_electrical_conductivity
+    units:        S m-1
+    coordinates:  time depth latitude longitude
+    instrument:    instrument_ctd
+    valid_min:    "0."
+    valid_max:    "10."
+    observation_type: "measured"
+    accuracy:      "0.0003"
+    precision:     "0.0001"
+    resolution:     "0.00002"
 
-#   temperature:
-#     source:  sci_water_temp
-#     long_name:    water temperature
-#     standard_name: sea_water_temperature
-#     units:        Celsius
-#     coordinates:  time depth latitude longitude
-#     instrument:   instrument_ctd
-#     valid_min:    "-5"
-#     valid_max:    "50"
-#     observation_type: "measured"
-#     accuracy:      "0.002"
-#     precision:     "0.001"
-#     resolution:    "0.0002"
+  temperature:
+    source:  sci_water_temp
+    long_name:    water temperature
+    standard_name: sea_water_temperature
+    units:        Celsius
+    coordinates:  time depth latitude longitude
+    instrument:   instrument_ctd
+    valid_min:    "-5"
+    valid_max:    "50"
+    observation_type: "measured"
+    accuracy:      "0.002"
+    precision:     "0.001"
+    resolution:    "0.0002"
 
-#   pressure:
-#     source:  sci_water_pressure
-#     long_name:    water pressure
-#     standard_name:  sea_water_pressure
-#     units:        dbar
-#     coordinates:  time depth latitude longitude
-#     conversion:   bar2dbar
-#     valid_min:    "0"
-#     valid_max:    "2000"
-#     positive:      "down"
-#     reference_datum:  "sea-surface"
-#     instrument:     "instrument_ctd"
-#     observation_type: "measured"
-#     accuracy:         "1"
-#     precision:        "2"
-#     resolution:       "0.02"
-#     comment:          "ctd pressure sensor"
+  pressure:
+    source:  sci_water_pressure
+    long_name:    water pressure
+    standard_name:  sea_water_pressure
+    units:        dbar
+    coordinates:  time depth latitude longitude
+    conversion:   bar2dbar
+    valid_min:    "0"
+    valid_max:    "2000"
+    positive:      "down"
+    reference_datum:  "sea-surface"
+    instrument:     "instrument_ctd"
+    observation_type: "measured"
+    accuracy:         "1"
+    precision:        "2"
+    resolution:       "0.02"
+    comment:          "ctd pressure sensor"
 
 
 # # optics:

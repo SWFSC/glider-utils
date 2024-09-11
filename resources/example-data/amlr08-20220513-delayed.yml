@@ -1,5 +1,4 @@
-metadata:
-  
+metadata:  
   # https://github.com/ioos/ioosngdac/wiki/NGDAC-NetCDF-File-Format-Version-2
   acknowledgment: 'This work was supported by funding from NOAA.'
   comment: 'TrajectoryProfile'  
@@ -42,7 +41,7 @@ metadata:
   publisher_institution: 'NOAA SWFSC Antarctic Ecosystem Research Division'
   publisher_name: Christian Reiss
   publisher_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center (external link)
-  references: 
+  references: " "
   # https://www.nodc.noaa.gov/General/NODC-Archive/seanamelist.txt
   sea_name: 'Pacific Ocean'
   source: 'Observational data from a profiling glider'
@@ -139,6 +138,14 @@ netcdf_variables:
     valid_max:    "180.0"
     valid_min:    "-180.0"
     coordinate_reference_frame:  urn:ogc:crs:EPSG::4326
+
+  m_depth:
+    source:  m_depth
+    long_name:    glider measured depth
+    standard_name: m_depth
+    observation_type: measured
+    units:        m
+    coordinates:  time 
 
   heading:
     source:  m_heading
@@ -252,20 +259,20 @@ netcdf_variables:
     units:        umol l-1
     coordinates:   time depth latitude longitude
 
-# derived water speed:
-  # water_velocity_eastward:
-  #   source:    m_final_water_vx
-  #   long_name:      mean eastward water velocity in segment
-  #   standard_name:  barotropic_eastward_sea_water_velocity
-  #   units:          m s-1
-  #   coordinates:   time depth latitude longitude
-  #
-  # water_velocity_northward:
-  #   source:    m_final_water_vy
-  #   long_name:      mean northward water velocity in segment
-  #   standard_name:  barotropic_northward_sea_water_velocity
-  #   units:          m s-1
-  #   coordinates:   time depth latitude longitude
+derived water speed:
+  water_velocity_eastward:
+    source:    m_final_water_vx
+    long_name:      mean eastward water velocity in segment
+    standard_name:  barotropic_eastward_sea_water_velocity
+    units:          m s-1
+    coordinates:   time depth latitude longitude
+  
+  water_velocity_northward:
+    source:    m_final_water_vy
+    long_name:      mean northward water velocity in segment
+    standard_name:  barotropic_northward_sea_water_velocity
+    units:          m s-1
+    coordinates:   time depth latitude longitude
 
 profile_variables:
   # variables for extract_L1timeseries_profiles processing step...
