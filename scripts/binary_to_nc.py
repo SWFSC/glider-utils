@@ -5,7 +5,7 @@ import sys
 import logging
 import argparse
 
-from esdglider.paths import year_path
+from esdglider.paths import year_path, binary_to_nc_paths
 
 import pyglider.slocum as slocum
 # import pyglider.ncprocess as ncprocess
@@ -26,6 +26,12 @@ def main(args):
     deployments_path = args.deployments_path
     clobber = args.clobber
 
+    # Choices (delayed, rt) specified in argument input
+    if mode == 'delayed':
+        binary_search = '*.[D|E|d|e]bd'
+    else:
+        binary_search = '*.[D|E|d|e]bd'
+
     # write_trajectory = args.write_trajectory
     # write_ngdac = args.write_ngdac    
     # write_acoustics = args.write_acoustics
@@ -34,72 +40,34 @@ def main(args):
 
     #--------------------------------------------
     # Checks and make glider_path and pyglider variables
-
-    prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO']    
-    if not os.path.isdir(deployments_path):
-        logging.error(f'deployments_path ({deployments_path}) does not exist')
-        return
-    else:
-        dir_expected = prj_list + ['cache']
-        if not all(x in os.listdir(deployments_path) for x in dir_expected):
-            logging.error(f"The expected folders ({', '.join(dir_expected)}) " + 
-                f'were not found in the provided directory ({deployments_path}). ' + 
-                'Did you provide the right path via deployments_path?')
-            return 
-
-    deployment_split = deployment.split('-')
-    deployment_mode = f'{deployment}-{mode}'
-    year = year_path(project, deployment_split)
-
-    glider_path = os.path.join(deployments_path, project, year, deployment)
-    if not os.path.isdir(glider_path):
-        logging.error(f'glider_path ({glider_path}) does not exist')
-        return
-    
-    # if write_imagery:
-    #     if not os.path.isdir(imagery_path):
-    #         logging.error('write_imagery is true, and thus imagery_path ' + 
-    #                       f'({imagery_path}) must be a valid path')
-    #         return
-
-    cacdir = os.path.join(deployments_path, 'cache')
-    binarydir = os.path.join(glider_path, 'data', 'binary', mode)
-    deploymentyaml = os.path.join(glider_path, 'data', 'data-config', 
-        f"{deployment_mode}.yml")
-
-    l1tsdir = os.path.join(glider_path, 'data', 'nc', 'L1-timeseries')
-    profiledir = os.path.join(glider_path, 'data', 'nc', 'ngdac', mode)
-    l1griddir = os.path.join(glider_path, 'data', 'nc', 'L1-gridded')
+    paths = binary_to_nc_paths(project, deployment, mode, deployments_path)
+    tsdir = paths["tsdir"]
 
     #--------------------------------------------
     # Run pyglider to process
 
-    if not os.path.exists(l1tsdir):
-        logging.info(f'Creating directory at: {l1tsdir}')
-        os.makedirs(l1tsdir)
+    if not os.path.exists(tsdir):
+        logging.info(f'Creating directory at: {tsdir}')
+        os.makedirs(tsdir)
 
-    l1ts_outname_sci = slocum.binary_to_timeseries(
-        binarydir, cacdir, l1tsdir, deploymentyaml,
-        search='*.[d|e]bd', fnamesuffix='-sci',
-        # search='*.[D|E]BD', fnamesuffix='',
-        time_base='sci_water_temp', profile_filt_time=100,
-        profile_min_time=300, maxgap=300)
-
-    l1ts_outname_oxy = slocum.binary_to_timeseries(
-        binarydir, cacdir, l1tsdir, deploymentyaml,
-        search='*.[d|e]bd', fnamesuffix='-oxy',
-        # search='*.[D|E]BD', fnamesuffix='',
-        time_base='oxygen_concentration', profile_filt_time=100,
-        profile_min_time=300, maxgap=300)
-
-    l1ts_outname_eng = slocum.binary_to_timeseries(
-        binarydir, cacdir, l1tsdir, deploymentyaml,
-        search='*.[d|e]bd', fnamesuffix='-eng',
-        # search='*.[D|E]BD', fnamesuffix='',
+    logging.info(f'Generating engineering timeseries: {tsdir}')
+    outname_tseng = slocum.binary_to_timeseries(
+        paths["binarydir"], paths["cacdir"], tsdir, 
+        [paths["deploymentyaml"], paths["engyaml"]], 
+        search=binary_search, fnamesuffix='-eng',
         time_base='m_depth', profile_filt_time=100,
         profile_min_time=300, maxgap=300)
 
-    # logging.info(f'Wrote L1 timeseries file: {l1ts_outname}')
+    logging.info(f'Wrote eng timeseries file: {outname_tseng}')
+    
+    # outname_tssci = slocum.binary_to_timeseries(
+    #     paths["binarydir"], paths["cacdir"], tsdir, 
+    #     paths["deploymentyaml"],
+    #     search=binary_search, fnamesuffix='-sci',
+    #     time_base='sci_water_temp', profile_filt_time=100,
+    #     profile_min_time=300, maxgap=300)
+
+   
 
 
 
