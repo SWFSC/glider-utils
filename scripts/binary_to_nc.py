@@ -7,7 +7,7 @@ import argparse
 import xarray as xr
 
 from esdglider.paths import esd_paths
-from esdglider.utils import postproc_eng_timeseries, postproc_sci_timeseries
+from esdglider.esdutils import postproc_eng_timeseries, postproc_sci_timeseries
 
 import pyglider.slocum as slocum
 import pyglider.ncprocess as ncprocess
