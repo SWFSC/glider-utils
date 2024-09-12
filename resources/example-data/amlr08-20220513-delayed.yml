@@ -1,25 +1,22 @@
 metadata:  
   # https://github.com/ioos/ioosngdac/wiki/NGDAC-NetCDF-File-Format-Version-2
   acknowledgment: 'This work was supported by funding from NOAA.'
-  comment: 'TrajectoryProfile'  
+  comment: ' '  
   contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Cossio, George Cutter, Samuel Woodman'
   contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Data Manager'
-  creator_email: christian.reiss at noaa.gov
+  creator_email: christian.reiss@noaa.gov
   creator_institution: 'NOAA SWFSC Antarctic Ecosystem Research Division'
   creator_name: 'Christian Reiss'
   creator_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center
-  # R: real time. P: provisional
-  data_mode: 'P'
   # date_created etc: added automatically
   # numbers must be eenclosed by strings so YAML keeps as strings
-  deployment_id: '1'
   deployment_name: 'amlr08-20220513T1817'
   format_version: IOOS_Glider_NetCDF_v2.0.nc
   # id filled automatically...
-  glider_name: 'amlr08'
-  glider_serial: 'amlr08'
+  glider_name: amlr08
+  glider_serial: ""
   glider_model: 'Teledyne Webb Research Slocum G3 glider'
-  glider_instrument_name: 'slocum'
+  glider_instrument_name: slocum
   institution: C-PROOF
   keywords: "AUVS, Autonomous Underwater Vehicles, Oceans, Ocean Pressure,
              Water Pressure, Oceans, Ocean Temperature, Water Temperature,
@@ -30,8 +27,8 @@ metadata:
             Data provided as is with no expressed or implied assurance of quality assurance or quality control.'
   metadata_link: " "
   Metadata_Conventions: CF-1.6, Unidata Dataset Discovery v1.0
-  naming_authority:   gov.noaa.fisheries
-  platform_type:    "Slocum Glider"
+  naming_authority: gov.noaa.fisheries
+  platform_type:    Slocum Glider
   processing_level: "No QC has been done to this delayed data.
                      Data provided as is with no expressed or implied
                      assurance of quality assurance or quality control."
@@ -43,7 +40,7 @@ metadata:
   publisher_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center (external link)
   references: " "
   # https://www.nodc.noaa.gov/General/NODC-Archive/seanamelist.txt
-  sea_name: 'Pacific Ocean'
+  sea_name: 'North Pacific Ocean'
   source: 'Observational data from a profiling glider'
   standard_name_vocabulary: CF STandard Name Table v49
   summary: 'These data are part of the U.S. Antarctic Marine Living Resources (AMLR) Program Operation SANDIEGO. 
@@ -142,7 +139,7 @@ netcdf_variables:
   m_depth:
     source:  m_depth
     long_name:    glider measured depth
-    standard_name: m_depth
+    standard_name: depth
     observation_type: measured
     units:        m
     coordinates:  time 

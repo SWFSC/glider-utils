@@ -5,6 +5,13 @@ import logging
 
 _log = logging.getLogger(__name__)
 
+
+"""
+ESD-specific utilities 
+Mostly for post-processing time series files created using pyglider
+"""
+
+
 def get_profiles_esd(ds, depth_var='pressure', 
                      min_dp=10.0, filt_time=100, profile_min_time=300):
     """
@@ -16,7 +23,7 @@ def get_profiles_esd(ds, depth_var='pressure',
     Parameters
     ----------
     ds : `xarray.Dataset`
-        Must have *time* coordinate and *pressure* as a variable
+        Must have *time* coordinate and depth_var as variables
     min_dp : float, default=10.0
         Minimum distance a profile must transit to be considered a profile, in dbar.
     filt_time : float, default=100
@@ -98,14 +105,13 @@ def get_profiles_esd(ds, depth_var='pressure',
             direction[ins] = -1
             pronum += 1
 
-    _log.debug('Doing this...')
     attrs = collections.OrderedDict([
         ('long_name', 'profile index'),
         ('units', '1'),
         ('comment',
          'N = inside profile N, N + 0.5 = between profiles N and N + 1'),
-        ('sources', 'time pressure'),
-        ('method', 'get_profiles_new'),
+        ('sources', f'time {depth_var}'),
+        ('method', 'get_profiles_esd'),
         ('min_dp', min_dp),
         ('filt_length', filt_length),
         ('min_nsamples', min_nsamples)])
@@ -116,7 +122,98 @@ def get_profiles_esd(ds, depth_var='pressure',
         ('units', '1'),
         ('comment',
          '-1 = ascending, 0 = inflecting or stalled, 1 = descending'),
-        ('sources', 'time pressure'),
-        ('method', 'get_profiles_new')])
+        ('sources', f'time {depth_var}'),
+        ('method', 'get_profiles_esd')])
     ds['profile_direction'] = (('time'), direction, attrs)
+    return ds
+
+
+def drop_bogus_times(ds, min_dt='1971-01-01'):
+    """
+    Remove/drop times from before a given value. 
+    By default this drops 1970-01-01 timestamps, but can also be used to 
+    drop uninformative timestamps from before when the glider was deployed
+
+    
+    ds : `xarray.Dataset`
+        Dataset, with 'time' coordinate
+    min_dt: string
+        String to be passed to np.datetime64. Minimum dt to keep
+    
+    Returns: filtered Dataset
+    """
+    # ds = ds.sel(time=slice(min_dt, None))
+    num_times_orig = len(ds.time)
+    ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
+    _log.info(f"Dropped {num_times_orig - len(ds.time)} times from before {min_dt}")
+
+    return ds
+    
+
+
+def postproc_eng_timeseries(ds, min_dt='1971-01-01'):
+    """
+    Post-process engineering timeseries, including: 
+        - Removing CTD vars
+        - Calculating profiles using m_depth instead of pressure
+        - Updating attributes
+
+    ds : `xarray.Dataset`
+        engineering Dataset, usually passed from binary_to_nc.py
+    min_dt: see drop_bogus_times
+    
+    returns Dataset
+    """
+
+    # Drop CTD variables required by binary_to_timeseries
+    ds = ds.drop_vars(["depth", "conductivity", "temperature", "pressure", 
+                       "salinity", "potential_density", "density", 
+                       "potential_temperature"])
+    
+    # With depth gone, rename m_depth
+    ds = ds.rename({"m_depth": "depth"})
+
+    # Remove times < min_dt
+    ds = drop_bogus_times(ds, min_dt)
+
+    # Calculate profile indices using measured depth
+    if np.any(np.isnan(ds.depth.values)):
+        num_nan = sum(np.isnan(ds.depth.values))
+        _log.warning(f"There are {num_nan} nan depth values")
+    ds = get_profiles_esd(ds, "depth")
+    _log.debug(f"There are {np.max(ds.profile_index.values)} profiles")
+
+    # Add comment
+    if not ('comment' in ds.attrs): 
+        ds.attrs["comment"] = "engineering-only time series"
+    elif not ds.attrs["comment"].strip():
+        ds.attrs["comment"] = "engineering-only time series"
+    else:
+        ds.attrs["comment"] = ds.attrs["comment"] + "; engineering-only time series"
+
+    return ds
+
+
+def postproc_sci_timeseries(ds, min_dt='1971-01-01'):
+    """
+    Post-process science timeseries, including: 
+        - rename to depth_ctd and depth
+        - remove bogus times. Eg, 1970 or before deployment start date
+        - Profiles. How to calc when ctd only sampling on dives?
+        - 
+
+    ds : `xarray.Dataset`
+        science Dataset, usually passed from binary_to_nc.py
+    min_dt: see drop_bogus_times
+    
+    returns Dataset
+    """
+
+    # Rename variables
+    ds = ds.rename({"depth": "depth_ctd", 
+                    "m_depth": "depth"})
+    
+    # Remove times < min_dt
+    ds = drop_bogus_times(ds, min_dt)
+
     return ds

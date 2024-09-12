@@ -1,18 +1,23 @@
 import os
 from pathlib import Path
 import logging
-import importlib.resources
+from importlib.resources import files, as_file
 
 _log = logging.getLogger(__name__)
 
+"""
+Functions that generate or otherwise handle ESD glider-specific 
+file path operations
+"""
 
-
-def get_engyaml_path():
+def get_engyml_path():
     """
     Get and return the path to the engineering deployment yaml
     Returns the path, so as to ber able to pass to binary_to_timeseries
     """
-    with importlib.resources.as_file(importlib.resources.files('esdglider.data').joinpath('deployment-eng.yml')) as path:
+
+    ref = files('esdglider.data') / 'deployment-eng.yml'
+    with as_file(ref) as path:
         return str(path)
 
 
@@ -59,14 +64,14 @@ def year_path(project, deployment):
     return year
 
 
-def binary_to_nc_paths(project, deployment, mode, deployments_path):
+def esd_paths(project, deployment, mode, deployments_path):
     """
     project
     deployment
     mode
     deployments_path
 
-    Return GCP paths needed by the binary_to_nc script.
+    Return paths needed by the binary_to_nc script.
     Paths as described here:
     https://swfsc.github.io/glider-lab-manual/content/data-management.html
     """
@@ -100,7 +105,7 @@ def binary_to_nc_paths(project, deployment, mode, deployments_path):
     binarydir = os.path.join(glider_path, 'data', 'binary', mode)
     deploymentyaml = os.path.join(glider_path, 'config', 
         f"{deployment_mode}.yml")
-    engyaml = get_engyaml_path()
+    engyaml = get_engyml_path()
 
     ncdir = os.path.join(glider_path, 'data', 'nc')
 
