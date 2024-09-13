@@ -18,3 +18,8 @@ dependencies:
   - pip:
     - dbdreader
     - git+https://github.com/c-proof/pyglider.git@main
+
+  # After creating and activating conda env, 
+  # run the follwoing to install esdglider as editable:
+  # `pip install -e ~/glider-utils`
+  

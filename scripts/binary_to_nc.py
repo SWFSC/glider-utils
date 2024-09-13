@@ -71,6 +71,7 @@ def main(args):
 
     # Science
     # TODO: make script to check that we aren't shooting ourselves in foot using CTD as base
+    logging.info(f'Generating science timeseries')
     outname_tssci = slocum.binary_to_timeseries(
         paths["binarydir"], paths["cacdir"], tsdir, 
         paths["deploymentyaml"],
@@ -90,11 +91,13 @@ def main(args):
     #--------------------------------------------
     # Gridded data, 1m and 5m
     # TODO: filter to match SOCIB?
+    logging.info(f'Generating 1m gridded data')
     outname_1m = ncprocess.make_gridfiles(
         outname_tssci, paths["griddir"], paths["deploymentyaml"], 
         dz = 1, fnamesuffix="-1m")
     logging.info(f'Finished making 1m gridded data: {outname_1m}')
 
+    logging.info(f'Generating 5m gridded data')
     outname_5m = ncprocess.make_gridfiles(
         outname_tssci, paths["griddir"], paths["deploymentyaml"], 
         dz = 5, fnamesuffix="-5m")
