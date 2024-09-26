@@ -109,9 +109,9 @@ def esd_paths(project, deployment, mode, deployments_path):
 
     ncdir = os.path.join(glider_path, 'data', 'nc')
 
-    tsdir = os.path.join(ncdir, 'L1-timeseries')
+    tsdir = os.path.join(ncdir, 'timeseries')
     profiledir = os.path.join(ncdir, 'ngdac', mode)
-    griddir = os.path.join(ncdir, 'L1-gridded')
+    griddir = os.path.join(ncdir, 'gridded')
 
     # return cacdir, binarydir, deploymentyaml, tsdir, profiledir, griddir
     return {
