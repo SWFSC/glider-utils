@@ -17,7 +17,10 @@ def main(args):
     logging.basicConfig(format=log_format, level=log_level)
 
     process.binary_to_nc(
-        args.deployment, args.project, args.mode, args.deployments_path, 
+        deployment=args.deployment, 
+        project=args.project, 
+        mode=args.mode, 
+        deployments_path=args.deployments_path, 
         write_timeseries=args.write_timeseries, 
         write_gridded=args.write_gridded, 
         profile_filt_time=args.profile_filt_time, 

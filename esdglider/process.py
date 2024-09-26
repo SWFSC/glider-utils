@@ -22,6 +22,16 @@ def binary_to_nc(deployment, project, mode, deployments_path,
 
     The contents of this function used to just be in scripts/binary_to_nc.py.
     They were moved to this structure for easier development and debugging
+
+    Parameters
+    ----------
+    deployment :
+    ...
+
+    Returns
+    ----------
+    0 if a successful run
+
     """
 
     # Choices (delayed, rt) specified in arg input
@@ -36,7 +46,8 @@ def binary_to_nc(deployment, project, mode, deployments_path,
     tsdir = paths["tsdir"]
 
     #--------------------------------------------
-    # TODO: handle compressed files, if necessary
+    # TODO: handle compressed files, if necessary. 
+    # Although maybe this should be in another function?
 
     #--------------------------------------------
     # Timeseries
@@ -62,6 +73,7 @@ def binary_to_nc(deployment, project, mode, deployments_path,
         _log.info(f'Finished eng timeseries postproc: {outname_tseng}')
 
         # Science
+        # Note - uses sci_water_temp as time_base sensor
         # TODO: make script to check that we aren't shooting ourselves in foot using CTD as base
         _log.info(f'Generating science timeseries')
         outname_tssci = slocum.binary_to_timeseries(
