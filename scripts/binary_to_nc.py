@@ -7,8 +7,10 @@ import argparse
 import xarray as xr
 import yaml
 
-from esdglider.paths import esd_paths
-from esdglider.esdutils import postproc_eng_timeseries, postproc_sci_timeseries
+import esdglider.pathutils as pathutils
+import esdglider.utils as utils
+# from esdglider.pathutils import esd_paths
+# from esdglider.utils import postproc_eng_timeseries, postproc_sci_timeseries
 
 import pyglider.slocum as slocum
 import pyglider.ncprocess as ncprocess
@@ -44,7 +46,7 @@ def main(args):
 
     #--------------------------------------------
     # Check/make file and directory paths
-    paths = esd_paths(project, deployment, mode, deployments_path)
+    paths = pathutils.esd_paths(project, deployment, mode, deployments_path)
     tsdir = paths["tsdir"]
 
     #--------------------------------------------
@@ -68,7 +70,7 @@ def main(args):
             profile_min_time=args.profile_min_time, maxgap=args.maxgap)
 
         tseng = xr.open_dataset(outname_tseng)
-        tseng = postproc_eng_timeseries(tseng)
+        tseng = utils.postproc_eng_timeseries(tseng)
         tseng.close()
         tseng.to_netcdf(outname_tseng)
         logging.info(f'Finished eng timeseries postproc: {outname_tseng}')
@@ -84,7 +86,7 @@ def main(args):
             profile_min_time=args.profile_min_time, maxgap=args.maxgap)
 
         tssci = xr.open_dataset(outname_tssci)
-        tssci = postproc_sci_timeseries(tssci)
+        tssci = utils.postproc_sci_timeseries(tssci)
         tssci.close()
         tssci.to_netcdf(outname_tssci)
         logging.info(f'Finished sci timeseries postproc: {outname_tssci}')

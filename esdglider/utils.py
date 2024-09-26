@@ -1,7 +1,8 @@
 import collections
 import numpy as np
-from scipy.signal import argrelextrema
 import logging
+
+from scipy.signal import argrelextrema
 
 _log = logging.getLogger(__name__)
 
