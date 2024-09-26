@@ -13,12 +13,13 @@ setup(name='esdglider',
       include_package_data=True,    
       python_requires='>=3.10',
       install_requires=[
-            # 'google-crc32c==1.1',
-            # 'google-cloud-secret-manager==2.12',
-            'pandas', 
+            'google-crc32c>=1.1',
+            'google-cloud-secret-manager>=2.12',
             'numpy', 
-            'scipy', 
-            'SQLAlchemy'
+            'pandas',
+            'xarray', 
+            "pyyaml"
+            # 'SQLAlchemy'
       ],
       zip_safe=False)
 
