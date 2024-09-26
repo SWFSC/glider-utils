@@ -1,5 +1,6 @@
 import os
 import logging
+import numpy as np
 import xarray as xr
 import yaml
 
@@ -55,7 +56,7 @@ def binary_to_nc(deployment, project, mode, deployments_path,
             profile_min_time=profile_min_time, maxgap=maxgap)
 
         tseng = xr.open_dataset(outname_tseng)
-        tseng = utils.postproc_eng_timeseries(tseng)
+        tseng = postproc_eng_timeseries(tseng)
         tseng.close()
         tseng.to_netcdf(outname_tseng)
         _log.info(f'Finished eng timeseries postproc: {outname_tseng}')
@@ -71,7 +72,7 @@ def binary_to_nc(deployment, project, mode, deployments_path,
             profile_min_time=profile_min_time, maxgap=maxgap)
 
         tssci = xr.open_dataset(outname_tssci)
-        tssci = utils.postproc_sci_timeseries(tssci)
+        tssci = postproc_sci_timeseries(tssci)
         tssci.close()
         tssci.to_netcdf(outname_tssci)
         _log.info(f'Finished sci timeseries postproc: {outname_tssci}')
@@ -127,3 +128,71 @@ def binary_to_nc(deployment, project, mode, deployments_path,
 
     #--------------------------------------------
     return 0
+
+
+def postproc_eng_timeseries(ds, min_dt='1971-01-01'):
+    """
+    Post-process engineering timeseries, including: 
+        - Removing CTD vars
+        - Calculating profiles using m_depth instead of pressure
+        - Updating attributes
+
+    ds : `xarray.Dataset`
+        engineering Dataset, usually passed from binary_to_nc.py
+    min_dt: see drop_bogus_times
+    
+    returns Dataset
+    """
+
+    # Drop CTD variables required by binary_to_timeseries
+    ds = ds.drop_vars(["depth", "conductivity", "temperature", "pressure", 
+                       "salinity", "potential_density", "density", 
+                       "potential_temperature"])
+    
+    # With depth gone, rename m_depth
+    ds = ds.rename({"m_depth": "depth"})
+
+    # Remove times < min_dt
+    ds = utils.drop_bogus_times(ds, min_dt)
+
+    # Calculate profile indices using measured depth
+    if np.any(np.isnan(ds.depth.values)):
+        num_nan = sum(np.isnan(ds.depth.values))
+        _log.warning(f"There are {num_nan} nan depth values")
+    ds = utils.get_profiles_esd(ds, "depth")
+    _log.debug(f"There are {np.max(ds.profile_index.values)} profiles")
+
+    # Add comment
+    if not ('comment' in ds.attrs): 
+        ds.attrs["comment"] = "engineering-only time series"
+    elif not ds.attrs["comment"].strip():
+        ds.attrs["comment"] = "engineering-only time series"
+    else:
+        ds.attrs["comment"] = ds.attrs["comment"] + "; engineering-only time series"
+
+    return ds
+
+
+def postproc_sci_timeseries(ds, min_dt='1971-01-01'):
+    """
+    Post-process science timeseries, including: 
+        - rename to depth_ctd and depth
+        - remove bogus times. Eg, 1970 or before deployment start date
+        - Profiles. How to calc when ctd only sampling on dives?
+        - 
+
+    ds : `xarray.Dataset`
+        science Dataset, usually passed from binary_to_nc.py
+    min_dt: see drop_bogus_times
+    
+    returns Dataset
+    """
+
+    # Rename variables
+    ds = ds.rename({"depth": "depth_ctd", 
+                    "m_depth": "depth"})
+    
+    # Remove times < min_dt
+    ds = utils.drop_bogus_times(ds, min_dt)
+
+    return ds
