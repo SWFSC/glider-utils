@@ -2,12 +2,12 @@ from setuptools import setup, find_packages
 
 
 setup(name='esdglider',
-      version='0.1a.9000',
+      version="0.1.0a1",
       description='Utility functions for processing ESD glider data',
       url='http://github.com/swfsc/glider-utils',
       author='Sam Woodman',
       author_email='sam.woodman@noaa.gov',
-      license='CC0-1.0',
+      license='Apache 2.0',
       packages=find_packages(),
       package_data = {'esdglider': ["esdglider/data/*"]},
       include_package_data=True,    
@@ -21,3 +21,4 @@ setup(name='esdglider',
             'SQLAlchemy'
       ],
       zip_safe=False)
+
