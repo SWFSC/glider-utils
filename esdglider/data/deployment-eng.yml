@@ -71,6 +71,12 @@ netcdf_variables:
     units:        rad
     coordinates:  time depth latitude longitude
 
+  total_num_inflections:
+    source: m_tot_num_inflections
+    long_name:    glider total number inflections
+    units:        nodim
+    coordinates:  time depth latitude longitude
+
   # profile info:
   waypoint_latitude:
     source:  c_wpt_lat
