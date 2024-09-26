@@ -14,12 +14,17 @@ dependencies:
   - pandas
   - xarray
   - scipy
+  - matplotlib
+  - pyyaml
+
+  - GliderTools
 
   - pip:
     - dbdreader
     - git+https://github.com/c-proof/pyglider.git@main
 
+  # conda env update -f glider-utils/environment.yml --prune
   # After creating and activating conda env, 
-  # run the follwoing to install esdglider as editable:
+  # run the following to install esdglider as editable:
   # `pip install -e ~/glider-utils`
   
