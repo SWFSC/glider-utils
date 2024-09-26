@@ -10,7 +10,7 @@ from subprocess import call, run
 from google.cloud import secretmanager
 import google_crc32c
 
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 def access_secret_version(project_id, secret_id, version_id = 'latest'):
@@ -34,7 +34,7 @@ def access_secret_version(project_id, secret_id, version_id = 'latest'):
     crc32c = google_crc32c.Checksum()
     crc32c.update(response.payload.data)
     if response.payload.data_crc32c != int(crc32c.hexdigest(), 16):
-        logging.error("Data corruption detected.")
+        _log.error("Data corruption detected.")
         return response
 
     # Print the secret payload.
@@ -59,33 +59,33 @@ def rt_files_mgmt(sfmc_ext_all, ext_regex, subdir_name, local_path, bucket_path)
     if (any(re.search(ext_regex, i) for i in sfmc_ext_all)):
         # Check paths
         if not os.path.isdir(local_path):
-            logging.error(f'Necessary path ({local_path}) does not exist')
+            _log.error(f'Necessary path ({local_path}) does not exist')
             return
 
         subdir_path = os.path.join(local_path, subdir_name)
         if not os.path.isdir(subdir_path):
-            logging.error(f'Necessary path ({subdir_path}) does not exist')
+            _log.error(f'Necessary path ({subdir_path}) does not exist')
             return
 
-        logging.info(f'Moving {subdir_name} files to their local subdirectory')
+        _log.info(f'Moving {subdir_name} files to their local subdirectory')
         ext_regex_path = os.path.join(local_path, f'*{ext_regex}')
-        logging.debug(f'Regex extension path: {ext_regex_path}')
-        logging.debug(f'Local subdirectory: {subdir_path}')
+        _log.debug(f'Regex extension path: {ext_regex_path}')
+        _log.debug(f'Local subdirectory: {subdir_path}')
         retcode_tmp = call(f'cp {ext_regex_path} {subdir_path}', 
             shell = True)
 
-        logging.info(f'Rsyncing {subdir_name} subdirectory with bucket directory')
-        logging.debug(f'Bucket directory: {bucket_path}')
+        _log.info(f'Rsyncing {subdir_name} subdirectory with bucket directory')
+        _log.debug(f'Bucket directory: {bucket_path}')
         retcode = run(['gcloud', 'storage', 'rsync', subdir_path, bucket_path], 
             capture_output = True)
         if retcode.returncode != 0:
-            logging.error(f'Error copying {subdir_name} files to bucket')
-            logging.error(f'Args: {retcode.args}')
-            logging.error(f'stderr: {retcode.stderr}')
+            _log.error(f'Error copying {subdir_name} files to bucket')
+            _log.error(f'Args: {retcode.args}')
+            _log.error(f'stderr: {retcode.stderr}')
             return
         else:
-            logging.info(f'Successfully copied {subdir_name} files to {bucket_path}')
-            logging.debug(f'Args: {retcode.args}')
-            logging.debug(f'stderr: {retcode.stdout}')
+            _log.info(f'Successfully copied {subdir_name} files to {bucket_path}')
+            _log.debug(f'Args: {retcode.args}')
+            _log.debug(f'stderr: {retcode.stdout}')
     else: 
-        logging.info(f'No {subdir_name} files to copy')
+        _log.info(f'No {subdir_name} files to copy')
