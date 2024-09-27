@@ -75,7 +75,7 @@ def esd_paths(project, deployment, mode, deployments_path):
     Paths as described here:
     https://swfsc.github.io/glider-lab-manual/content/data-management.html
     """
-    prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO']    
+    prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']    
     if not os.path.isdir(deployments_path):
         _log.error(f'deployments_path ({deployments_path}) does not exist')
         return

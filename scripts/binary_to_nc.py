@@ -39,8 +39,8 @@ if __name__ == '__main__':
 
     arg_parser.add_argument('project', 
         type=str,
-        help='Glider project name', 
-        choices=['FREEBYRD', 'REFOCUS', 'SANDIEGO'])
+        help='Project name for deployment', 
+        choices=['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'])
 
     arg_parser.add_argument('mode', 
         type=str,
