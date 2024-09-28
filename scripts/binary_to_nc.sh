@@ -1,9 +1,10 @@
 #!/bin/bash
 
-PATH_DEPLOYMENTS=/home/sam_woodman_noaa_gov/amlr-gliders-deployments-dev
+DEPLOYMENTS_PATH=/home/sam_woodman_noaa_gov/amlr-gliders-deployments-dev
+IMAGERY_PATH=/home/sam_woodman_noaa_gov/amlr-gliders-imagery-raw-dev
 
-fusermount -u $PATH_DEPLOYMENTS
-gcsfuse --implicit-dirs amlr-gliders-deployments-dev $PATH_DEPLOYMENTS
+fusermount -u $DEPLOYMENTS_PATH
+gcsfuse --implicit-dirs amlr-gliders-deployments-dev $DEPLOYMENTS_PATH
 echo -e "\nend of bucket mounting\n"
 
 # conda activate esdglider

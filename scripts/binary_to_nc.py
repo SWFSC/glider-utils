@@ -10,11 +10,9 @@ def main(args):
     """
     Process binary ESD glider data...
     """
-
-    loglevel = args.loglevel
-    log_level = getattr(logging, loglevel.upper())
-    log_format = '%(module)s:%(levelname)s:%(message)s [line %(lineno)d]'
-    logging.basicConfig(format=log_format, level=log_level)
+    logging.basicConfig(
+        format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
+        level=getattr(logging, args.loglevel.upper()))
 
     process.binary_to_nc(
         deployment=args.deployment, 
