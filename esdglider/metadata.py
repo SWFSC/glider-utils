@@ -100,11 +100,21 @@ def imagery_metadata(ds_eng, ds_sci, imagery_dir, ext = 'jpg'):
                  .agg(min_time=('time', 'min'), max_time=('time', 'max'))
                  .reset_index()
     )
+    # Check
+    # # TODO: make this into a function
+    # # with boolean flag to specify if it should stop on the first instance, or check all
+    # overlaps = []
+    # for i in range(len(profile_times)):
+    #     for j in range(i + 1, len(profile_times)):  # Compare each row with every other row
+    #         if (profile_times.loc[i, 'min_time'] <= profile_times.loc[j, 'max_time']) and (profile_times.loc[i, 'max_time'] >= profile_times.loc[j, 'min_time']):
+    #             overlaps.append((i, j))  # Store overlapping row indices
+    # print(overlaps)
+
     # Option 1: https://stackoverflow.com/a/44601120
-    # a = df.time.values
-    # bh = profile_times.max_time.values
-    # bl = profile_times.min_time.values
-    # i, j = np.where((a[:, None] >= bl) & (a[:, None] <= bh))
+    a = df.img_time.values
+    bh = profile_times.max_time.values
+    bl = profile_times.min_time.values
+    i, j = np.where((a[:, None] >= bl) & (a[:, None] <= bh))
     # d = pd.concat([
     #     df.loc[i, :].reset_index(drop=True),
     #     profile_times.loc[j, :].reset_index(drop=True)
@@ -118,7 +128,6 @@ def imagery_metadata(ds_eng, ds_sci, imagery_dir, ext = 'jpg'):
     # # Perform a cross-join and filter by intervals
     # merged = pd.merge(b, a, on='key').drop('key', axis=1)
     # matches = merged[(merged['img_time'] >= merged['min_time']) & (merged['img_time'] <= merged['max_time'])]
-    # print(matches[['time', 'category1', 'category2']])
 
     _log.debug("Interpolating engineering glider data")
     ds_eng_interp = ds_eng.interp(time=df.img_time.values)
