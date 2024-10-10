@@ -7,8 +7,8 @@ import argparse
 import logging
 from subprocess import run
 
-from esdglider.paths import year_path, find_extensions
-from esdglider.realtime import access_secret_version, rt_files_mgmt
+from esdglider.pathutils import year_path, find_extensions, rt_files_mgmt
+from esdglider.gcp import access_secret_version
 
 
 def main(args):

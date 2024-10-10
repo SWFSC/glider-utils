@@ -3,6 +3,7 @@ import logging
 import datetime as dt
 import glob
 import pandas as pd
+import numpy as np
 
 _log = logging.getLogger(__name__)
 
