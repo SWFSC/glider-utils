@@ -6,21 +6,20 @@ import xarray as xr
 
 import esdglider.utils as utils
 import esdglider.metadata as met
+import esdglider.process as process
 
 
-
-def main():
-    logging.basicConfig(
-        format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
-        level=logging.INFO)
-    
-    # logging.basicConfig(filename=logf,
-    #                 filemode='w',
-    #                 format='%(asctime)s %(levelname)-8s %(message)s',
-    #                 level=logging.INFO,
-    #                 datefmt='%Y-%m-%d %H:%M:%S')
+def scrape_sfmc():
+    process.scrape_sfmc(deployment='calanus-20241019', 
+        project="ECOSWIM", 
+        bucket='amlr-gliders-deployments-dev', 
+        # sfmc_path='/var/sfmc', 
+        sfmc_path='/home/sam_woodman_noaa_gov/sfmc', 
+        gcpproject_id='ggn-nmfs-usamlr-dev-7b99', 
+        secret_id='sfmc-swoodman')
 
 
+def ts():
     deployment = 'amlr08-20220513'
     mode = 'delayed'
     bucket_name = 'amlr-gliders-deployments-dev'
@@ -48,4 +47,15 @@ def main():
     met.imagery_metadata(dseng, dssci, i_path)
 
 if __name__ == "__main__":
-    main()
+    logging.basicConfig(
+        format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
+        level=logging.INFO)
+    # logging.basicConfig(filename=logf,
+    #                 filemode='w',
+    #                 format='%(asctime)s %(levelname)-8s %(message)s',
+    #                 level=logging.INFO,
+    #                 datefmt='%Y-%m-%d %H:%M:%S')
+
+    # ts()
+    logging.info("Starting test")
+    scrape_sfmc()

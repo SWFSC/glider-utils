@@ -1,9 +1,8 @@
 import os
-import re
 import logging
 
 from pathlib import Path
-from subprocess import call, run
+# from subprocess import call, run
 from importlib.resources import files, as_file
 
 _log = logging.getLogger(__name__)
@@ -55,10 +54,15 @@ def year_path(project, deployment):
     and ringo-20190101 would return 2019
     """
     deployment_split = deployment.split('-')
-    year = deployment_split[1][0:4]
+    deployment_date = deployment_split[1]
+    if len(deployment_date) != 8:
+        _log.error('The deployment must be the glider name followed by the deployment date')
+        raise ValueError(f'Invalid glider deployment date: {deployment_date}')
+    
+    year = deployment_date[0:4]
 
     if project == 'FREEBYRD':
-        month = deployment_split[1][4:6]
+        month = deployment_date[4:6]
         if int(month) <= 7: 
             year = f'{int(year)}'
         else:
@@ -66,6 +70,19 @@ def year_path(project, deployment):
 
     return year
 
+
+def mkdir_pass(outdir):
+    """
+    Convenience wrapper to try to make a directory path, 
+    and pass if it already exists
+    """
+    _log.debug(f"Trying to make directory {outdir}")
+    try:
+        os.mkdir(outdir)
+    except FileExistsError:
+        pass
+
+    return outdir
 
 def esd_paths(project, deployment, mode, deployments_path):
     """
@@ -128,45 +145,7 @@ def esd_paths(project, deployment, mode, deployments_path):
     }
 
 
-def rt_files_mgmt(sfmc_ext_all, ext_regex, subdir_name, local_path, bucket_path):
-    """
-    Copy real-time files from the local sfmc folder (local_path)
-    to their subdirectory (subdir_path), 
-    and then rsync to their place in the bucket (bucket_path)
+def sfmc_paths():
+    return 0    
 
-    ext_regex_path does include * for copying files (eg is '.[st]bd')
-    """
-    
-    if (any(re.search(ext_regex, i) for i in sfmc_ext_all)):
-        # Check paths
-        if not os.path.isdir(local_path):
-            _log.error(f'Necessary path ({local_path}) does not exist')
-            return
 
-        subdir_path = os.path.join(local_path, subdir_name)
-        if not os.path.isdir(subdir_path):
-            _log.error(f'Necessary path ({subdir_path}) does not exist')
-            return
-
-        _log.info(f'Moving {subdir_name} files to their local subdirectory')
-        ext_regex_path = os.path.join(local_path, f'*{ext_regex}')
-        _log.debug(f'Regex extension path: {ext_regex_path}')
-        _log.debug(f'Local subdirectory: {subdir_path}')
-        retcode_tmp = call(f'cp {ext_regex_path} {subdir_path}', 
-            shell = True)
-
-        _log.info(f'Rsyncing {subdir_name} subdirectory with bucket directory')
-        _log.debug(f'Bucket directory: {bucket_path}')
-        retcode = run(['gcloud', 'storage', 'rsync', subdir_path, bucket_path], 
-            capture_output = True)
-        if retcode.returncode != 0:
-            _log.error(f'Error copying {subdir_name} files to bucket')
-            _log.error(f'Args: {retcode.args}')
-            _log.error(f'stderr: {retcode.stderr}')
-            return
-        else:
-            _log.info(f'Successfully copied {subdir_name} files to {bucket_path}')
-            _log.debug(f'Args: {retcode.args}')
-            _log.debug(f'stderr: {retcode.stdout}')
-    else: 
-        _log.info(f'No {subdir_name} files to copy')
