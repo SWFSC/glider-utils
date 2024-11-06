@@ -5,7 +5,6 @@ import numpy as np
 import xarray as xr
 import yaml
 import subprocess
-import stat
 
 import esdglider.gcp as gcp
 import esdglider.pathutils as pathutils
