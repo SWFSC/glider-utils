@@ -5,6 +5,7 @@ import numpy as np
 import xarray as xr
 import yaml
 import subprocess
+import stat
 
 import esdglider.gcp as gcp
 import esdglider.pathutils as pathutils
@@ -254,14 +255,14 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     pathutils.mkdir_pass(sfmc_path)
     pathutils.mkdir_pass(sfmc_local_path)
 
-    # _log.debug('SFMC ssh password')
-    # sfmc_pwd_file = os.path.join(sfmc_local_path, ".sfmcpwd.txt")
-    # if not os.path.isfile(sfmc_pwd_file):
-    #     _log.info('Writing SFMC ssh pwd to file')
-    #     file = open(sfmc_pwd_file, 'w+')
-    #     file.write(gcp.access_secret_version(gcpproject_id, secret_id))
-    #     file.close()
-    #     os.chmod(sfmc_pwd_file, stat.S_IREAD)
+    sfmc_pwd_file = os.path.join(sfmc_local_path, ".sfmcpwd.txt")
+    _log.debug(f'SFMC ssh password written to {sfmc_pwd_file}')
+    if not os.path.isfile(sfmc_pwd_file):
+        _log.info('Writing SFMC ssh pwd to file')
+        file = open(sfmc_pwd_file, 'w+')
+        file.write(gcp.access_secret_version(gcpproject_id, secret_id))
+        file.close()
+        os.chmod(sfmc_pwd_file, stat.S_IREAD)
 
     #--------------------------------------------
     # rsync with SFMC
@@ -269,10 +270,13 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     sfmc_glider = os.path.join('/var/opt/sfmc-dockserver/stations/noaa/gliders',
                                glider, 'from-glider/')
     sfmc_server_path = f'swoodman@sfmc.webbresearch.com:{sfmc_glider}'
-    rsync_args = ['sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
-                  'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
-    # rsync_args = ['sshpass', '-f', sfmc_pwd_file, 'rsync', "-aP", sfmc_server, sfmc_local_path]
-    # delete sfmc_pwd_file
+
+    # rsync_args = ['sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
+    #               'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
+    rsync_args = ['sshpass', '-f', sfmc_pwd_file, 
+                  'rsync', "-aP", "--delete". sfmc_server_path, sfmc_local_path]
+    os.remove(sfmc_pwd_file) #delete sfmc_pwd_file
+
     _log.debug(rsync_args)
     retcode = subprocess.run(rsync_args, capture_output=True)
     _log.debug(retcode.args)
