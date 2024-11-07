@@ -271,10 +271,10 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
                                glider, 'from-glider/')
     sfmc_server_path = f'swoodman@sfmc.webbresearch.com:{sfmc_glider}'
 
-    # rsync_args = ['sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
-    #               'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
-    rsync_args = ['sshpass', '-f', sfmc_pwd_file, 
+    rsync_args = ['sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
                   'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
+    # rsync_args = ['sshpass', '-f', sfmc_pwd_file, 
+    #               'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
     os.remove(sfmc_pwd_file) #delete sfmc_pwd_file
     _log.debug(f'Removed SFMC ssh password file')
 
