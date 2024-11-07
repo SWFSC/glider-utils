@@ -274,8 +274,9 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     # rsync_args = ['sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
     #               'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
     rsync_args = ['sshpass', '-f', sfmc_pwd_file, 
-                  'rsync', "-aP", "--delete". sfmc_server_path, sfmc_local_path]
+                  'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
     os.remove(sfmc_pwd_file) #delete sfmc_pwd_file
+    _log.debug(f'Removed SFMC ssh password file')
 
     _log.debug(rsync_args)
     retcode = subprocess.run(rsync_args, capture_output=True)
@@ -293,13 +294,14 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
 
     # Check for unexpected file extensions
     sfmc_file_ext = pathutils.find_extensions(sfmc_local_path)
-    file_ext_expected = {".cac", ".CAC", ".sbd", ".tbd", ".ad2", "scd", "tcd"} #, ".cam"
+    file_ext_expected = {".cac", ".CAC", ".sbd", ".tbd", ".ad2"} 
+                        #  ".ccc", ".scd", ".tcd", ".cam"
     file_ext_weird = sfmc_file_ext.difference(file_ext_expected)
     if len(file_ext_weird) > 0:
         x = os.listdir(sfmc_local_path)
-        logging.warning(f'File with unexpected extensions ({file_ext_weird}) ' + 
+        logging.warning(f'File with the following extensions ({file_ext_weird}) ' + 
             'were downloaded from the SFMC, ' + 
-            'but will not be copied to the GCP bucket')
+            'but will not be organized copied to the GCP bucket')
         # logging.warning(f'File list: TODO')
 
 
@@ -321,12 +323,19 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     rt_file_mgmt(
         sfmc_file_ext, '.[SsTt]bd', name_stbd, sfmc_local_path, bucket_stbd)
 
-    # scd/tcd files
-    name_stcd = 'stcd'
-    bucket_stcd = os.path.join(bucket_deployment, 'data', 'binary', 'rt-compressed')
-    pathutils.mkdir_pass(os.path.join(sfmc_local_path, name_stcd))
-    rt_file_mgmt(
-        sfmc_file_ext, '.[SsTt]cd', name_stcd, sfmc_local_path, bucket_stcd)
+    # Do not bother with compressed files, because the SFMC uncompresses them
+    
+    # name_ccc  = 'ccc'
+    # pathutils.mkdir_pass(os.path.join(sfmc_local_path, name_ccc))
+    # rt_file_mgmt(sfmc_file_ext, '.ccc', name_ccc, sfmc_local_path, 
+    #              f'gs://{bucket}/cache-compressed')
+
+    # # scd/tcd files
+    # name_stcd = 'stcd'
+    # bucket_stcd = os.path.join(bucket_deployment, 'data', 'binary', 'rt-compressed')
+    # pathutils.mkdir_pass(os.path.join(sfmc_local_path, name_stcd))
+    # rt_file_mgmt(
+    #     sfmc_file_ext, '.[SsTt]cd', name_stcd, sfmc_local_path, bucket_stcd)
 
     # ad2 files
     name_ad2  = 'ad2'
@@ -338,7 +347,6 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     # name_cam  = 'cam'    
     # pathutils.mkdir_pass(os.path.join(sfmc_local_path, name_cam))
     # rt_files_mgmt(sfmc_file_ext, '.cam', name_cam, sfmc_local_path, bucket_cam)
-
 
     #--------------------------------------------
     return 0

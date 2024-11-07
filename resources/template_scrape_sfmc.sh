@@ -2,6 +2,8 @@
 
 # # In glider-proc VM:
 # sudo touch /opt/glider-scripts/calanus-20241019-scrape_sfmc.sh
+# # Use nano, or other to paste in and update template
+# # Template: glider-utils/resources/template_scrape_sfmc.sh
 # sudo chmod 775 /opt/glider-scripts/calanus-20241019-scrape_sfmc.sh 
 # sudo chgrp gliders /opt/glider-scripts/calanus-20241019-scrape_sfmc.sh
 

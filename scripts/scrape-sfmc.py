@@ -13,14 +13,14 @@ def main(args):
     """
     if args.logfile == "":
         logging.basicConfig(
-            format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
+            format='%(asctime)s %(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
             level=getattr(logging, args.loglevel.upper()), 
             datefmt="%Y-%m-%d %H:%M:%S")
     else:
         logging.basicConfig(
             filename=args.logfile,
             filemode="a",
-            format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
+            format='%(asctime)s %(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
             level=getattr(logging, args.loglevel.upper()), 
             datefmt="%Y-%m-%d %H:%M:%S")
     
@@ -30,6 +30,9 @@ def main(args):
                 sfmc_path=args.sfmc_path, 
                 gcpproject_id=args.gcpproject_id, 
                 secret_id=args.secret_id)
+    
+    logging.info("Completed process.scrape_sfmc")
+
     
 
 
