@@ -3,6 +3,7 @@
 import argparse
 import logging
 import esdglider.process as process
+import sys
 
 
 def main(args):
@@ -10,10 +11,18 @@ def main(args):
     rsync files from sfmc, and send them to correct bucket directories;
     Returns 0
     """
-
-    logging.basicConfig(
-        format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
-        level=getattr(logging, args.loglevel.upper()))
+    if args.logfile == "":
+        logging.basicConfig(
+            format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
+            level=getattr(logging, args.loglevel.upper()), 
+            datefmt="%Y-%m-%d %H:%M:%S")
+    else:
+        logging.basicConfig(
+            filename=args.logfile,
+            filemode="a",
+            format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
+            level=getattr(logging, args.loglevel.upper()), 
+            datefmt="%Y-%m-%d %H:%M:%S")
     
     process.scrape_sfmc(deployment=args.deployment, 
                 project=args.project, 

@@ -242,7 +242,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     deployment_split = deployment.split('-')
     if len(deployment_split[1]) != 8:
         _log.error('The deployment must be the glider name followed by the deployment date')
-        return
+        raise ValueError ("Unsuccessful deployment_split")
     else:
         glider = deployment_split[0]
         year = pathutils.year_path(project, deployment)
@@ -266,7 +266,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     #--------------------------------------------
     # rsync with SFMC
     _log.info(f'Starting rsync with SFMC dockerver for {glider}')
-    sfmc_glider = os.path.join('/var/opt/sfmc-dockserver/stations/noaa/gliders', 
+    sfmc_glider = os.path.join('/var/opt/sfmc-dockserver/stations/noaa/gliders',
                                glider, 'from-glider/')
     sfmc_server_path = f'swoodman@sfmc.webbresearch.com:{sfmc_glider}'
     rsync_args = ['sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
@@ -281,7 +281,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
         _log.error('Error rsyncing with SFMC dockserver')
         _log.error(f'Args: {retcode.args}')
         _log.error(f'stderr: {retcode.stderr}')
-        return
+        raise ValueError ("Unsuccessful rsync with SFMC dockserver")
     else:
         _log.info(f'Successfully completed rsync with SFMC dockerver for {glider}')
         _log.debug(f'Args: {retcode.args}')
