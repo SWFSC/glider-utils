@@ -255,14 +255,14 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     pathutils.mkdir_pass(sfmc_path)
     pathutils.mkdir_pass(sfmc_local_path)
 
-    sfmc_pwd_file = os.path.join(sfmc_local_path, ".sfmcpwd.txt")
-    _log.debug(f'SFMC ssh password written to {sfmc_pwd_file}')
-    if not os.path.isfile(sfmc_pwd_file):
-        _log.info('Writing SFMC ssh pwd to file')
-        file = open(sfmc_pwd_file, 'w+')
-        file.write(gcp.access_secret_version(gcpproject_id, secret_id))
-        file.close()
-        os.chmod(sfmc_pwd_file, stat.S_IREAD)
+    # sfmc_pwd_file = os.path.join(sfmc_local_path, ".sfmcpwd.txt")
+    # _log.debug(f'SFMC ssh password written to {sfmc_pwd_file}')
+    # if not os.path.isfile(sfmc_pwd_file):
+    #     _log.info('Writing SFMC ssh pwd to file')
+    #     file = open(sfmc_pwd_file, 'w+')
+    #     file.write(gcp.access_secret_version(gcpproject_id, secret_id))
+    #     file.close()
+    #     os.chmod(sfmc_pwd_file, stat.S_IREAD)
 
     #--------------------------------------------
     # rsync with SFMC
@@ -273,10 +273,11 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
 
     rsync_args = ['sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
                   'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
+    # NOTE: sshpass via file does not currently work. Unsure why
     # rsync_args = ['sshpass', '-f', sfmc_pwd_file, 
     #               'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
-    os.remove(sfmc_pwd_file) #delete sfmc_pwd_file
-    _log.debug(f'Removed SFMC ssh password file')
+    # os.remove(sfmc_pwd_file) #delete sfmc_pwd_file
+    # _log.debug(f'Removed SFMC ssh password file')
 
     _log.debug(rsync_args)
     retcode = subprocess.run(rsync_args, capture_output=True)
