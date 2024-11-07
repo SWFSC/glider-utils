@@ -46,11 +46,10 @@ ESD glider utility references and resources. Most relevant are an example data f
 
 ## Scripts
 
-Python scripts that are functionally wrappers around esdglider functions. These scripts use argparse, and are designed to be run via the command line on GCP virtual machines. 
+Python scripts that are functionally wrappers around esdglider functions. These scripts use argparse, and are designed to be run via the command line on GCP virtual machines. Templates for shell scripts that run these Python scripts can be found in the resources folder. Some common aspects of these scripts incldue specifying the log level, and specifying a log file to which to write these logs. 
 
-Some common aspects of these scripts incldue specifying the log level, and specifying a log file to which to write these logs. 
+This folder also contains individual 'test' scripts, for reference.
 
-Templates for shell scripts that run these Python scripts can be found in the resources folder.
 
 ## Disclaimer
 
