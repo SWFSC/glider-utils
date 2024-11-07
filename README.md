@@ -2,7 +2,7 @@
 
 Utility functions for ESD glider processing.
 
-This repo was inspired by [cproofutils](https://github.com/c-proof/cproofutils) and [votoutils](https://github.com/voto-ocean-knowledge/votoutils), as well as informed by experiences developing [amlr-gliders](https://github.com/us-amlr/amlr-gliders).
+This repo was inspired by [cproofutils](https://github.com/c-proof/cproofutils) and [votoutils](https://github.com/voto-ocean-knowledge/votoutils), as well as informed by experiences developing [amlr-gliders](https://github.com/us-amlr/amlr-gliders). Although this repo is a collection of utility functions and functionality, it roughly follows structure and opinions outlined by [Cookiecutter Data Science](https://cookiecutter-data-science.drivendata.org/).
 
 For more detailed information about the Ecosystem Science Division's (ESD) glider data processing, see the ESD glider lab manual: https://swfsc.github.io/glider-lab-manual/
 
@@ -25,14 +25,32 @@ You can then use esdglider functions in your scripts. For instance:
 from esdglider.process import binary_to_nc
 ```
 
+For developers, the pyproject.toml and setup.py files specify for pip how to install the esdglider package. See [here](https://packaging.python.org/en/latest/tutorials/packaging-projects/) and [here](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) for more info.
+
 ### Modules
 
 * **data**: folder for data included in the package
-* **gcp**: functions specific to interacting with ESD's Google Cloud Platform project
+* **gcp**: functions specific to interacting with ESD's Google Cloud Platform (GCP) project
 * **metadata**: functions for creating ESD metadata files
 * **pathutils**: utility functions related to directory and file path creation and management. These functions follow the directory structure outlined [here](https://swfsc.github.io/glider-lab-manual/content/data-management.html)
 * **process**: processing functions, for instance scraping data from the SFMC or writing NetCDF files
 * **utils**: utility functions for glider data shenanigans
+
+## Notebooks
+
+This folder contains Jupyter notebooks, for instance for demonstrating sample processing or data access.
+
+## Resources
+
+ESD glider utility references and resources. Most relevant are an example data folder, and two template shell scripts for setting up automated SFMC scraping or binary data processing in GCP. There are also some example scripts for common processes in the 'examples' folder.
+
+## Scripts
+
+Python scripts that are functionally wrappers around esdglider functions. These scripts use argparse, and are designed to be run via the command line on GCP virtual machines. 
+
+Some common aspects of these scripts incldue specifying the log level, and specifying a log file to which to write these logs. 
+
+Templates for shell scripts that run these Python scripts can be found in the resources folder.
 
 ## Disclaimer
 
