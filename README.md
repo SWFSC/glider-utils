@@ -6,13 +6,26 @@ This repo was inspired by [cproofutils](https://github.com/c-proof/cproofutils) 
 
 For more detailed information about the Ecosystem Science Division's (ESD) glider data processing, see the ESD glider lab manual: https://swfsc.github.io/glider-lab-manual/
 
-## esdglider
+## esdglider Conda Environment
+
+Create the esdglider conda environment, which contains all of the packages needed to 1) use the esdglider package and 2) additional glider-utils operations. To isntall the esdglider package in the conda environment, see below. From the directory above where this repo is cloned: 
+
+```bash
+conda env create -f glider-utils/environment.yml 
+```
+
+To update the environment after making any changes to the yml file:
+
+```bash
+conda env update -f glider-utils/environment.yml --prune
+```
+
+## esdglider Package
 
 This glider-utils repo contains the esdglider Python toolbox, which contains functionality for processing glider data from the ESD. To install and use this package, the recommended process is to create the esdglider conda environment, and then install the esdglider toolbox as editable. From the directory above where this repo is cloned:
 
 ```bash
-# Create and activate the esdglider conda environment
-conda env create -f glider-utils/environment.yml 
+# Create as descriebd above, and activate the esdglider conda environment
 conda activate esdglider
 
 # Install esdglider package
@@ -26,6 +39,18 @@ from esdglider.process import binary_to_nc
 ```
 
 For developers, the pyproject.toml and setup.py files specify for pip how to install the esdglider package. See [here](https://packaging.python.org/en/latest/tutorials/packaging-projects/) and [here](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) for more info.
+
+### esdglider in another conda environment
+
+To install and use esdglider in another conda environment, you can either 1) activate the conda environment and install esdglider using pip as described above, or 2) add the following to your env yml file:
+
+```yml
+dependencies:
+  ...
+  - pip:
+      - ...
+      - git+https://github.com/swfsc/glider-utils.git@main #installs esdglider package from glider-utils repo
+```
 
 ### Modules
 
