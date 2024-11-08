@@ -8,7 +8,7 @@ dependencies:
   - google-crc32c
   - google-cloud-secret-manager
 
-  - openssl>=3.3.3
+  - openssl<3.1
 
   - SQLAlchemy
   - pyodbc
