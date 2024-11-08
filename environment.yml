@@ -2,7 +2,7 @@ name: esdglider
 channels:
   - conda-forge
 dependencies:
-  - python>=3.10
+  - python=3.12
   - pip
   - ipykernel #for running things in GCP Jupyter notebooks  
   - google-crc32c
