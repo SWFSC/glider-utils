@@ -315,7 +315,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     name_cac  = 'cac'
     pathutils.mkdir_pass(os.path.join(sfmc_local_path, name_cac))
     rt_file_mgmt(sfmc_file_ext, '.[Cc][Aa][Cc]', name_cac, sfmc_local_path, 
-                 f'gs://{bucket}/cache')
+                 f'gs://{bucket}/cache', rsync_delete=False)
 
     # sbd/tbd files
     name_stbd = 'stbd'
@@ -353,11 +353,17 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     return 0
 
 
-def rt_file_mgmt(sfmc_ext_all, ext_regex, subdir_name, local_path, bucket_path):
+def rt_file_mgmt(
+    sfmc_ext_all, ext_regex, subdir_name, local_path, bucket_path, 
+    rsync_delete = True
+):
     """
     Move real-time files from the local sfmc folder (local_path)
     to their subdirectory (subdir_path). 
-    Then rsync to their place in the bucket (bucket_path)
+    Then uses gcloud to rsync to their place in the bucket (bucket_path)
+
+    The rsync_delete falg indicates if the --delete-unmatched-destination-objects
+    flag is used in the command
 
     ext_regex_path does include * for copying files (eg is '.[st]bd')
     """
@@ -382,9 +388,11 @@ def rt_file_mgmt(sfmc_ext_all, ext_regex, subdir_name, local_path, bucket_path):
 
         # Do rsync
         _log.info(f'Rsyncing {subdir_name} subdirectory with bucket directory')
-        rsync_args = ['gcloud', 'storage', 'rsync', '-r', 
-                      "--delete-unmatched-destination-objects", 
-                      subdir_path, bucket_path]
+        rsync_args = ['gcloud', 'storage', 'rsync', '-r']
+        if rsync_delete: 
+            rsync_args.append("--delete-unmatched-destination-objects")
+        rsync_args.extend([subdir_path, bucket_path])
+
         _log.debug(rsync_args)
         retcode = subprocess.run(rsync_args, capture_output = True)
 
