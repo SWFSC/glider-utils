@@ -8,8 +8,6 @@ dependencies:
   - google-crc32c
   - google-cloud-secret-manager
 
-  - openssl<3.1
-
   - SQLAlchemy
   - pyodbc
   - numpy
