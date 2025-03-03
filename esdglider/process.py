@@ -20,7 +20,7 @@ _log = logging.getLogger(__name__)
 def binary_to_nc(deployment, project, mode, deployments_path, 
                  write_timeseries=False, write_gridded=False, 
                  write_imagery=False, imagery_path=None, 
-                 profile_filt_time=100, profile_min_time=300, maxgap=300):
+                 profile_filt_time=150, profile_min_time=300, maxgap=300):
     """
     Process raw ESD glider data...
 
@@ -146,7 +146,7 @@ def binary_to_nc(deployment, project, mode, deployments_path,
     return 0
 
 
-def postproc_eng_timeseries(ds, min_dt='1971-01-01'):
+def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
     """
     Post-process engineering timeseries, including: 
         - Removing CTD vars
@@ -167,9 +167,9 @@ def postproc_eng_timeseries(ds, min_dt='1971-01-01'):
     
     # With depth gone, rename m_depth
     ds = ds.rename({"m_depth": "depth"})
-
+    ds_type = "eng"
     # Remove times < min_dt
-    ds = utils.drop_bogus_times(ds, min_dt)
+    ds = utils.drop_bogus_times(ds, ds_type, min_dt)
 
     # Calculate profile indices using measured depth
     if np.any(np.isnan(ds.depth.values)):
@@ -189,7 +189,7 @@ def postproc_eng_timeseries(ds, min_dt='1971-01-01'):
     return ds
 
 
-def postproc_sci_timeseries(ds, min_dt='1971-01-01'):
+def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     """
     Post-process science timeseries, including: 
         - rename to depth_ctd and depth
@@ -207,9 +207,9 @@ def postproc_sci_timeseries(ds, min_dt='1971-01-01'):
     # Rename variables
     ds = ds.rename({"depth": "depth_ctd", 
                     "m_depth": "depth"})
-    
+    ds_type = "sci"
     # Remove times < min_dt
-    ds = utils.drop_bogus_times(ds, min_dt)
+    ds = utils.drop_bogus_times(ds, ds_type, min_dt)
 
     return ds
 

@@ -14,7 +14,7 @@ Mostly for post-processing time series files created using pyglider
 
 
 def get_profiles_esd(ds, depth_var='pressure', 
-                     min_dp=10.0, filt_time=100, profile_min_time=300):
+                     min_dp=5.0, filt_time=150, profile_min_time=300):
     """
     NOTE: this function is from pyglider.utils.get_profiles_new. 
     ESD needed a function that calculated profiles using user-defined depth var
@@ -129,7 +129,7 @@ def get_profiles_esd(ds, depth_var='pressure',
     return ds
 
 
-def drop_bogus_times(ds, min_dt='1971-01-01'):
+def drop_bogus_times(ds, ds_type, min_dt='2017-01-01'):
     """
     Remove/drop times from before a given value. 
     By default this drops 1970-01-01 timestamps, but can also be used to 
@@ -147,5 +147,20 @@ def drop_bogus_times(ds, min_dt='1971-01-01'):
     num_times_orig = len(ds.time)
     ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
     _log.info(f"Dropped {num_times_orig - len(ds.time)} times from before {min_dt}")
+
+    vars_to_check = ['conductivity', 'temperature', 'pressure', 'chlorophyll', 'cdom', 'backscatter_700',  'salinity', 'potential_density', 'density', 'potential_temperature'] # 'oxygen_concentration',
+    drop_values = {'conductivity':[0, 60], 'temperature':[-5, 100], 'pressure':[-2, 1500], 'chlorophyll':[0, 30], 'cdom':[0, 30], 'backscatter_700':[0, 5],  'salinity':[0, 50], 'potential_density':[900, 1050], 'density':[1000, 1050], 'potential_temperature':[-5, 100]} # 'oxygen_concentration':[-100, 500],
+    
+    # vars_to_check = ['conductivity', 'temperature', 'pressure', 'chlorophyll', 'cdom', 'backscatter_700', 'salinity', 'potential_density', 'density', 'potential_temperature']
+    # drop_values = {'conductivity':[0, 60], 'temperature':[-5, 100], 'pressure':[-2, 1500], 'chlorophyll':[0, 30], 'cdom':[0, 30], 'backscatter_700':[0, 5], 'salinity':[0, 50], 'potential_density':[900, 1050], 'density':[1000, 1050], 'potential_temperature':[-5, 100]}
+    if ds_type == "sci":
+        for var in vars_to_check:
+            num_orig = len(ds[var])
+            ds = ds.where(ds[var] >= drop_values[var][0], drop=True)
+            _log.info(f"Dropped {num_orig - len(ds[var])} {var} values less then {drop_values[var][0]}")
+
+            num_orig = len(ds[var])
+            ds = ds.where(ds[var] <= drop_values[var][1], drop=True)
+            _log.info(f"Dropped {num_orig - len(ds[var])} {var} values greater than {drop_values[var][1]}")
 
     return ds
