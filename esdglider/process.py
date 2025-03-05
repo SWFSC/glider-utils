@@ -6,6 +6,7 @@ import xarray as xr
 import yaml
 import subprocess
 import stat
+import collections
 
 import esdglider.gcp as gcp
 import esdglider.pathutils as pathutils
@@ -19,8 +20,8 @@ _log = logging.getLogger(__name__)
 
 def binary_to_nc(deployment, project, mode, deployments_path, 
                  write_timeseries=False, write_gridded=False, 
-                 write_imagery=False, imagery_path=None, 
-                 profile_filt_time=150, profile_min_time=300, maxgap=300):
+                 write_imagery=False, imagery_path=None): 
+                
     """
     Process raw ESD glider data...
 
@@ -31,6 +32,8 @@ def binary_to_nc(deployment, project, mode, deployments_path,
     ----------
     deployment :
     ...
+    #  profile_filt_time=150, profile_min_time=300, maxgap=300
+
 
     Returns
     ----------
@@ -48,6 +51,7 @@ def binary_to_nc(deployment, project, mode, deployments_path,
     # Check/make file and directory paths
     paths = pathutils.esd_paths(project, deployment, mode, deployments_path)
     tsdir = paths["tsdir"]
+    deploymentyaml = paths["deploymentyaml"]
 
     #--------------------------------------------
     # TODO: handle compressed files, if necessary. 
@@ -60,15 +64,18 @@ def binary_to_nc(deployment, project, mode, deployments_path,
         if not os.path.exists(tsdir):
             _log.info(f'Creating directory at: {tsdir}')
             os.makedirs(tsdir)
+        
+        if not os.path.isfile(deploymentyaml):
+            raise FileNotFoundError(f'Could not find {deploymentyaml}')
 
         # Engineering
         _log.info(f'Generating engineering timeseries')
         outname_tseng = slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
-            [paths["deploymentyaml"], paths["engyaml"]], 
-            search=binary_search, fnamesuffix='-eng', time_base='m_depth',
-            profile_filt_time=profile_filt_time, 
-            profile_min_time=profile_min_time, maxgap=maxgap)
+            [deploymentyaml, paths["engyaml"]], search=binary_search, 
+            fnamesuffix=f"-{mode}-eng", time_base="m_depth")
+            # profile_filt_time=profile_filt_time, 
+            # profile_min_time=profile_min_time, maxgap=maxgap)
 
         tseng = xr.open_dataset(outname_tseng)
         tseng = postproc_eng_timeseries(tseng)
@@ -82,10 +89,10 @@ def binary_to_nc(deployment, project, mode, deployments_path,
         _log.info(f'Generating science timeseries')
         outname_tssci = slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
-            paths["deploymentyaml"],
-            search=binary_search, fnamesuffix='-sci',  time_base='sci_water_temp',
-            profile_filt_time=profile_filt_time, 
-            profile_min_time=profile_min_time, maxgap=maxgap)
+            deploymentyaml, search=binary_search, 
+            fnamesuffix=f"-{mode}-sci", time_base='sci_water_temp')
+            # profile_filt_time=profile_filt_time, 
+            # profile_min_time=profile_min_time, maxgap=maxgap)
 
         tssci = xr.open_dataset(outname_tssci)
         tssci = postproc_sci_timeseries(tssci)
@@ -100,11 +107,11 @@ def binary_to_nc(deployment, project, mode, deployments_path,
             deployment_ = yaml.safe_load(fin)
             deployment_name = deployment_["metadata"]["deployment_name"]
         
-        # outname_tseng = os.path.join(tsdir, deployment, '-eng.nc')
-        outname_tssci = os.path.join(tsdir, f"{deployment_name}-sci.nc")
-        if not os.path.isfile(outname_tssci):
-            raise FileNotFoundError(f'Not writing timeseries, and could not find {outname_tssci}')
-        _log.info(f'Reading in outname_tssci ({outname_tssci})')
+        outname_tseng = os.path.join(tsdir, f"{deployment_name}-{mode}-eng.nc")
+        outname_tssci = os.path.join(tsdir, f"{deployment_name}-{mode}-sci.nc")
+        # if not os.path.isfile(outname_tssci):
+        #     raise FileNotFoundError(f'Not writing timeseries, and could not find {outname_tssci}')
+        # _log.info(f'Reading in outname_tssci ({outname_tssci})')
 
     #--------------------------------------------
     # TODO: Profiles
@@ -114,19 +121,24 @@ def binary_to_nc(deployment, project, mode, deployments_path,
     # Gridded data, 1m and 5m
     # TODO: filter to match SOCIB?
     if write_gridded:
+        if not os.path.isfile(outname_tssci):
+            raise FileNotFoundError(f'Could not find {outname_tssci}')
+
         _log.info(f'Generating 1m gridded data')
         outname_1m = ncprocess.make_gridfiles(
             outname_tssci, paths["griddir"], paths["deploymentyaml"], 
-            dz = 1, fnamesuffix="-1m")
+            dz = 1, fnamesuffix=f"-{mode}-1m")
         _log.info(f'Finished making 1m gridded data: {outname_1m}')
 
         _log.info(f'Generating 5m gridded data')
         outname_5m = ncprocess.make_gridfiles(
             outname_tssci, paths["griddir"], paths["deploymentyaml"], 
-            dz = 5, fnamesuffix="-5m")
+            dz = 5, fnamesuffix=f"-{mode}-5m")
         _log.info(f'Finished making 5m gridded data: {outname_5m}')
 
     else:
+        outname_1m = ""
+        outname_5m = ""
         _log.info(f'Not writing gridded data')
 
     #--------------------------------------------
@@ -143,10 +155,10 @@ def binary_to_nc(deployment, project, mode, deployments_path,
     #     )
 
     #--------------------------------------------
-    return 0
+    return outname_tseng, outname_tssci, outname_1m, outname_5m
 
 
-def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
+def postproc_eng_timeseries(ds, min_dt='2017-01-01', stall=20, shake=200):
     """
     Post-process engineering timeseries, including: 
         - Removing CTD vars
@@ -160,6 +172,8 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
     returns Dataset
     """
 
+    _log.debug(f"begin eng postproc: ds has {len(ds.time)} values")
+
     # Drop CTD variables required by binary_to_timeseries
     ds = ds.drop_vars(["depth", "conductivity", "temperature", "pressure", 
                        "salinity", "potential_density", "density", 
@@ -167,15 +181,36 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
     
     # With depth gone, rename m_depth
     ds = ds.rename({"m_depth": "depth"})
-    ds_type = "eng"
     # Remove times < min_dt
-    ds = utils.drop_bogus_times(ds, ds_type, min_dt)
+    ds = utils.drop_bogus(ds, "eng", min_dt)
 
     # Calculate profile indices using measured depth
     if np.any(np.isnan(ds.depth.values)):
         num_nan = sum(np.isnan(ds.depth.values))
         _log.warning(f"There are {num_nan} nan depth values")
-    ds = utils.get_profiles_esd(ds, "depth")
+    prof_idx, prof_dir = utils.findProfiles(ds.time.values, ds.depth.values, 
+                                            stall=stall, shake=shake)
+    attrs = collections.OrderedDict([
+        ('long_name', 'profile index'),
+        ('units', '1'),
+        ('comment',
+         'N = inside profile N, N + 0.5 = between profiles N and N + 1'),
+        ('sources', f'time depth'),
+        ('method', 'esdglider.utils.findProfiles'),
+        ('stall', stall),
+        ('shake', shake)])
+    ds['profile_index'] = (('time'), prof_idx, attrs)
+
+    attrs = collections.OrderedDict([
+        ('long_name', 'glider vertical speed direction'),
+        ('units', '1'),
+        ('comment',
+         '-1 = ascending, 0 = inflecting or stalled, 1 = descending'),
+        ('sources', f'time depth'),
+        ('method', 'esdglider.utils.findProfiles')])
+    ds['profile_direction'] = (('time'), prof_dir, attrs)
+    
+    # ds = utils.get_profiles_esd(ds, "depth")
     _log.debug(f"There are {np.max(ds.profile_index.values)} profiles")
 
     # Add comment
@@ -185,6 +220,8 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
         ds.attrs["comment"] = "engineering-only time series"
     else:
         ds.attrs["comment"] = ds.attrs["comment"] + "; engineering-only time series"
+
+    _log.debug(f"end eng postproc: ds has {len(ds.time)} values")
 
     return ds
 
@@ -204,12 +241,25 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     returns Dataset
     """
 
+    _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
+
     # Rename variables
     ds = ds.rename({"depth": "depth_ctd", 
                     "m_depth": "depth"})
-    ds_type = "sci"
     # Remove times < min_dt
-    ds = utils.drop_bogus_times(ds, ds_type, min_dt)
+    ds = utils.drop_bogus(ds, "sci", min_dt)
+
+    prof_idx, prof_dir = utils.findProfiles(ds.time.values, ds.depth.values, 
+                                        stall=20, shake=200)
+    
+    # TODO: update this to work with eng timeseries
+    attrs = collections.OrderedDict([
+        ('comment', 'TODO: remove'), 
+        ('method', 'esdglider.utils.findProfiles')])
+    ds['profile_index'] = (('time'), prof_idx, attrs)
+    ds['profile_direction'] = (('time'), prof_dir, attrs)
+
+    _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
 
     return ds
 
