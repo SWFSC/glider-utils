@@ -5,7 +5,6 @@ import numpy as np
 import xarray as xr
 import yaml
 import subprocess
-import stat
 import collections
 
 import esdglider.gcp as gcp
@@ -20,7 +19,8 @@ _log = logging.getLogger(__name__)
 
 def binary_to_nc(deployment, project, mode, deployments_path, 
                  write_timeseries=False, write_gridded=False, 
-                 write_imagery=False, imagery_path=None): 
+                 write_imagery=False, imagery_path=None, 
+                 min_dt='2017-01-01'): 
                 
     """
     Process raw ESD glider data...
@@ -32,12 +32,15 @@ def binary_to_nc(deployment, project, mode, deployments_path,
     ----------
     deployment :
     ...
+    min_dt : see utils.drop_bogus
     #  profile_filt_time=150, profile_min_time=300, maxgap=300
 
 
     Returns
     ----------
-    0 if a successful run
+    A tuple of the filenames of the various netCDF files. 
+    In order: the engineering and science timeseries, 
+    and the 1m and 5m gridded files
 
     """
 
@@ -77,9 +80,8 @@ def binary_to_nc(deployment, project, mode, deployments_path,
             # profile_filt_time=profile_filt_time, 
             # profile_min_time=profile_min_time, maxgap=maxgap)
 
-        tseng = xr.open_dataset(outname_tseng)
-        tseng = postproc_eng_timeseries(tseng)
-        tseng.close()
+        tseng = xr.load_dataset(outname_tseng)
+        tseng = postproc_eng_timeseries(tseng, min_dt=min_dt)
         tseng.to_netcdf(outname_tseng)
         _log.info(f'Finished eng timeseries postproc: {outname_tseng}')
 
@@ -94,11 +96,17 @@ def binary_to_nc(deployment, project, mode, deployments_path,
             # profile_filt_time=profile_filt_time, 
             # profile_min_time=profile_min_time, maxgap=maxgap)
 
-        tssci = xr.open_dataset(outname_tssci)
-        tssci = postproc_sci_timeseries(tssci)
-        tssci.close()
+        tssci = xr.load_dataset(outname_tssci)
+        tssci = postproc_sci_timeseries(tssci, min_dt=min_dt)
         tssci.to_netcdf(outname_tssci)
         _log.info(f'Finished sci timeseries postproc: {outname_tssci}')
+
+        num_profiles_eng = len(np.unique(tseng.profile_index.values))
+        num_profiles_sci = len(np.unique(tssci.profile_index.values))
+        if num_profiles_eng != num_profiles_sci: 
+            _log.warning("The eng and sci timeseries have different total numbers of profiles")
+            _log.debug(f"Number of eng profiles: {num_profiles_eng}")
+            _log.debug(f"Number of sci profiles: {num_profiles_sci}")
 
     else:
         _log.info(f'Not writing timeseries')
@@ -231,8 +239,7 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     Post-process science timeseries, including: 
         - rename to depth_ctd and depth
         - remove bogus times. Eg, 1970 or before deployment start date
-        - Profiles. How to calc when ctd only sampling on dives?
-        - 
+        - Profiles. How to calc when ctd only sampling on dives?        - 
 
     ds : `xarray.Dataset`
         science Dataset, usually passed from binary_to_nc.py
@@ -412,7 +419,7 @@ def rt_file_mgmt(
     to their subdirectory (subdir_path). 
     Then uses gcloud to rsync to their place in the bucket (bucket_path)
 
-    The rsync_delete falg indicates if the --delete-unmatched-destination-objects
+    The rsync_delete flag indicates if the --delete-unmatched-destination-objects
     flag is used in the command
 
     ext_regex_path does include * for copying files (eg is '.[st]bd')

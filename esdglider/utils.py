@@ -223,14 +223,13 @@ def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
     Times from before min_dt are dropped; default is beofre Jan 2017, 
     which is beofre the ESD/AERD glider program. 
 
-
-
     ds: `xarray.Dataset`
         Dataset, with 'time' coordinate
     ds_type: string
         String of either 'sci' or 'eng'
     min_dt: string
-        String to be passed to np.datetime64. Minimum dt to keep
+        String to be passed to np.datetime64. Minimum datetime to keep.
+        For instance, '1971-01-01', or '2020-03-06 12:00:00'
     
     Returns: filtered Dataset
     """

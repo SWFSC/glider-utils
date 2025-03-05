@@ -31,7 +31,8 @@ def ts():
                          ro=False)
 
     x = process.binary_to_nc(deployment, project, mode, deployments_path, 
-                             write_timeseries=True, write_gridded=True)
+                             write_timeseries=True, write_gridded=True, 
+                             min_dt='2024-10-19 17:00:00')
     
     return x
 
@@ -74,8 +75,8 @@ if __name__ == "__main__":
 
     print(outname_tseng)
 
-    ds_eng = xr.open_dataset(outname_tseng)
-    ds_sci = xr.open_dataset(outname_tssci)
+    ds_eng = xr.load_dataset(outname_tseng)
+    ds_sci = xr.load_dataset(outname_tssci)
 
     print(f"there are {len(ds_eng.time)} points in the engineering timeseries")
     print(f"there are {len(ds_sci.time)} points in the science timeseries")
