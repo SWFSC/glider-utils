@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-# import collections
+import collections
 # from scipy.signal import argrelextrema
 
 _log = logging.getLogger(__name__)
@@ -8,7 +8,7 @@ _log = logging.getLogger(__name__)
 
 """
 ESD-specific utilities 
-Mostly for post-processing time series files created using pyglider
+Mostly helpers for post-processing time series files created using pyglider
 """
 
 def findProfiles(stamp: np.ndarray,depth: np.ndarray,**kwargs):
@@ -214,6 +214,46 @@ def findProfiles(stamp: np.ndarray,depth: np.ndarray,**kwargs):
 #         ('method', 'get_profiles_esd')])
 #     ds['profile_direction'] = (('time'), direction, attrs)
 #     return ds
+
+
+def get_fill_profiles(ds, time_vals, depth_vals):
+    """
+    Calculate profile index and direction values, 
+    and fill values and attributes into ds
+
+    ds : `xarray.Dataset`
+    time_vals, depth_vals: passed directly to utils.findProfiles
+    
+    returns Dataset
+    """
+
+    prof_idx, prof_dir = findProfiles(
+        time_vals, depth_vals, stall=20, shake=200)
+
+    attrs = collections.OrderedDict([
+        ('long_name', 'profile index'),
+        ('units', '1'),
+        ('comment',
+         'N = inside profile N, N + 0.5 = between profiles N and N + 1'),
+        ('sources', f'time depth'),
+        ('method', 'esdglider.utils.findProfiles'),
+        ('stall', 20),
+        ('shake', 200)])
+    ds['profile_index'] = (('time'), prof_idx, attrs)
+
+    attrs = collections.OrderedDict([
+        ('long_name', 'glider vertical speed direction'),
+        ('units', '1'),
+        ('comment',
+         '-1 = ascending, 0 = inflecting or stalled, 1 = descending'),
+        ('sources', f'time depth'),
+        ('method', 'esdglider.utils.findProfiles')])
+    ds['profile_direction'] = (('time'), prof_dir, attrs)
+    
+    # ds = utils.get_profiles_esd(ds, "depth")
+    _log.debug(f"There are {np.max(ds.profile_index.values)} profiles")
+
+    return ds
 
 
 def drop_bogus(ds, ds_type, min_dt='2017-01-01'):

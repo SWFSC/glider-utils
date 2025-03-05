@@ -12,7 +12,7 @@ Functions that generate or otherwise handle ESD glider-specific
 file path operations
 """
 
-def get_engyml_path():
+def get_engyaml_path():
     """
     Get and return the path to the engineering deployment yaml
     Returns the path, so as to ber able to pass to binary_to_timeseries
@@ -125,7 +125,7 @@ def esd_paths(project, deployment, mode, deployments_path):
     binarydir = os.path.join(glider_path, 'data', 'binary', mode)
     deploymentyaml = os.path.join(glider_path, 'config', 
         f"{deployment_mode}.yml")
-    engyaml = get_engyml_path()
+    engyaml = get_engyaml_path()
 
     ncdir = os.path.join(glider_path, 'data', 'nc')
 

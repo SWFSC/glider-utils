@@ -5,7 +5,6 @@ import numpy as np
 import xarray as xr
 import yaml
 import subprocess
-import collections
 
 import esdglider.gcp as gcp
 import esdglider.pathutils as pathutils
@@ -17,10 +16,12 @@ import pyglider.ncprocess as ncprocess
 _log = logging.getLogger(__name__)
 
 
-def binary_to_nc(deployment, project, mode, deployments_path, 
-                 write_timeseries=False, write_gridded=False, 
-                 write_imagery=False, imagery_path=None, 
-                 min_dt='2017-01-01'): 
+def binary_to_nc(
+    deployment, project, mode, deployments_path, 
+    write_timeseries=False, write_gridded=False, 
+    write_imagery=False, imagery_path=None, 
+    min_dt='2017-01-01'
+): 
                 
     """
     Process raw ESD glider data...
@@ -166,11 +167,11 @@ def binary_to_nc(deployment, project, mode, deployments_path,
     return outname_tseng, outname_tssci, outname_1m, outname_5m
 
 
-def postproc_eng_timeseries(ds, min_dt='2017-01-01', stall=20, shake=200):
+def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
     """
     Post-process engineering timeseries, including: 
         - Removing CTD vars
-        - Calculating profiles using m_depth instead of pressure
+        - Calculating profiles using depth (m_depth)
         - Updating attributes
 
     ds : `xarray.Dataset`
@@ -182,44 +183,22 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01', stall=20, shake=200):
 
     _log.debug(f"begin eng postproc: ds has {len(ds.time)} values")
 
-    # Drop CTD variables required by binary_to_timeseries
-    ds = ds.drop_vars(["depth", "conductivity", "temperature", "pressure", 
-                       "salinity", "potential_density", "density", 
-                       "potential_temperature"])
+    # Drop CTD variables required or created by binary_to_timeseries
+    ds = ds.drop_vars([
+        "depth", "conductivity", "temperature", "pressure", "salinity", 
+        "potential_density", "density", "potential_temperature"])
     
-    # With depth gone, rename m_depth
-    ds = ds.rename({"m_depth": "depth"})
+    # With depth (CTD) gone, rename depth_measured
+    ds = ds.rename({"depth_measured": "depth"})
+    
     # Remove times < min_dt
     ds = utils.drop_bogus(ds, "eng", min_dt)
 
-    # Calculate profile indices using measured depth
+    # Calculate profiles using measured depth
     if np.any(np.isnan(ds.depth.values)):
         num_nan = sum(np.isnan(ds.depth.values))
         _log.warning(f"There are {num_nan} nan depth values")
-    prof_idx, prof_dir = utils.findProfiles(ds.time.values, ds.depth.values, 
-                                            stall=stall, shake=shake)
-    attrs = collections.OrderedDict([
-        ('long_name', 'profile index'),
-        ('units', '1'),
-        ('comment',
-         'N = inside profile N, N + 0.5 = between profiles N and N + 1'),
-        ('sources', f'time depth'),
-        ('method', 'esdglider.utils.findProfiles'),
-        ('stall', stall),
-        ('shake', shake)])
-    ds['profile_index'] = (('time'), prof_idx, attrs)
-
-    attrs = collections.OrderedDict([
-        ('long_name', 'glider vertical speed direction'),
-        ('units', '1'),
-        ('comment',
-         '-1 = ascending, 0 = inflecting or stalled, 1 = descending'),
-        ('sources', f'time depth'),
-        ('method', 'esdglider.utils.findProfiles')])
-    ds['profile_direction'] = (('time'), prof_dir, attrs)
-    
-    # ds = utils.get_profiles_esd(ds, "depth")
-    _log.debug(f"There are {np.max(ds.profile_index.values)} profiles")
+    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
     # Add comment
     if not ('comment' in ds.attrs): 
@@ -237,9 +216,8 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01', stall=20, shake=200):
 def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     """
     Post-process science timeseries, including: 
-        - rename to depth_ctd and depth
         - remove bogus times. Eg, 1970 or before deployment start date
-        - Profiles. How to calc when ctd only sampling on dives?        - 
+        - Calculating profiles using depth (derived from ctd's pressure)
 
     ds : `xarray.Dataset`
         science Dataset, usually passed from binary_to_nc.py
@@ -250,21 +228,12 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
 
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
-    # Rename variables
-    ds = ds.rename({"depth": "depth_ctd", 
-                    "m_depth": "depth"})
     # Remove times < min_dt
     ds = utils.drop_bogus(ds, "sci", min_dt)
 
-    prof_idx, prof_dir = utils.findProfiles(ds.time.values, ds.depth.values, 
-                                        stall=20, shake=200)
-    
-    # TODO: update this to work with eng timeseries
-    attrs = collections.OrderedDict([
-        ('comment', 'TODO: remove'), 
-        ('method', 'esdglider.utils.findProfiles')])
-    ds['profile_index'] = (('time'), prof_idx, attrs)
-    ds['profile_direction'] = (('time'), prof_dir, attrs)
+    # Calculate profiles, using the CTD-derived depth values
+    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+    # TODO: update this to play nice with eng timeseries for rt data?
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
 
@@ -324,12 +293,14 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     #--------------------------------------------
     # rsync with SFMC
     _log.info(f'Starting rsync with SFMC dockerver for {glider}')
-    sfmc_glider = os.path.join('/var/opt/sfmc-dockserver/stations/noaa/gliders',
-                               glider, 'from-glider/')
+    sfmc_glider = os.path.join(
+        '/var/opt/sfmc-dockserver/stations/noaa/gliders', 
+        glider, 'from-glider/')
     sfmc_server_path = f'swoodman@sfmc.webbresearch.com:{sfmc_glider}'
 
-    rsync_args = ['sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
-                  'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
+    rsync_args = [
+        'sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
+        'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
     # NOTE: sshpass via file does not currently work. Unsure why
     # rsync_args = ['sshpass', '-f', sfmc_pwd_file, 
     #               'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
@@ -371,8 +342,9 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     # cache files
     name_cac  = 'cac'
     pathutils.mkdir_pass(os.path.join(sfmc_local_path, name_cac))
-    rt_file_mgmt(sfmc_file_ext, '.[Cc][Aa][Cc]', name_cac, sfmc_local_path, 
-                 f'gs://{bucket}/cache', rsync_delete=False)
+    rt_file_mgmt(
+        sfmc_file_ext, '.[Cc][Aa][Cc]', name_cac, sfmc_local_path, 
+        f'gs://{bucket}/cache', rsync_delete=False)
 
     # sbd/tbd files
     name_stbd = 'stbd'
