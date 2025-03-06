@@ -64,7 +64,6 @@ def binary_to_nc(
     #--------------------------------------------
     # Timeseries
     if write_timeseries:
-        _log.info(f'Writing timeseries')
         if not os.path.exists(tsdir):
             _log.info(f'Creating directory at: {tsdir}')
             os.makedirs(tsdir)
@@ -77,7 +76,8 @@ def binary_to_nc(
         outname_tseng = slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
             [deploymentyaml, paths["engyaml"]], search=binary_search, 
-            fnamesuffix=f"-{mode}-eng", time_base="m_depth")
+            fnamesuffix=f"-{mode}-eng", time_base="m_depth", 
+            profile_filt_time = None)
             # profile_filt_time=profile_filt_time, 
             # profile_min_time=profile_min_time, maxgap=maxgap)
 
@@ -93,7 +93,8 @@ def binary_to_nc(
         outname_tssci = slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
             deploymentyaml, search=binary_search, 
-            fnamesuffix=f"-{mode}-sci", time_base='sci_water_temp')
+            fnamesuffix=f"-{mode}-sci", time_base='sci_water_temp', 
+            profile_filt_time = None)
             # profile_filt_time=profile_filt_time, 
             # profile_min_time=profile_min_time, maxgap=maxgap)
 
