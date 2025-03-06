@@ -1,0 +1,46 @@
+# Metadata block for deployment yaml
+# numbers must be eenclosed by strings so YAML keeps as strings
+# Created by pyglider: history, id, 
+
+acknowledgment: 'This work was supported by funding from NOAA.'
+comment: ' '  
+contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Cossio, Caleb Flaim, Jacob Partida, Eric Bjorkstedt, Jason C. Clarke, Samuel Woodman'
+contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Research Fish Biologist, Glider Pilot, Data Manager'
+creator_email: christian.reiss@noaa.gov
+creator_name: 'Christian Reiss'
+creator_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center
+format_version: IOOS_Glider_NetCDF_v2.0.nc
+glider_name: <glider name>
+glider_serial: <glider number>
+glider_model: 'Teledyne Webb Research Slocum G3 glider'
+glider_instrument_name: slocum
+institution: 'NOAA SWFSC Ecosystem Science Division'
+keywords: 'AUVS > Autonomous Underwater Vehicles, 
+  Earth Science > Oceans > Ocean Pressure > Water Pressure, 
+  Earth Science > Oceans > Ocean Temperature > Water Temperature, 
+  Earth Science > Oceans > Salinity/Density > Conductivity, 
+  Earth Science > Oceans > Salinity/Density > Density, 
+  Earth Science > Oceans > Salinity/Density > Salinity, 
+  In Situ Ocean-based platforms > Seaglider,
+  glider, Slocum, trajectory, underwater glider, water, wmo'
+keywords_vocabulary: GCMD Science Keywords
+license: "This data may be redistributed and used without restriction. 
+  Data provided as is with no expressed or implied assurance of quality assurance or quality control."
+Metadata_Conventions: Unidata Dataset Discovery v1.0, COARDS, CF-1.6
+metadata_link: " "
+naming_authority: gov.noaa.fisheries
+platform_type: "Slocum Glider"
+processing_level: "Data provided as is with no expressed or implied
+                    assurance of quality assurance or quality control."
+project: <project name>
+publisher_email: christian.reiss@noaa.gov
+publisher_name: Christian Reiss
+publisher_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center (external link)
+references: "created with pyglider https://github.com/c-proof/pyglider 
+              and esdglider https://github.com/SWFSC/glider-utils"
+sea_name: <sea name>
+source: Observational data from a profiling glider.
+standard_name_vocabulary: CF Standard Name Table v72
+summary: <summary>
+transmission_system: IRIDIUM
+wmo_id: <glider wmo>
