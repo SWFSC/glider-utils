@@ -16,16 +16,16 @@ glider_model: 'Teledyne Webb Research Slocum G3 glider'
 glider_instrument_name: slocum
 institution: 'NOAA SWFSC Ecosystem Science Division'
 keywords: 'AUVS > Autonomous Underwater Vehicles, 
-  Earth Science > Oceans > Ocean Pressure > Water Pressure, 
-  Earth Science > Oceans > Ocean Temperature > Water Temperature, 
-  Earth Science > Oceans > Salinity/Density > Conductivity, 
-  Earth Science > Oceans > Salinity/Density > Density, 
-  Earth Science > Oceans > Salinity/Density > Salinity, 
-  In Situ Ocean-based platforms > Seaglider,
-  glider, Slocum, trajectory, underwater glider, water, wmo'
+            Earth Science > Oceans > Ocean Pressure > Water Pressure, 
+            Earth Science > Oceans > Ocean Temperature > Water Temperature, 
+            Earth Science > Oceans > Salinity/Density > Conductivity, 
+            Earth Science > Oceans > Salinity/Density > Density, 
+            Earth Science > Oceans > Salinity/Density > Salinity, 
+            In Situ Ocean-based platforms > Seaglider,
+            glider, Slocum, trajectory, underwater glider, water, wmo'
 keywords_vocabulary: GCMD Science Keywords
 license: "This data may be redistributed and used without restriction. 
-  Data provided as is with no expressed or implied assurance of quality assurance or quality control."
+          Data provided as is with no expressed or implied assurance of quality assurance or quality control."
 Metadata_Conventions: Unidata Dataset Discovery v1.0, COARDS, CF-1.6
 metadata_link: " "
 naming_authority: gov.noaa.fisheries

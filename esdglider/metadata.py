@@ -4,6 +4,11 @@ import datetime as dt
 import glob
 import pandas as pd
 import numpy as np
+import sqlalchemy
+import yaml
+
+from importlib.resources import files, as_file
+import esdglider.pathutils as pathutils
 
 _log = logging.getLogger(__name__)
 
@@ -146,7 +151,7 @@ def imagery_metadata(ds_eng, ds_sci, imagery_dir, ext = 'jpg'):
     df['pressure']             = ds_sci_interp['pressure'].values
     df['salinity']             = ds_sci_interp['salinity'].values
     df['density']              = ds_sci_interp['density'].values
-    df['depth_ctd']            = ds_sci_interp['depth_ctd'].values
+    df['depth']                = ds_sci_interp['depth'].values
     df['oxygen_concentration'] = ds_sci_interp['oxygen_concentration'].values
     df['chlorophyll']          = ds_sci_interp['chlorophyll'].values
     df['cdom']                 = ds_sci_interp['cdom'].values
@@ -160,3 +165,93 @@ def imagery_metadata(ds_eng, ds_sci, imagery_dir, ext = 'jpg'):
     df.to_csv(csv_file, index=False)
 
     return df
+
+
+def make_deployment_yaml(
+    deployment: str, project: str, mode: str, out_path: str, 
+    db_url=None
+):
+    """
+    deployment : str
+        name of the glider deployment. Eg, amlr01-20200101
+    project : str
+        deployment project name, eg FREEBYRD
+    mode : str
+        mode for data being generated; either rt or delayed
+    out_path : str
+        path to which to write the output yaml file
+    db_url : str
+        The database URL, which is passed to sqlalchemy.create_engine
+        to connect to the division database to extract glider info.
+        If None (default), no connection attempt will be made
+
+    Returns:
+        Full path of the output (written) yaml file
+    """
+
+    _log.debug("Reading template yaml files")
+    def esdglider_yaml_read(yaml_name):
+        with as_file(files('esdglider.data') / yaml_name) as path:
+            with open(str(path), 'r') as fin:
+                return yaml.safe_load(fin)
+    metadata = esdglider_yaml_read('metadata.yml')
+    netcdf_vars = esdglider_yaml_read('netcdf-variables-sci.yml')
+    prof_vars = esdglider_yaml_read('profile-variables.yml')
+
+
+    if db_url is not None:
+        _log.debug("connecting to database, with provided URL")
+        try:
+            engine = sqlalchemy.create_engine(db_url)
+            Glider_Deployment = pd.read_sql_table(
+                'Glider_Deployment', con = engine, schema = 'dbo')
+        except:
+            raise ValueError('Unable to connect to database and read tablea')
+
+        x = Glider_Deployment[Glider_Deployment['Deployment_Name'] == deployment]
+        _log.debug("database connection successful")
+        if x.shape[0] != 1:
+            _log.error('Exactly one row from the Glider_Deployment table ' + 
+                       f'must match the deployment name {deployment}. ' + 
+                       f'Here, {x.shape[0]} rows matched')
+            raise ValueError('Invalid Glider_Deployment match')
+        
+        glider_id = x['Glider_ID'][0]
+        
+
+        # Get metadata info  
+        metadata["deployment_id"] = x["Glider_Deployment_ID"][0]
+        metadata["glider_serial"] = "todo" #from database build
+
+        # TODO: use deployment name to:
+        # 1) Generate glider_devices from some combo of template and database
+        # 2) Update netcdf_variables, depending on the instruments    
+
+    else:
+        _log.info("no database URL provided, and thus no connection attempted")
+
+    deployment_split = pathutils.split_deployment(deployment)
+
+    metadata["deployment_name"] = deployment
+    metadata["project"] = project
+    metadata["glider_name"] = deployment_split[0]
+    if project == "FREEBYRD":
+        metadata["sea_name"] = "Southern Ocean"
+    elif project in ["ECOSWIM", "SANDIEGO", "REFOCUS"]: 
+        metadata["sea_name"] = "Coastal Waters of California"
+    else:
+        metadata["sea_name"] = "<sea name>"
+
+    deployment_yaml = {
+        "metadata" : metadata, 
+        "glider_devices" : {}, 
+        "netcdf_variables" : netcdf_vars, 
+        "profile_variables" : prof_vars
+    }
+
+    yaml_out = os.path.join(out_path, f"{deployment}-{mode}.yml")
+    _log.info(f"writing {yaml_out}")
+    with open(yaml_out, 'w') as file:
+        yaml.dump(deployment_yaml, file)
+
+    return yaml_out

@@ -5,7 +5,6 @@ import logging
 import xarray as xr
 
 import esdglider.gcp as gcp
-import esdglider.utils as utils
 import esdglider.metadata as met
 import esdglider.process as process
 
@@ -30,9 +29,10 @@ def ts():
     gcp.gcs_mount_bucket("amlr-gliders-deployments-dev", deployments_path, 
                          ro=False)
 
-    x = process.binary_to_nc(deployment, project, mode, deployments_path, 
-                             write_timeseries=True, write_gridded=True, 
-                             min_dt='2024-10-19 17:00:00')
+    x = process.binary_to_nc(
+        deployment, project, mode, deployments_path, 
+        write_timeseries=True, write_gridded=True, 
+        min_dt='2024-10-19 17:00:00')
     
     return x
 
@@ -56,6 +56,20 @@ def ts():
     # dssci = xr.open_dataset(outname_dssci)
     # met.imagery_metadata(dseng, dssci, i_path)
 
+def yaml():
+    conn_path = os.path.join(
+        "C:/SMW/Gliders_Moorings/Gliders/glider-utils", 
+        "db", "glider-db-prod.txt"
+    )
+    
+    with open(conn_path, "r") as f:
+        conn_string = f.read()
+
+    return met.make_deployment_yaml(
+        "amlr01-20181216", "FREEBYRD", "delayed", 
+        "C:/Users/sam.woodman/Downloads", conn_string)
+
+
 if __name__ == "__main__":
     logging.basicConfig(
         format='%(module)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]', 
@@ -68,19 +82,13 @@ if __name__ == "__main__":
     #                 datefmt='%Y-%m-%d %H:%M:%S')
 
     
-    logging.info("Starting test")
     # scrape_sfmc()
     # print(ts())
-    outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
+    # outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
+    print(yaml())
 
-    print(outname_tseng)
-
-    ds_eng = xr.load_dataset(outname_tseng)
-    ds_sci = xr.load_dataset(outname_tssci)
-
-    print(f"there are {len(ds_eng.time)} points in the engineering timeseries")
-    print(f"there are {len(ds_sci.time)} points in the science timeseries")
-    # pd_eng = ds_eng.to_pandas()[['depth', 'profile_index', 'profile_direction']]
-    # pd_eng
-
-    gcp.gcs_unmount_bucket("amlr-gliders-deployments-dev")
+    # ds_eng = xr.load_dataset(outname_tseng)
+    # ds_sci = xr.load_dataset(outname_tssci)
+    # print(f"there are {len(ds_eng.time)} points in the engineering timeseries")
+    # print(f"there are {len(ds_sci.time)} points in the science timeseries")
+    # gcp.gcs_unmount_bucket("amlr-gliders-deployments-dev")

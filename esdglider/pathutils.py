@@ -38,6 +38,21 @@ def find_extensions(dir_path): #,  excluded = ['', '.txt', '.lnk']):
     return extensions
 
 
+def split_deployment(deployment):
+    """
+    Split the deployment string into glider name, and date deployed
+    Splits by "-"
+    Returns a tuple of the glider name and deployment date
+    """
+    deployment_split = deployment.split('-')
+    deployment_date = deployment_split[1]
+    if len(deployment_date) != 8:
+        _log.error('The deployment must be the glider name followed by the deployment date')
+        raise ValueError(f'Invalid glider deployment date: {deployment_date}')
+    
+    return deployment_split
+
+
 def year_path(project, deployment):
     """
     From the glider project and deployment name, 
@@ -53,12 +68,13 @@ def year_path(project, deployment):
     For example, ringo-20181231 would return 2018, 
     and ringo-20190101 would return 2019
     """
-    deployment_split = deployment.split('-')
+    # deployment_split = deployment.split('-')
+    # deployment_date = deployment_split[1]
+    # if len(deployment_date) != 8:
+    #     _log.error('The deployment must be the glider name followed by the deployment date')
+    #     raise ValueError(f'Invalid glider deployment date: {deployment_date}')
+    deployment_split = split_deployment(deployment)
     deployment_date = deployment_split[1]
-    if len(deployment_date) != 8:
-        _log.error('The deployment must be the glider name followed by the deployment date')
-        raise ValueError(f'Invalid glider deployment date: {deployment_date}')
-    
     year = deployment_date[0:4]
 
     if project == 'FREEBYRD':
