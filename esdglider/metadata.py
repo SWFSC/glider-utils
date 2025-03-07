@@ -205,18 +205,59 @@ def make_deployment_yaml(
             engine = sqlalchemy.create_engine(db_url)
             Glider_Deployment = pd.read_sql_table(
                 'Glider_Deployment', con = engine, schema = 'dbo')
+            vDeployment_Device = pd.read_sql_table(
+                'vDeployment_Device', con = engine, schema = 'dbo')
         except:
             raise ValueError('Unable to connect to database and read tablea')
 
-        x = Glider_Deployment[Glider_Deployment['Deployment_Name'] == deployment]
+        # Filter for the glider deployment, using the deployment name
+        db_depl = Glider_Deployment[Glider_Deployment['Deployment_Name'] == deployment]
         _log.debug("database connection successful")
-        if x.shape[0] != 1:
-            _log.error('Exactly one row from the Glider_Deployment table ' + 
-                       f'must match the deployment name {deployment}. ' + 
-                       f'Here, {x.shape[0]} rows matched')
+        # Confirm that exactly one deployment in the db matched deployment name
+        if db_depl.shape[0] != 1:
+            _log.error(
+                'Exactly one row from the Glider_Deployment table ' + 
+                f'must match the deployment name {deployment}. ' + 
+                f'Currently, {db_deplShadowgraph.shape[0]} rows matched')
             raise ValueError('Invalid Glider_Deployment match')
         
-        glider_id = x['Glider_ID'][0]
+        # Extract the Glider and Glider_Deployment IDs, 
+        glider_id = db_depl['Glider_ID'][0]
+        glider_deployment_id = db_depl['Glider_Deployment_ID'][0]
+        
+        # Filter the Devices table for this deployment
+        db_devices = vDeployment_Device[vDeployment_Device['Glider_Deployment_ID'] == glider_deployment_id]
+        components = db_devices['Component'].values
+        
+        ### Remove vars from yamls if relevant instruments are not on the glider
+        # optics
+        if 'flbbcd Fluorometer' not in components:
+            netcdf_vars.pop('chlorophyll', None)
+            netcdf_vars.pop('cdom', None)
+            netcdf_vars.pop('backscatter_700', None)
+
+        # oxygen
+        if 'Oxygen Optode' not in components:
+            netcdf_vars.pop('oxygen_concentration', None)
+
+        # TODO shadowgraph
+        if 'Shadowgraph cameras (11cm)' not in components:
+            pass 
+
+        # TODO glidercam
+        if 'Autonomous Camera with Depth Activation Switch' not in components:
+            pass 
+        
+        # TODO AZFP
+        if 'AZFP' not in components:
+            pass 
+
+        # TODO AZFP
+        if 'Signature 100 Compact echsounder' not in components:
+            pass 
+
+        ### Fill relevant info for glider_devices
+
         
 
         # Get metadata info  

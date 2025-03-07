@@ -165,3 +165,8 @@ oxygen_concentration:
 #     standard_name:  barotropic_northward_sea_water_velocity
 #     units:          m s-1
 #     coordinates:   time depth latitude longitude
+
+# TODO: add glidercam var(s)
+# TODO: add shadowgraph var(s)
+# TODO: add AZFP var(s)
+# TODO: add Nortek echosounder var(s)

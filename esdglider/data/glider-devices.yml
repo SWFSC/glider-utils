@@ -1,0 +1,52 @@
+ctd:
+  long_name: 'Conductivity, Temperature, Depth (CTD) Sensor'
+  make_model: 'Sea-Bird GPCTD'
+  serial: 'XXXX'
+  factory_calibrated: 'XXXX'
+  calibration_date: 'XXXX'
+  calibration_report: ""
+  comment: "Pumped"
+optics:
+  long_name: 'Optical Backscatter, Chlorophyll, and CDOM Fluorescence Sensor'
+  make_model: 'WET Labs ECO Puck FLBBCD'
+  serial: 'XXXX'
+  calibration_date: "XXXX"
+  factory_calibrated: "XXXX"
+  calibration_report: ""
+  comment: ""
+oxygen:
+  long_name: 'Oxygen Optode'
+  make_model: 'Aanderaa Oxygen Optode 4831'
+  serial: 'XXXX'
+  calibration_date: "XXXX"
+  factory_calibrated: "XXXX"
+  calibration_report: ""
+  comment: ""
+glidercam: #software? other versiony info?
+  make_model: 'Williamson and Associates Glidercam'
+  serial_number: "XXXX"
+  calibration_date: "XXXX"
+  factory_calibrated: "XXXX"
+  calibration_report: ""
+  comment: ""
+shadowgraph: #software? other versiony info?
+  make_model: 'Williamson and Associates Shadowgraph Camera (11cm)'
+  serial_number: "XXXX"
+  calibration_date: "XXXX"
+  factory_calibrated: "XXXX"
+  calibration_report: ""
+  comment: ""
+azfp:
+  make_model: 'ASL Environmental Sciences AZFP 3 Frequency'
+  serial_number: "XXXX"
+  calibration_date: "XXXX"
+  factory_calibrated: "XXXX"
+  calibration_report: ""
+  comment: ""
+adcp: #software? other versiony info?
+  make_model: 'Nortek Signature 100 Compact Echosounder'
+  serial_number: "XXXX"
+  calibration_date: "XXXX"
+  factory_calibrated: "XXXX"
+  calibration_report: ""
+  comment: ""
