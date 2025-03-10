@@ -130,18 +130,22 @@ chlorophyll:
   standard_name: concentration_of_chlorophyll_in_sea_water
   units:        mg m-3
   coordinates:  time depth latitude longitude
+  instrument:   "instrument_flbbcd"
+
 
 cdom:
   source:  sci_flbbcd_cdom_units
   long_name:    CDOM
   units:        ppb
   coordinates:  time depth latitude longitude
+  instrument:   "instrument_flbbcd"
 
 backscatter_700:
   source:  sci_flbbcd_bb_units
   long_name:    700 nm wavelength backscatter
   units:         "1"
   coordinates:  time depth latitude longitude
+  instrument:   "instrument_flbbcd"
 
 # Oxygen
 oxygen_concentration:
@@ -150,6 +154,7 @@ oxygen_concentration:
   standard_name: mole_concentration_of_dissolved_molecular_oxygen_in_sea_water
   units:        umol l-1
   coordinates:   time depth latitude longitude
+  instrument:   "instrument_oxygen"
 
 # derived water speed:
 #   water_velocity_eastward:

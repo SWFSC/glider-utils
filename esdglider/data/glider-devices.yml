@@ -6,7 +6,7 @@ ctd:
   calibration_date: 'XXXX'
   calibration_report: ""
   comment: "Pumped"
-optics:
+flbbcd:
   long_name: 'Optical Backscatter, Chlorophyll, and CDOM Fluorescence Sensor'
   make_model: 'WET Labs ECO Puck FLBBCD'
   serial: 'XXXX'

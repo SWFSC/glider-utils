@@ -13,6 +13,32 @@ import esdglider.pathutils as pathutils
 _log = logging.getLogger(__name__)
 
 
+# Names of Components in the ESD Glider Database
+db_components = {
+    "ctd"         : 'CTD', 
+    "flbbcd"      : 'flbbcd Fluorometer', 
+    "oxygen"      : 'Oxygen Optode', 
+    "shadowgraph" : ['Shadowgraph cameras (11cm)', 'Shadowgraph cameras (14cm)'], 
+    "glidercam"   : 'Internal Camera Modules', 
+    "azfp"        : 'AZFP', 
+    "echosounder" : 'Signature 100 Compact echsounder'
+}
+# db_ctd         = 'CTD'
+# db_flbbcd      = 'flbbcd Fluorometer'
+# db_oxygen      = 'Oxygen Optode'
+# db_shadowgraph = ['Shadowgraph cameras (11cm)', 'Shadowgraph cameras (14cm)']
+# db_glidercam   = 'Internal Camera Modules'
+# db_azfp        = 'AZFP'
+# db_echosounder = 'Signature 100 Compact echsounder'
+
+db_factory_cal = ['Factory - Initial', 'Factory - Recal']
+# Factory - Iniital
+# Factory - Initial
+# Factory - Intial
+# Factory - Recal
+# Factory - recalib
+
+
 def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
     """
     Parse imagery filename to return associated datetime
@@ -35,7 +61,7 @@ def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
 
 def imagery_metadata(ds_eng, ds_sci, imagery_dir, ext = 'jpg'):
     """
-    Matches up imagery files with data from gdm object by imagery filename
+    Matches up imagery files with data from pyglider by imagery filename
     Uses interpolated variables (hardcoded in function)
     Returns data frame with metadata information
     
@@ -166,6 +192,38 @@ def imagery_metadata(ds_eng, ds_sci, imagery_dir, ext = 'jpg'):
 
     return df
 
+def fill_instrument(prof_vars, instr_name, devices, x, y):
+    """
+    prof_vars: dict
+        Profile variables dictionary
+    instr_name: str
+        Name of instrument name, eg 'ctd' or 'oxygen'.
+        Name must be a key in db_components
+    devices: dict
+        Devices dictionary, read in from yaml file
+    x: DataFrame
+        Pandas dataframe of devices, filtered for Deployment ID
+    y: DataFrame
+        Pandas dataframe of device calibrations, filtered for Deployment ID
+    """
+
+    component_name = db_components[instr_name]
+    instr_dict = devices[instr_name]
+
+    instr_dict["serial"] = x.loc[x['Component'] == component_name, "Serial_Num"].values[0]
+
+    y_curr = y[y['Component'] == component_name]
+    if y_curr.shape[0] != 1:
+        raise ValueError(f'Multiple calibrations for {instr_name}')
+    instr_dict["calibration_date"] = str(y_curr["Calibration_Date"].values[0])[:10]
+    # if instr_name in ["ctd", "flbbcd", "oxygen"]:
+    if y_curr["Calibration_Type"].values[0] in db_factory_cal:
+        instr_dict["factory_calibrated"] = instr_dict["calibration_date"]
+
+    prof_vars[f"instrument_{instr_name}"] = instr_dict
+
+    return prof_vars
+
 
 def make_deployment_yaml(
     deployment: str, project: str, mode: str, out_path: str, 
@@ -197,6 +255,7 @@ def make_deployment_yaml(
     metadata = esdglider_yaml_read('metadata.yml')
     netcdf_vars = esdglider_yaml_read('netcdf-variables-sci.yml')
     prof_vars = esdglider_yaml_read('profile-variables.yml')
+    devices = esdglider_yaml_read('glider-devices.yml')
 
 
     if db_url is not None:
@@ -207,6 +266,8 @@ def make_deployment_yaml(
                 'Glider_Deployment', con = engine, schema = 'dbo')
             vDeployment_Device = pd.read_sql_table(
                 'vDeployment_Device', con = engine, schema = 'dbo')
+            vDeployment_Device_Calibration = pd.read_sql_table(
+                'vDeployment_Device_Calibration', con = engine, schema = 'dbo')
         except:
             raise ValueError('Unable to connect to database and read tablea')
 
@@ -218,55 +279,64 @@ def make_deployment_yaml(
             _log.error(
                 'Exactly one row from the Glider_Deployment table ' + 
                 f'must match the deployment name {deployment}. ' + 
-                f'Currently, {db_deplShadowgraph.shape[0]} rows matched')
+                f'Currently, {db_depl.shape[0]} rows matched')
             raise ValueError('Invalid Glider_Deployment match')
         
         # Extract the Glider and Glider_Deployment IDs, 
-        glider_id = db_depl['Glider_ID'][0]
-        glider_deployment_id = db_depl['Glider_Deployment_ID'][0]
+        glider_id = db_depl['Glider_ID'].values[0]
+        glider_deployment_id = db_depl['Glider_Deployment_ID'].values[0]
         
+        # Get metadata info  
+        metadata["deployment_id"] = str(glider_deployment_id)
+        metadata["glider_serial"] = " "
+
         # Filter the Devices table for this deployment
         db_devices = vDeployment_Device[vDeployment_Device['Glider_Deployment_ID'] == glider_deployment_id]
+        db_cals = vDeployment_Device_Calibration [vDeployment_Device_Calibration ['Glider_Deployment_ID'] == glider_deployment_id]
         components = db_devices['Component'].values
         
-        ### Remove vars from yamls if relevant instruments are not on the glider
-        # optics
-        if 'flbbcd Fluorometer' not in components:
+        # Based on the instruments on the glider:
+        # 1) Remove netcdf vars from yamls, if necessary
+        # 2) Add instrument_ metadata 
+        # for key, value in db_components.itmes():
+        #     if value in components:
+        #         prof_vars[f"instrument_{key}"] = fill_instrument(key, devices, db_devices, db_cals)
+
+        if db_components['ctd'] in components:
+            prof_vars = fill_instrument(
+                prof_vars, 'ctd', devices, db_devices, db_cals)
+        else:
+            raise ValueError('Glider must have a CTD')
+        
+        if db_components['flbbcd'] in components:
+            prof_vars = fill_instrument(
+                prof_vars, 'flbbcd', devices, db_devices, db_cals)
+        else:
             netcdf_vars.pop('chlorophyll', None)
             netcdf_vars.pop('cdom', None)
             netcdf_vars.pop('backscatter_700', None)
 
-        # oxygen
-        if 'Oxygen Optode' not in components:
+        if db_components['oxygen'] in components:
+            prof_vars = fill_instrument(
+                prof_vars, 'oxygen', devices, db_devices, db_cals)
+        else:
             netcdf_vars.pop('oxygen_concentration', None)
 
-        # TODO shadowgraph
-        if 'Shadowgraph cameras (11cm)' not in components:
-            pass 
+        # if not set(db_components['shadowgraph']).isdisjoint(components):
+        #     pass 
 
-        # TODO glidercam
-        if 'Autonomous Camera with Depth Activation Switch' not in components:
-            pass 
+        if db_components['glidercam'] in components:
+            prof_vars = fill_instrument(
+                prof_vars, 'glidercam', devices, db_devices, db_cals)
         
-        # TODO AZFP
-        if 'AZFP' not in components:
-            pass 
+        if db_components['azfp'] in components:
+            prof_vars = fill_instrument(
+                prof_vars, 'azfp', devices, db_devices, db_cals)
 
-        # TODO AZFP
-        if 'Signature 100 Compact echsounder' not in components:
-            pass 
+        if db_components['echosounder'] in components:
+            prof_vars = fill_instrument(
+                prof_vars, 'echosounder', devices, db_devices, db_cals)       
 
-        ### Fill relevant info for glider_devices
-
-        
-
-        # Get metadata info  
-        metadata["deployment_id"] = x["Glider_Deployment_ID"][0]
-        metadata["glider_serial"] = "todo" #from database build
-
-        # TODO: use deployment name to:
-        # 1) Generate glider_devices from some combo of template and database
-        # 2) Update netcdf_variables, depending on the instruments    
 
     else:
         _log.info("no database URL provided, and thus no connection attempted")
@@ -285,7 +355,7 @@ def make_deployment_yaml(
 
     deployment_yaml = {
         "metadata" : metadata, 
-        "glider_devices" : {}, 
+        "glider_devices" : "", 
         "netcdf_variables" : netcdf_vars, 
         "profile_variables" : prof_vars
     }

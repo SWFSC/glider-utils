@@ -26,7 +26,7 @@ keywords: 'AUVS > Autonomous Underwater Vehicles,
 keywords_vocabulary: GCMD Science Keywords
 license: "This data may be redistributed and used without restriction. 
           Data provided as is with no expressed or implied assurance of quality assurance or quality control."
-Metadata_Conventions: Unidata Dataset Discovery v1.0, COARDS, CF-1.6
+metadata_conventions: Unidata Dataset Discovery v1.0, COARDS, CF-1.6
 metadata_link: " "
 naming_authority: gov.noaa.fisheries
 platform_type: "Slocum Glider"
@@ -36,7 +36,8 @@ project: <project name>
 publisher_email: christian.reiss@noaa.gov
 publisher_name: Christian Reiss
 publisher_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center (external link)
-references: "created with pyglider https://github.com/c-proof/pyglider 
+references: "https://swfsc.github.io/glider-lab-manual/; 
+              created with pyglider https://github.com/c-proof/pyglider 
               and esdglider https://github.com/SWFSC/glider-utils"
 sea_name: <sea name>
 source: Observational data from a profiling glider.
