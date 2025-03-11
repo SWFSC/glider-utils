@@ -21,7 +21,7 @@ db_components = {
     "shadowgraph" : ['Shadowgraph cameras (11cm)', 'Shadowgraph cameras (14cm)'], 
     "glidercam"   : 'Internal Camera Modules', 
     "azfp"        : 'AZFP', 
-    "echosounder" : 'Signature 100 Compact echsounder'
+    "echosounder" : 'Signature 100 compact echosounder'
 }
 # db_ctd         = 'CTD'
 # db_flbbcd      = 'flbbcd Fluorometer'
@@ -192,13 +192,13 @@ def imagery_metadata(ds_eng, ds_sci, imagery_dir, ext = 'jpg'):
 
     return df
 
-def fill_instrument(prof_vars, instr_name, devices, x, y):
+def fill_instrument(instr_name, prof_vars, devices, x, y):
     """
-    prof_vars: dict
-        Profile variables dictionary
     instr_name: str
         Name of instrument name, eg 'ctd' or 'oxygen'.
         Name must be a key in db_components
+    prof_vars: dict
+        Profile variables dictionary
     devices: dict
         Devices dictionary, read in from yaml file
     x: DataFrame
@@ -210,22 +210,25 @@ def fill_instrument(prof_vars, instr_name, devices, x, y):
     component_name = db_components[instr_name]
     instr_dict = devices[instr_name]
 
-    instr_dict["serial"] = x.loc[x['Component'] == component_name, "Serial_Num"].values[0]
+    instr_dict["serial_number"] = x.loc[x['Component'] == component_name, "Serial_Num"].values[0]
 
     y_curr = y[y['Component'] == component_name]
-    if y_curr.shape[0] != 1:
+    if y_curr.shape[0] > 1:
         raise ValueError(f'Multiple calibrations for {instr_name}')
-    instr_dict["calibration_date"] = str(y_curr["Calibration_Date"].values[0])[:10]
-    # if instr_name in ["ctd", "flbbcd", "oxygen"]:
-    if y_curr["Calibration_Type"].values[0] in db_factory_cal:
-        instr_dict["factory_calibrated"] = instr_dict["calibration_date"]
+    elif y_curr.shape[0] == 1:
+        instr_dict["calibration_date"] = str(y_curr["Calibration_Date"].values[0])[:10]
+        # if instr_name in ["ctd", "flbbcd", "oxygen"]:
+        if y_curr["Calibration_Type"].values[0] in db_factory_cal:
+            instr_dict["factory_calibrated"] = instr_dict["calibration_date"]
+    else:
+        _log.info(f"No calibration info for component {instr_name}")
 
     prof_vars[f"instrument_{instr_name}"] = instr_dict
 
     return prof_vars
 
 
-def make_deployment_yaml(
+def make_deployment_config(
     deployment: str, project: str, mode: str, out_path: str, 
     db_url=None
 ):
@@ -297,20 +300,22 @@ def make_deployment_yaml(
         
         # Based on the instruments on the glider:
         # 1) Remove netcdf vars from yamls, if necessary
-        # 2) Add instrument_ metadata 
+        # 2) Add instrument_ metadata \
+        # TODO: turn this section into a loop through the dictionary
+        #   Remove items from netcdf_vars based on instrument attribute
         # for key, value in db_components.itmes():
         #     if value in components:
         #         prof_vars[f"instrument_{key}"] = fill_instrument(key, devices, db_devices, db_cals)
 
         if db_components['ctd'] in components:
             prof_vars = fill_instrument(
-                prof_vars, 'ctd', devices, db_devices, db_cals)
+                'ctd', prof_vars, devices, db_devices, db_cals)
         else:
             raise ValueError('Glider must have a CTD')
         
         if db_components['flbbcd'] in components:
             prof_vars = fill_instrument(
-                prof_vars, 'flbbcd', devices, db_devices, db_cals)
+                'flbbcd', prof_vars, devices, db_devices, db_cals)
         else:
             netcdf_vars.pop('chlorophyll', None)
             netcdf_vars.pop('cdom', None)
@@ -318,24 +323,25 @@ def make_deployment_yaml(
 
         if db_components['oxygen'] in components:
             prof_vars = fill_instrument(
-                prof_vars, 'oxygen', devices, db_devices, db_cals)
+                'oxygen', prof_vars, devices, db_devices, db_cals)
         else:
             netcdf_vars.pop('oxygen_concentration', None)
 
+        # TODO: how to handle multiple shadowgraph models?
         # if not set(db_components['shadowgraph']).isdisjoint(components):
         #     pass 
 
         if db_components['glidercam'] in components:
             prof_vars = fill_instrument(
-                prof_vars, 'glidercam', devices, db_devices, db_cals)
+                'glidercam', prof_vars, devices, db_devices, db_cals)
         
         if db_components['azfp'] in components:
             prof_vars = fill_instrument(
-                prof_vars, 'azfp', devices, db_devices, db_cals)
+                'azfp', prof_vars, devices, db_devices, db_cals)
 
         if db_components['echosounder'] in components:
             prof_vars = fill_instrument(
-                prof_vars, 'echosounder', devices, db_devices, db_cals)       
+                'echosounder', prof_vars, devices, db_devices, db_cals)       
 
 
     else:

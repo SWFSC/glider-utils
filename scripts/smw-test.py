@@ -57,16 +57,16 @@ def ts():
     # met.imagery_metadata(dseng, dssci, i_path)
 
 def yaml():
-    conn_path = os.path.join(
-        "C:/SMW/Gliders_Moorings/Gliders/glider-utils", 
-        "db", "glider-db-prod.txt"
-    )
+    # conn_path = os.path.join(
+    #     "C:/SMW/Gliders_Moorings/Gliders/glider-utils", 
+    #     "db", "glider-db-prod.txt"
+    # )
     
-    with open(conn_path, "r") as f:
+    with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
 
-    return met.make_deployment_yaml(
-        "amlr01-20181216", "FREEBYRD", "delayed", 
+    return met.make_deployment_config(
+        "calanus-20241019", "ECOSWIM", "delayed", 
         "C:/Users/sam.woodman/Downloads", conn_string)
 
 
