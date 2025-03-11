@@ -35,8 +35,8 @@ profile_lat:
   platform:          platform
   standard_name:     latitude
   units:             degrees_north
-  valid_max:         "90.0"
-  valid_min:         "-90.0"
+  valid_max:         90.0
+  valid_min:         -90.0
 
 profile_lon:
   comment:           Value is interpolated to provide an estimate of the latitude at the mid-point of the profile
@@ -45,8 +45,8 @@ profile_lon:
   platform:          platform
   standard_name:     longitude
   units:             degrees_east
-  valid_max:         "180.0"
-  valid_min:         "-180.0"
+  valid_max:         180.0
+  valid_min:         -180.0
 
 u:
   comment:  The depth-averaged current is an estimate of the net current measured while the glider is underwater.  The value is calculated over the entire underwater segment, which may consist of 1 or more dives.
@@ -55,8 +55,8 @@ u:
   platform:          platform
   standard_name:     eastward_sea_water_velocity
   units:             m s-1
-  valid_max:         "10.0"
-  valid_min:         "-10.0"
+  valid_max:         10.0
+  valid_min:         -10.0
 
 v:
   comment:  The depth-averaged current is an estimate of the net current measured while the glider is underwater.  The value is calculated over the entire underwater segment, which may consist of 1 or more dives.
@@ -65,8 +65,8 @@ v:
   platform:          platform
   standard_name:     northward_sea_water_velocity
   units:             m s-1
-  valid_max:         "10.0"
-  valid_min:         "-10.0"
+  valid_max:         10.0
+  valid_min:         -10.0
 
 lon_uv:
   comment:           Not computed
@@ -75,8 +75,8 @@ lon_uv:
   platform:          platform
   standard_name:     longitude
   units:             degrees_east
-  valid_max:         "180.0"
-  valid_min:         "-180.0"
+  valid_max:         180.0
+  valid_min:         -180.0
 
 lat_uv:
   comment:           Not computed
@@ -85,8 +85,8 @@ lat_uv:
   platform:          platform
   standard_name:     latitude
   units:             degrees_north
-  valid_max:         "90.0"
-  valid_min:         "-90.0"
+  valid_max:         90.0
+  valid_min:         -90.0
 
 time_uv:
   comment:       Not computed

@@ -8,7 +8,6 @@ import esdglider.pathutils as putils
 import esdglider.gcp as gcp
 import esdglider.config as config
 import esdglider.process as process
-import pyglider.ncprocess as ncprocess
 
 
 deployment = 'calanus-20241019'
@@ -18,6 +17,7 @@ bucket_name = 'amlr-gliders-deployments-dev'
 
 base_path = "/home/sam_woodman_noaa_gov"
 deployments_path = f'{base_path}/{bucket_name}'
+config_path = f"{base_path}/glider-lab"
 
 
 
@@ -32,11 +32,8 @@ def scrape_sfmc():
 
 
 def ts():
-    gcp.gcs_mount_bucket("amlr-gliders-deployments-dev", deployments_path, 
-                         ro=False)
-
     x = process.binary_to_nc(
-        deployment, project, mode, deployments_path, f"{base_path}/glider-lab", 
+        deployment, project, mode, deployments_path, config_path, 
         write_timeseries=True, write_gridded=True)
         # min_dt='2024-10-19 17:00:00')
     
@@ -62,17 +59,23 @@ def ts():
     # dssci = xr.open_dataset(outname_dssci)
     # met.imagery_metadata(dseng, dssci, i_path)
 
-def yaml():
-    # conn_path = os.path.join(
-    #     "C:/SMW/Gliders_Moorings/Gliders/glider-utils", 
-    #     "db", "glider-db-prod.txt"
-    # )
+def prof():
+    outname_tseng, outname_tssci, outname_1m, outname_5m = process.binary_to_nc(
+        deployment, project, mode, deployments_path, config_path, 
+        write_timeseries=False, write_gridded=False)
     
+    paths = putils.esd_paths(
+        project, deployment, mode, deployments_path, config_path)
+    
+    return process.ngdac_profiles(
+        outname_tssci, paths['profdir'], paths['deploymentyaml'])
+
+def yaml():
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
 
     return config.make_deployment_config(
-        "calanus-20241019", "ECOSWIM", "delayed", 
+        deployment, project, mode, 
         "C:/Users/sam.woodman/Downloads", conn_string)
 
 
@@ -87,16 +90,10 @@ if __name__ == "__main__":
     #                 level=logging.INFO,
     #                 datefmt='%Y-%m-%d %H:%M:%S')
 
+    gcp.gcs_mount_bucket("amlr-gliders-deployments-dev", deployments_path, 
+                         ro=False)
     
     # scrape_sfmc()
     outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
-    # outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
-    # print(yaml())
-
-    paths = putils.esd_paths(project, deployment, mode, deployments_path)
-    path_deploymentyaml = os.path.join(
-        base_path, "glider-lab/deployment-config", 
-        f"{deployment}-{mode}.yml")
-    
-    ncprocess.extract_timeseries_profiles(
-        outname_tssci, paths["profdir"], path_deploymentyaml)
+    # yaml()
+    # prof()

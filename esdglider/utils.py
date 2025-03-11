@@ -216,3 +216,26 @@ def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
     solocam_dt = dt.datetime.strptime(solocam_substr, format)
 
     return solocam_dt
+
+
+
+def esd_file_id(ds):
+    """
+    ESD's version of pyglider.utils.get_file_id.
+    This version does not require a glider_serial
+    Make a file id for a Dataset: Id = *glider_name* + "YYYYMMDDTHHMM"
+    """
+
+    _log.debug(ds.time)
+    if not ds.time.dtype == 'datetime64[ns]':
+        dt = ds.time.values[0].astype('timedelta64[s]') + np.datetime64('1970-01-01')
+    else:
+        dt = ds.time.values[0].astype('datetime64[s]')
+    _log.debug(f'dt, {dt}')
+    id = (
+        ds.attrs['glider_name']
+        # + ds.attrs['glider_serial']
+        + '-'
+        + dt.item().strftime('%Y%m%dT%H%M')
+    )
+    return id

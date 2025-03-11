@@ -100,12 +100,9 @@ def mkdir_pass(outdir):
 
     return outdir
 
-def esd_paths(project, deployment, mode, deployments_path):
+def esd_paths(project, deployment, mode, deployments_path, config_path):
     """
-    project
-    deployment
-    mode
-    deployments_path
+    See arg documentation in process.binary_to_timeseries
 
     Return paths needed by the binary_to_nc script.
     Paths as described here:
@@ -123,7 +120,6 @@ def esd_paths(project, deployment, mode, deployments_path):
                 'Did you provide the right path via deployments_path?')
             return 
 
-    deployment_mode = f'{deployment}-{mode}'
     year = year_path(project, deployment)
 
     glider_path = os.path.join(deployments_path, project, year, deployment)
@@ -139,6 +135,8 @@ def esd_paths(project, deployment, mode, deployments_path):
 
     cacdir = os.path.join(deployments_path, 'cache')
     binarydir = os.path.join(glider_path, 'data', 'binary', mode)
+    deploymentyaml = os.path.join(config_path, 'deployment-config', 
+        f"{deployment}-{mode}.yml")
     # deploymentyaml = os.path.join(glider_path, 'config', 
     #     f"{deployment_mode}.yml")
     engyaml = get_engyaml_path()
@@ -154,7 +152,7 @@ def esd_paths(project, deployment, mode, deployments_path):
     return {
         "cacdir": cacdir,
         "binarydir": binarydir,
-        # "deploymentyaml": deploymentyaml,
+        "deploymentyaml": deploymentyaml,
         "engyaml": engyaml,
         "tsdir": tsdir,
         "profdir": profdir,

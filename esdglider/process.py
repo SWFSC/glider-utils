@@ -7,14 +7,16 @@ import pandas as pd
 import glob
 import yaml
 import subprocess
+import netCDF4
+import importlib
 
 import esdglider.gcp as gcp
 import esdglider.pathutils as pathutils
-import esdglider.esdpyglider as esdpyglider
 import esdglider.utils as utils
 
 import pyglider.slocum as slocum
 import pyglider.ncprocess as ncprocess
+import pyglider.utils as pgutils
 
 _log = logging.getLogger(__name__)
 
@@ -22,9 +24,7 @@ _log = logging.getLogger(__name__)
 def binary_to_nc(
     deployment, project, mode, deployments_path, config_path, 
     write_timeseries=False, write_gridded=False, 
-    write_profiles=False, 
-    write_imagery=False, imagery_path=None, 
-    min_dt='2017-01-01', profile_force = False
+    min_dt='2017-01-01'
 ): 
                 
     """
@@ -57,11 +57,10 @@ def binary_to_nc(
 
     #--------------------------------------------
     # Check/make file and directory paths
-    paths = pathutils.esd_paths(project, deployment, mode, deployments_path)
+    paths = pathutils.esd_paths(
+        project, deployment, mode, deployments_path, config_path)
     tsdir = paths["tsdir"]
-    # deploymentyaml = paths["deploymentyaml"]
-    deploymentyaml = os.path.join(config_path, 'deployment-config', 
-        f"{deployment}-{mode}.yml")
+    deploymentyaml = paths["deploymentyaml"]    
 
     #--------------------------------------------
     # TODO: handle compressed files, if necessary. 
@@ -184,6 +183,28 @@ def binary_to_nc(
     return outname_tseng, outname_tssci, outname_1m, outname_5m
 
 
+def postproc_metadata(ds):
+    """
+    Update attrbites of xarray DataSet ds
+    Used for post-processing both engineering and science timeseries
+    """
+    try:
+        del ds.attrs['glider_serial']
+    except KeyError:
+        _log.warning("Unable to delete glider_serial attribute")
+        pass
+
+    ds.attrs['standard_name_vocabulary'] = 'CF Standard Name Table v72'
+    ds.attrs['history'] = (
+        f"{np.datetime64('now')}Z: Timeseries and gridded netCDF files " +
+        f"created using pyglider v{importlib.metadata.version("pyglider")} " + 
+        f"and esdglider v{importlib.metadata.version("esdglider")}"
+    )
+    ds.attrs['processing_level'] = 'Minimal data screening. Data provided as is with no expressed or implied assurance of quality assurance or quality control.'
+
+    return ds
+
+
 def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
     """
     Post-process engineering timeseries, including: 
@@ -217,7 +238,8 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
         _log.warning(f"There are {num_nan} nan depth values")
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
-    # Add comment
+    # Update attributes
+    ds = postproc_metadata(ds)
     if not ('comment' in ds.attrs): 
         ds.attrs["comment"] = "engineering-only time series"
     elif not ds.attrs["comment"].strip():
@@ -252,6 +274,9 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
     # TODO: update this to play nice with eng timeseries for rt data?
 
+    # Update attributes
+    ds = postproc_metadata(ds)
+    
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
 
     return ds
@@ -615,30 +640,36 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
         Force an overwite even if profile netcdf already exists
     """
     try:
-        os.mkdir(outdir)
+        os.makedirs(outdir)
     except FileExistsError:
         pass
 
-    deployment = utils._get_deployment(deploymentyaml)
-    deployment["glider_serial"] = "" #ESD doesn't use glider serial number as part of name
+    with open(deploymentyaml) as fin:
+        deployment = yaml.safe_load(fin)
 
     # ESD: include all instrument vars
-    
+    # deployment["glider_devices"]
+    instrument_meta = deployment["glider_devices"]
+    instrument_str = ",".join(list(instrument_meta.keys()))
 
     meta = deployment['metadata']
     with xr.open_dataset(inname) as ds:
         _log.info('Extracting profiles: opening %s', inname)
+        trajectory = utils.esd_file_id(ds).encode()
+        trajlen    = len(trajectory)
+        
+        # TODO: do floor like oceanGNS??
         profiles = np.unique(ds.profile_index)
         profiles = [p for p in profiles if (~np.isnan(p) and not (p % 1) and (p > 0))]
         for p in profiles:
             ind = np.where(ds.profile_index == p)[0]
             dss = ds.isel(time=ind)
-            outname = outdir + '/' + utils.get_file_id(dss) + '.nc'
+            outname = outdir + '/' + utils.esd_file_id(dss) + '.nc'
             _log.info('Checking %s', outname)
             if force or (not os.path.exists(outname)):
                 # this is the id for the whole file, not just this profile..
-                dss['trajectory'] = utils.get_file_id(ds).encode()
-                trajlen = len(utils.get_file_id(ds).encode())
+                dss['trajectory'] = trajectory
+                # trajlen = len(pgutils.get_file_id(ds).encode())
                 dss['trajectory'].attrs['cf_role'] = 'trajectory_id'
                 dss['trajectory'].attrs['comment'] = (
                     'A trajectory is a single'
@@ -691,15 +722,12 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
                 dss['lat'] = dss['latitude']
                 dss['lon'] = dss['longitude']
                 dss['platform'] = np.int32(1)
-                comment = meta['glider_model'] + ' operated by ' + meta['institution']
+                comment = f"{meta['glider_model']} operated by {meta['institution']}"
                 dss['platform'].attrs['comment'] = comment
-                dss['platform'].attrs['id'] = (
-                    meta['glider_name'] + meta['glider_serial']
-                )
-                dss['platform'].attrs['instrument'] = 'instrument_ctd'
+                dss['platform'].attrs['id'] = meta['glider_name']
+                dss['platform'].attrs['instrument'] = instrument_str
                 dss['platform'].attrs['long_name'] = (
-                    meta['glider_model'] + dss['platform'].attrs['id']
-                )
+                    f"{meta['glider_model']} {dss['platform'].attrs['id']}")
                 dss['platform'].attrs['type'] = 'platform'
                 dss['platform'].attrs['wmo_id'] = meta['wmo_id']
                 if '_FillValue' not in dss['platform'].attrs:
@@ -712,10 +740,15 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
                 dss['time_uv'] = np.nan
                 dss['time_uv'].attrs = profile_meta['time_uv']
 
-                dss['instrument_ctd'] = np.int32(1.0)
-                dss['instrument_ctd'].attrs = profile_meta['instrument_ctd']
-                if '_FillValue' not in dss['instrument_ctd'].attrs:
-                    dss['instrument_ctd'].attrs['_FillValue'] = -1
+                # dss['instrument_ctd'] = np.int32(1.0)
+                # dss['instrument_ctd'].attrs = profile_meta['instrument_ctd']
+                # if '_FillValue' not in dss['instrument_ctd'].attrs:
+                #     dss['instrument_ctd'].attrs['_FillValue'] = -1
+                for key in instrument_meta.keys():
+                    dss[key] = np.int32(1.0)
+                    dss[key].attrs = instrument_meta[key]
+                    if '_FillValue' not in dss[key].attrs:
+                        dss[key].attrs['_FillValue'] = -1
 
                 dss.attrs['date_modified'] = str(np.datetime64('now')) + 'Z'
 
@@ -737,9 +770,9 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
                     dss[name].attrs['ancillary_variables'] = qcname
                     if qcname not in dss.keys():
                         dss[qcname] = ('time', 2 * np.ones(len(dss[name]), np.int8))
-                        dss[qcname].attrs = utils.fill_required_qcattrs({}, name)
+                        dss[qcname].attrs = pgutils.fill_required_qcattrs({}, name)
                         # 2 is "not eval"
-                # outname = outdir + '/' + utils.get_file_id(dss) + '.nc'
+
                 _log.info('Writing %s', outname)
                 timeunits = 'seconds since 1970-01-01T00:00:00Z'
                 timecalendar = 'gregorian'

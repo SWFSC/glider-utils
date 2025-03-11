@@ -1,4 +1,5 @@
 ctd:
+  _FillValue: -999
   long_name: 'Conductivity, Temperature, Depth (CTD) Sensor'
   make_model: 'Sea-Bird GPCTD'
   serial_number: ' '
@@ -6,47 +7,68 @@ ctd:
   calibration_date: ' '
   calibration_report: ""
   comment: "Pumped"
+  platform: "platform"
+  type: "instrument"
 flbbcd:
+  _FillValue: -999
   long_name: 'Optical Backscatter, Chlorophyll, and CDOM Fluorescence Sensor'
   make_model: 'WET Labs ECO Puck FLBBCD'
   serial_number: ' '
-  calibration_date: " "
-  factory_calibrated: " "
+  calibration_date: ""
+  factory_calibrated: ""
   calibration_report: ""
   comment: ""
+  platform: "platform"
+  type: "instrument"
 oxygen:
+  _FillValue: -999
   long_name: 'Oxygen Optode'
   make_model: 'Aanderaa Oxygen Optode 4831'
   serial_number: ' '
-  calibration_date: " "
-  factory_calibrated: " "
+  calibration_date: ""
+  factory_calibrated: ""
   calibration_report: ""
   comment: ""
+  platform: "platform"
+  type: "instrument"
 glidercam: #software? other versiony info?
+  _FillValue: -999
   make_model: 'Williamson and Associates Glidercam'
-  serial_number: " "
-  calibration_date: " "
-  factory_calibrated: " "
+  serial_number: ""
+  calibration_date: ""
+  factory_calibrated: ""
   calibration_report: ""
   comment: ""
+  platform: "platform"
+  type: "instrument"
 shadowgraph: #software? other versiony info?
+  _FillValue: -999
   make_model: 'Williamson and Associates Shadowgraph Camera (11cm)'
-  serial_number: " "
-  calibration_date: " "
-  factory_calibrated: " "
+  serial_number: ""
+  calibration_date: ""
+  factory_calibrated: ""
   calibration_report: ""
   comment: ""
+  platform: "platform"
+  type: "instrument"
 azfp:
-  make_model: 'ASL Environmental Sciences AZFP 3 Frequency'
-  serial_number: " "
-  calibration_date: " "
-  factory_calibrated: " "
+  _FillValue: -999
+  make_model: "ASL Environmental Sciences AZFP 3 Frequency"
+  long_name: 'ASL AZFP'
+  serial_number: ""
+  calibration_date: ""
+  factory_calibrated: ""
   calibration_report: ""
   comment: ""
+  platform: "platform"
+  type: "instrument"
 echosounder: #software? other versiony info?
+  _FillValue: -999
   make_model: 'Nortek Signature 100 Compact Echosounder'
-  serial_number: " "
-  calibration_date: " "
-  factory_calibrated: " "
+  serial_number: ""
+  calibration_date: ""
+  factory_calibrated: ""
   calibration_report: ""
   comment: ""
+  platform: "platform"
+  type: "instrument"
