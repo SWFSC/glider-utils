@@ -192,7 +192,7 @@ def imagery_metadata(ds_eng, ds_sci, imagery_dir, ext = 'jpg'):
 
     return df
 
-def fill_instrument(instr_name, prof_vars, devices, x, y):
+def instrument_attrs(instr_name, devices, x, y):
     """
     instr_name: str
         Name of instrument name, eg 'ctd' or 'oxygen'.
@@ -208,24 +208,22 @@ def fill_instrument(instr_name, prof_vars, devices, x, y):
     """
 
     component_name = db_components[instr_name]
-    instr_dict = devices[instr_name]
+    instrument = devices[instr_name]
 
-    instr_dict["serial_number"] = x.loc[x['Component'] == component_name, "Serial_Num"].values[0]
+    instrument["serial_number"] = x.loc[x['Component'] == component_name, "Serial_Num"].values[0]
 
     y_curr = y[y['Component'] == component_name]
     if y_curr.shape[0] > 1:
         raise ValueError(f'Multiple calibrations for {instr_name}')
     elif y_curr.shape[0] == 1:
-        instr_dict["calibration_date"] = str(y_curr["Calibration_Date"].values[0])[:10]
+        instrument["calibration_date"] = str(y_curr["Calibration_Date"].values[0])[:10]
         # if instr_name in ["ctd", "flbbcd", "oxygen"]:
         if y_curr["Calibration_Type"].values[0] in db_factory_cal:
-            instr_dict["factory_calibrated"] = instr_dict["calibration_date"]
+            instrument["factory_calibrated"] = instrument["calibration_date"]
     else:
         _log.info(f"No calibration info for component {instr_name}")
 
-    prof_vars[f"instrument_{instr_name}"] = instr_dict
-
-    return prof_vars
+    return instrument
 
 
 def make_deployment_config(
@@ -306,24 +304,28 @@ def make_deployment_config(
         # for key, value in db_components.itmes():
         #     if value in components:
         #         prof_vars[f"instrument_{key}"] = fill_instrument(key, devices, db_devices, db_cals)
+        instruments = {}
 
-        if db_components['ctd'] in components:
-            prof_vars = fill_instrument(
-                'ctd', prof_vars, devices, db_devices, db_cals)
+        key = 'ctd'
+        if db_components[key] in components:
+            instruments[f"instrument_{key}"] = instrument_attrs(
+                key, devices, db_devices, db_cals)    
         else:
             raise ValueError('Glider must have a CTD')
         
-        if db_components['flbbcd'] in components:
-            prof_vars = fill_instrument(
-                'flbbcd', prof_vars, devices, db_devices, db_cals)
+        key = 'flbbcd'
+        if db_components[key] in components:
+            instruments[f"instrument_{key}"] = instrument_attrs(
+                key, devices, db_devices, db_cals)    
         else:
             netcdf_vars.pop('chlorophyll', None)
             netcdf_vars.pop('cdom', None)
             netcdf_vars.pop('backscatter_700', None)
 
-        if db_components['oxygen'] in components:
-            prof_vars = fill_instrument(
-                'oxygen', prof_vars, devices, db_devices, db_cals)
+        key = 'oxygen'
+        if db_components[key] in components:
+            instruments[f"instrument_{key}"] = instrument_attrs(
+                key, devices, db_devices, db_cals)    
         else:
             netcdf_vars.pop('oxygen_concentration', None)
 
@@ -331,17 +333,20 @@ def make_deployment_config(
         # if not set(db_components['shadowgraph']).isdisjoint(components):
         #     pass 
 
-        if db_components['glidercam'] in components:
-            prof_vars = fill_instrument(
-                'glidercam', prof_vars, devices, db_devices, db_cals)
+        key = 'glidercam'
+        if db_components[key] in components:
+            instruments[f"instrument_{key}"] = instrument_attrs(
+                key, devices, db_devices, db_cals)    
         
-        if db_components['azfp'] in components:
-            prof_vars = fill_instrument(
-                'azfp', prof_vars, devices, db_devices, db_cals)
+        key = 'azfp'
+        if db_components[key] in components:
+            instruments[f"instrument_{key}"] = instrument_attrs(
+                key, devices, db_devices, db_cals)    
 
-        if db_components['echosounder'] in components:
-            prof_vars = fill_instrument(
-                'echosounder', prof_vars, devices, db_devices, db_cals)       
+        key = 'echosounder'
+        if db_components[key] in components:
+            instruments[f"instrument_{key}"] = instrument_attrs(
+                key, devices, db_devices, db_cals)       
 
 
     else:
@@ -361,7 +366,7 @@ def make_deployment_config(
 
     deployment_yaml = {
         "metadata" : metadata, 
-        "glider_devices" : {}, #has to be an empty dict for pyglider
+        "glider_devices" : instruments, 
         "netcdf_variables" : netcdf_vars, 
         "profile_variables" : prof_vars
     }
