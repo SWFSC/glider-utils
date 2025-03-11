@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 import collections
-# from scipy.signal import argrelextrema
+import datetime as dt
 
 _log = logging.getLogger(__name__)
 
@@ -196,3 +196,23 @@ def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
             # _log.info(f"Changed {num_orig - len(ds[var])} {var} values greater than {value[1]} to nan")
 
     return ds
+
+
+def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
+    """
+    Parse imagery filename to return associated datetime
+    Requires index of start of datetime part of string
+
+    filename : str : Full filename
+    index_start : int : The index of the start of the datetime string.
+        The datetime runs from this index to this index plus 15 characters
+    format : str : format passed to strptime
+
+    Returns:
+        Datetime object, with the datetime extracted from the imagery filename
+    """
+    solocam_substr = filename[index_dt:(index_dt+15)]
+    _log.debug(f"datetime substring: {solocam_substr}")
+    solocam_dt = dt.datetime.strptime(solocam_substr, format)
+
+    return solocam_dt

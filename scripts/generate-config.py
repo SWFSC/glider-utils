@@ -1,5 +1,5 @@
 import logging
-import esdglider.metadata as met
+import esdglider.config as config
 
 
 """
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
 
-    met.make_deployment_config(
+    config.make_deployment_config(
         "calanus-20241019", "ECOSWIM", "delayed", 
         "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-config", 
         conn_string)
