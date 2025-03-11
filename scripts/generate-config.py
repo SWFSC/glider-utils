@@ -20,4 +20,5 @@ if __name__ == "__main__":
 
     met.make_deployment_config(
         "calanus-20241019", "ECOSWIM", "delayed", 
-        "C:/Users/sam.woodman/Downloads", conn_string)
+        "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-config", 
+        conn_string)

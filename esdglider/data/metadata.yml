@@ -35,7 +35,7 @@ processing_level: 'Data provided as is with no expressed or implied
 project: <project name>
 publisher_email: christian.reiss@noaa.gov
 publisher_name: Christian Reiss
-publisher_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center (external link)
+publisher_url: https://www.fisheries.noaa.gov/about/southwest-fisheries-science-center
 references: 'https://swfsc.github.io/glider-lab-manual/; 
               created with pyglider https://github.com/c-proof/pyglider 
               and esdglider https://github.com/SWFSC/glider-utils'
