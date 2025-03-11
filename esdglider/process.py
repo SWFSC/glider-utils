@@ -8,6 +8,7 @@ import subprocess
 
 import esdglider.gcp as gcp
 import esdglider.pathutils as pathutils
+import esdglider.esdpyglider as esdpyglider
 import esdglider.utils as utils
 
 import pyglider.slocum as slocum
@@ -18,9 +19,9 @@ _log = logging.getLogger(__name__)
 
 def binary_to_nc(
     deployment, project, mode, deployments_path, config_path, 
-    write_timeseries=False, write_gridded=False, 
+    write_timeseries=False, write_gridded=False, write_profiles=False, 
     write_imagery=False, imagery_path=None, 
-    min_dt='2017-01-01'
+    min_dt='2017-01-01', profile_force = False
 ): 
                 
     """
@@ -131,7 +132,13 @@ def binary_to_nc(
 
     #--------------------------------------------
     # TODO: Profiles
-    # extract_timeseries_profiles(inname, outdir, deploymentyaml, force=False)
+    if write_profiles:
+        _log.info(f'Generating profile nc files')
+        esdpyglider.esd_extract_timeseries_profiles(
+            outname_tssci, paths["profdir"], deploymentyaml, profile_force=False)
+    else:
+        _log.info(f'Not writing profiles')
+
 
     #--------------------------------------------
     # Gridded data, 1m and 5m

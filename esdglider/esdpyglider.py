@@ -16,7 +16,7 @@ def esd_extract_timeseries_profiles(inname, outdir, deploymentyaml, force=False)
     ESD's version of extract_timeseries_profiles, from:
     https://github.com/c-proof/pyglider/blob/main/pyglider/ncprocess.py#L19
     
-     Extract and save each profile from a timeseries netCDF.
+    Extract and save each profile from a timeseries netCDF.
 
     Parameters
     ----------
@@ -39,6 +39,10 @@ def esd_extract_timeseries_profiles(inname, outdir, deploymentyaml, force=False)
         pass
 
     deployment = utils._get_deployment(deploymentyaml)
+    deployment["glider_serial"] = "" #ESD doesn't use glider serial number as part of name
+
+    # ESD: include all instrument vars
+    
 
     meta = deployment['metadata']
     with xr.open_dataset(inname) as ds:
@@ -182,6 +186,7 @@ def esd_extract_timeseries_profiles(inname, outdir, deploymentyaml, force=False)
                 # add traj_strlen using bare ntcdf to make IOOS happy
                 with netCDF4.Dataset(outname, 'r+') as nc:
                     nc.renameDimension('string%d' % trajlen, 'traj_strlen')
+
 
 
 
