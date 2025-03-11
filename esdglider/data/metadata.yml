@@ -1,9 +1,9 @@
 # Metadata block for deployment yaml
-# numbers must be eenclosed by strings so YAML keeps as strings
-# Created by pyglider: history, id, 
+# numbers must be enclosed by strings so YAML keeps as strings
+# Created by pyglider: history, id, processing_level, title
 
 acknowledgment: 'This work was supported by funding from NOAA.'
-comment: ' '  
+comment: ''  
 contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Cossio, Caleb Flaim, Jacob Partida, Eric Bjorkstedt, Jason C. Clarke, Samuel Woodman'
 contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Research Fish Biologist, Glider Pilot, Data Manager'
 creator_email: christian.reiss@noaa.gov
@@ -11,7 +11,7 @@ creator_name: 'Christian Reiss'
 creator_url: https://www.fisheries.noaa.gov/about/southwest-fisheries-science-center
 format_version: IOOS_Glider_NetCDF_v2.0.nc
 glider_name: <glider name>
-glider_serial: ''
+glider_serial: ' '
 glider_model: 'Teledyne Webb Research Slocum G3 glider'
 glider_instrument_name: slocum
 institution: 'NOAA SWFSC Ecosystem Science Division'
@@ -27,20 +27,16 @@ keywords_vocabulary: GCMD Science Keywords
 license: 'This data may be redistributed and used without restriction. 
           Data provided as is with no expressed or implied assurance of quality assurance or quality control.'
 Metadata_Conventions: Unidata Dataset Discovery v1.0, COARDS, CF-1.8
-metadata_link: ' '
+metadata_link: 'https://swfsc.github.io/glider-lab-manual/'
 naming_authority: gov.noaa.fisheries
 platform_type: 'Slocum Glider'
-processing_level: 'Data provided as is with no expressed or implied
-                    assurance of quality assurance or quality control.'
 project: <project name>
 publisher_email: christian.reiss@noaa.gov
 publisher_name: Christian Reiss
 publisher_url: https://www.fisheries.noaa.gov/about/southwest-fisheries-science-center
-references: 'https://swfsc.github.io/glider-lab-manual/; 
-              created with pyglider https://github.com/c-proof/pyglider 
-              and esdglider https://github.com/SWFSC/glider-utils'
+references: 'https://swfsc.github.io/glider-lab-manual/, https://github.com/c-proof/pyglider, https://github.com/SWFSC/glider-utils'
 sea_name: <sea name>
-source: Observational data from a profiling glider.
+source: Observational data from a profiling glider
 standard_name_vocabulary: CF Standard Name Table v72
 summary: <summary>
 transmission_system: IRIDIUM

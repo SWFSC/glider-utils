@@ -5,7 +5,7 @@ ctd:
   serial_number: ' '
   factory_calibrated: ' '
   calibration_date: ' '
-  calibration_report: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: "Pumped"
   platform: "platform"
   type: "instrument"
@@ -16,7 +16,7 @@ flbbcd:
   serial_number: ' '
   calibration_date: ""
   factory_calibrated: ""
-  calibration_report: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
   platform: "platform"
   type: "instrument"
@@ -27,7 +27,7 @@ oxygen:
   serial_number: ' '
   calibration_date: ""
   factory_calibrated: ""
-  calibration_report: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
   platform: "platform"
   type: "instrument"
@@ -37,7 +37,7 @@ glidercam: #software? other versiony info?
   serial_number: ""
   calibration_date: ""
   factory_calibrated: ""
-  calibration_report: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
   platform: "platform"
   type: "instrument"
@@ -47,7 +47,7 @@ shadowgraph: #software? other versiony info?
   serial_number: ""
   calibration_date: ""
   factory_calibrated: ""
-  calibration_report: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
   platform: "platform"
   type: "instrument"
@@ -58,7 +58,7 @@ azfp:
   serial_number: ""
   calibration_date: ""
   factory_calibrated: ""
-  calibration_report: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
   platform: "platform"
   type: "instrument"
@@ -68,7 +68,7 @@ echosounder: #software? other versiony info?
   serial_number: ""
   calibration_date: ""
   factory_calibrated: ""
-  calibration_report: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
   platform: "platform"
   type: "instrument"

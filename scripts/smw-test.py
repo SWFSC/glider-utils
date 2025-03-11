@@ -17,7 +17,7 @@ bucket_name = 'amlr-gliders-deployments-dev'
 
 base_path = "/home/sam_woodman_noaa_gov"
 deployments_path = f'{base_path}/{bucket_name}'
-config_path = f"{base_path}/glider-lab"
+config_path = f"{base_path}/glider-lab/deployment-configs"
 
 
 

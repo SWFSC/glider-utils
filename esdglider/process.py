@@ -62,6 +62,16 @@ def binary_to_nc(
     tsdir = paths["tsdir"]
     deploymentyaml = paths["deploymentyaml"]    
 
+    # Get deployment and thus file name from yaml file
+    with open(deploymentyaml) as fin:
+        deployment_ = yaml.safe_load(fin)
+        deployment_name = deployment_["metadata"]["deployment_name"]
+    if deployment_name != deployment:
+        raise ValueError (
+            f"Provided deployment ({deployment}) is not the same as " +
+            f"the deploymentyaml deployment_name ({deployment_name})"
+        )
+
     #--------------------------------------------
     # TODO: handle compressed files, if necessary. 
     # Although maybe this should be in another function?
@@ -88,8 +98,10 @@ def binary_to_nc(
             # profile_filt_time=profile_filt_time, 
             # profile_min_time=profile_min_time, maxgap=maxgap)
 
+        _log.info(f'Post-processing engineering timeseries')
         tseng = xr.load_dataset(outname_tseng)
         tseng = postproc_eng_timeseries(tseng, min_dt=min_dt)
+        tseng = postproc_attrs(tseng, mode)
         tseng.to_netcdf(outname_tseng)
         _log.info(f'Finished eng timeseries postproc: {outname_tseng}')
 
@@ -107,8 +119,10 @@ def binary_to_nc(
             # profile_filt_time=profile_filt_time, 
             # profile_min_time=profile_min_time, maxgap=maxgap)
 
+        _log.info(f'Post-processing science timeseries')
         tssci = xr.load_dataset(outname_tssci)
         tssci = postproc_sci_timeseries(tssci, min_dt=min_dt)
+        tssci = postproc_attrs(tssci, mode)
         tssci.to_netcdf(outname_tssci)
         _log.info(f'Finished sci timeseries postproc: {outname_tssci}')
 
@@ -121,26 +135,11 @@ def binary_to_nc(
 
     else:
         _log.info(f'Not writing timeseries')
-        # Get deployment and thus file name from yaml file
-        with open(deploymentyaml) as fin:
-            deployment_ = yaml.safe_load(fin)
-            deployment_name = deployment_["metadata"]["deployment_name"]
-        
-        outname_tseng = os.path.join(tsdir, f"{deployment_name}-{mode}-eng.nc")
-        outname_tssci = os.path.join(tsdir, f"{deployment_name}-{mode}-sci.nc")
+        outname_tseng = os.path.join(tsdir, f"{deployment}-{mode}-eng.nc")
+        outname_tssci = os.path.join(tsdir, f"{deployment}-{mode}-sci.nc")
         # if not os.path.isfile(outname_tssci):
         #     raise FileNotFoundError(f'Not writing timeseries, and could not find {outname_tssci}')
         # _log.info(f'Reading in outname_tssci ({outname_tssci})')
-
-    # #--------------------------------------------
-    # # TODO: Profiles
-    # if write_profiles:
-    #     _log.info(f'Generating profile nc files')
-    #     esdpyglider.esd_extract_timeseries_profiles(
-    #         outname_tssci, paths["profdir"], deploymentyaml, profile_force=False)
-    # else:
-    #     _log.info(f'Not writing profiles')
-
 
     #--------------------------------------------
     # Gridded data, 1m and 5m
@@ -153,17 +152,15 @@ def binary_to_nc(
         outname_1m = ncprocess.make_gridfiles(
             outname_tssci, paths["griddir"], deploymentyaml, 
             dz = 1, fnamesuffix=f"-{mode}-1m")
-        _log.info(f'Finished making 1m gridded data: {outname_1m}')
 
         _log.info(f'Generating 5m gridded data')
         outname_5m = ncprocess.make_gridfiles(
             outname_tssci, paths["griddir"], deploymentyaml, 
             dz = 5, fnamesuffix=f"-{mode}-5m")
-        _log.info(f'Finished making 5m gridded data: {outname_5m}')
 
     else:
-        outname_1m = ""
-        outname_5m = ""
+        outname_1m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-1m.nc")
+        outname_5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
         _log.info(f'Not writing gridded data')
 
     #--------------------------------------------
@@ -183,10 +180,10 @@ def binary_to_nc(
     return outname_tseng, outname_tssci, outname_1m, outname_5m
 
 
-def postproc_metadata(ds):
+def postproc_attrs(ds, mode):
     """
     Update attrbites of xarray DataSet ds
-    Used for post-processing both engineering and science timeseries
+    Used for both engineering and science timeseries
     """
     try:
         del ds.attrs['glider_serial']
@@ -200,7 +197,14 @@ def postproc_metadata(ds):
         f"created using pyglider v{importlib.metadata.version("pyglider")} " + 
         f"and esdglider v{importlib.metadata.version("esdglider")}"
     )
-    ds.attrs['processing_level'] = 'Minimal data screening. Data provided as is with no expressed or implied assurance of quality assurance or quality control.'
+    ds.attrs['processing_level'] = (
+        "Minimal data screening. " + 
+        "Data provided as is, with no expressed or implied assurance " +
+        "of quality assurance or quality control."
+    )
+
+    if mode == "delayed":
+        ds.attrs['title'] = ds.attrs['title'] + "-delayed"
 
     return ds
 
@@ -238,8 +242,7 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
         _log.warning(f"There are {num_nan} nan depth values")
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
-    # Update attributes
-    ds = postproc_metadata(ds)
+    # Update comment
     if not ('comment' in ds.attrs): 
         ds.attrs["comment"] = "engineering-only time series"
     elif not ds.attrs["comment"].strip():
@@ -274,9 +277,6 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
     # TODO: update this to play nice with eng timeseries for rt data?
 
-    # Update attributes
-    ds = postproc_metadata(ds)
-    
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
 
     return ds

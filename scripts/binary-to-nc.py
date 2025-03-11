@@ -19,11 +19,10 @@ def main(args):
         project=args.project, 
         mode=args.mode, 
         deployments_path=args.deployments_path, 
+        config_path=args.config_path, 
         write_timeseries=args.write_timeseries, 
         write_gridded=args.write_gridded, 
-        profile_filt_time=args.profile_filt_time, 
-        profile_min_time=args.profile_min_time, 
-        maxgap=args.maxgap)
+        min_dt=args.min_dt)
 
 
 if __name__ == '__main__':
@@ -52,26 +51,18 @@ if __name__ == '__main__':
         help='Path to glider deployments directory. ' + 
             'In GCP, this will be the mounted bucket path')
 
-    arg_parser.add_argument('--profile_filt_time', 
-        type=float,
-        default=100,
-        help="time in seconds over which to smooth the pressure " +
-            "time series for finding up and down profiles. " +
-            "https://github.com/c-proof/pyglider/blob/main/pyglider/slocum.py")
-    
-    arg_parser.add_argument('--profile_min_time', 
-        type=float,
-        default=300,
-        help="minimum time to consider a profile an actual profile (seconds). " +
-            "https://github.com/c-proof/pyglider/blob/main/pyglider/slocum.py")
-    
-    arg_parser.add_argument('--maxgap', 
-        type=float,
-        default=300,
-        help="Longest gap in seconds to interpolate over " +
-            "when matching instrument timeseries. " +
-            "https://github.com/c-proof/pyglider/blob/main/pyglider/slocum.py")
+    arg_parser.add_argument('config_path', 
+        type=str,
+        help='Path to folder with the config (deployment yaml) file. ' + 
+            'Usually in a clone of https://github.com/SWFSC/glider-lab')
 
+    arg_parser.add_argument('--min_dt', 
+        type=str,
+        default="2017-01-01",
+        help="The minimum datetime kept during deployment processing. All " +
+            "rows with timestamps less than this value will be dropped. " + 
+            "String must be readable by numpy.datetime64()")
+    
     arg_parser.add_argument('--write_timeseries',
         help='flag; indicates if timeseries nc files should be written',
         action='store_true')
@@ -79,23 +70,6 @@ if __name__ == '__main__':
     arg_parser.add_argument('--write_gridded',
         help='flag; indicates if gridded nc files should be written',
         action='store_true')
-
-    # arg_parser.add_argument('--write_ngdac',
-    #     help='flag; indicates if ngdac nc files should be written',
-    #     action='store_true')
-
-    # arg_parser.add_argument('--write_acoustics',
-    #     help='flag; indicates if acoustic files should be written',
-    #     action='store_true')
-
-    arg_parser.add_argument('--write_imagery',
-        help='flag; indicates if imagery metadata csv file should be written',
-        action='store_true')
-
-    arg_parser.add_argument('--imagery_path',
-        type=str,
-        help='Path to imagery bucket. Required if write_imagery flag is true',
-        default='')
 
     arg_parser.add_argument('-l', '--loglevel',
         type=str,
