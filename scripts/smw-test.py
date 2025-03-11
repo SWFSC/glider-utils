@@ -4,35 +4,41 @@ import os
 import logging
 import xarray as xr
 
+import esdglider.pathutils as putils
 import esdglider.gcp as gcp
 import esdglider.metadata as met
 import esdglider.process as process
+import pyglider.ncprocess as ncprocess
+
+
+deployment = 'calanus-20241019'
+project = "ECOSWIM"
+mode = 'delayed'
+bucket_name = 'amlr-gliders-deployments-dev'
+
+base_path = "/home/sam_woodman_noaa_gov"
+deployments_path = f'{base_path}/{bucket_name}'
+
 
 
 def scrape_sfmc():
-    process.scrape_sfmc(deployment='calanus-20241019', 
-        project="ECOSWIM", 
-        bucket='amlr-gliders-deployments-dev', 
+    process.scrape_sfmc(deployment=deployment, 
+        project=project, 
+        bucket=bucket_name, 
         # sfmc_path='/var/sfmc', 
-        sfmc_path='/home/sam_woodman_noaa_gov/sfmc', 
+        sfmc_path=f'{base_path}/sfmc', 
         gcpproject_id='ggn-nmfs-usamlr-dev-7b99', 
         secret_id='sfmc-swoodman')
 
 
 def ts():
-    deployment = 'calanus-20241019'
-    project = "ECOSWIM"
-    mode = 'delayed'
-    bucket_name = 'amlr-gliders-deployments-dev'
-
-    deployments_path = f'/home/sam_woodman_noaa_gov/{bucket_name}'
     gcp.gcs_mount_bucket("amlr-gliders-deployments-dev", deployments_path, 
                          ro=False)
 
     x = process.binary_to_nc(
-        deployment, project, mode, deployments_path, 
-        write_timeseries=True, write_gridded=True, 
-        min_dt='2024-10-19 17:00:00')
+        deployment, project, mode, deployments_path, f"{base_path}/glider-lab", 
+        write_timeseries=True, write_gridded=True)
+        # min_dt='2024-10-19 17:00:00')
     
     return x
 
@@ -83,12 +89,14 @@ if __name__ == "__main__":
 
     
     # scrape_sfmc()
-    # print(ts())
+    outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
     # outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
-    print(yaml())
+    # print(yaml())
 
-    # ds_eng = xr.load_dataset(outname_tseng)
-    # ds_sci = xr.load_dataset(outname_tssci)
-    # print(f"there are {len(ds_eng.time)} points in the engineering timeseries")
-    # print(f"there are {len(ds_sci.time)} points in the science timeseries")
-    # gcp.gcs_unmount_bucket("amlr-gliders-deployments-dev")
+    paths = putils.esd_paths(project, deployment, mode, deployments_path)
+    path_deploymentyaml = os.path.join(
+        base_path, "glider-lab/deployment-config", 
+        f"{deployment}-{mode}.yml")
+    
+    ncprocess.extract_timeseries_profiles(
+        outname_tssci, paths["profdir"], path_deploymentyaml)

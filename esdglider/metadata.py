@@ -361,7 +361,7 @@ def make_deployment_config(
 
     deployment_yaml = {
         "metadata" : metadata, 
-        "glider_devices" : "", 
+        "glider_devices" : {}, #has to be an empty dict for pyglider
         "netcdf_variables" : netcdf_vars, 
         "profile_variables" : prof_vars
     }

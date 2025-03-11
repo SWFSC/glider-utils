@@ -17,7 +17,7 @@ _log = logging.getLogger(__name__)
 
 
 def binary_to_nc(
-    deployment, project, mode, deployments_path, 
+    deployment, project, mode, deployments_path, config_path, 
     write_timeseries=False, write_gridded=False, 
     write_imagery=False, imagery_path=None, 
     min_dt='2017-01-01'
@@ -55,7 +55,9 @@ def binary_to_nc(
     # Check/make file and directory paths
     paths = pathutils.esd_paths(project, deployment, mode, deployments_path)
     tsdir = paths["tsdir"]
-    deploymentyaml = paths["deploymentyaml"]
+    # deploymentyaml = paths["deploymentyaml"]
+    deploymentyaml = os.path.join(config_path, 'deployment-config', 
+        f"{deployment}-{mode}.yml")
 
     #--------------------------------------------
     # TODO: handle compressed files, if necessary. 
@@ -75,8 +77,10 @@ def binary_to_nc(
         _log.info(f'Generating engineering timeseries')
         outname_tseng = slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
-            [deploymentyaml, paths["engyaml"]], search=binary_search, 
-            fnamesuffix=f"-{mode}-eng", time_base="m_depth", 
+            [deploymentyaml, paths["engyaml"]], 
+            search=binary_search, 
+            fnamesuffix=f"-{mode}-eng", 
+            time_base="m_depth", 
             profile_filt_time = None)
             # profile_filt_time=profile_filt_time, 
             # profile_min_time=profile_min_time, maxgap=maxgap)
@@ -92,8 +96,10 @@ def binary_to_nc(
         _log.info(f'Generating science timeseries')
         outname_tssci = slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
-            deploymentyaml, search=binary_search, 
-            fnamesuffix=f"-{mode}-sci", time_base='sci_water_temp', 
+            deploymentyaml, 
+            search=binary_search, 
+            fnamesuffix=f"-{mode}-sci", 
+            time_base='sci_water_temp', 
             profile_filt_time = None)
             # profile_filt_time=profile_filt_time, 
             # profile_min_time=profile_min_time, maxgap=maxgap)
@@ -113,7 +119,7 @@ def binary_to_nc(
     else:
         _log.info(f'Not writing timeseries')
         # Get deployment and thus file name from yaml file
-        with open(paths["deploymentyaml"]) as fin:
+        with open(deploymentyaml) as fin:
             deployment_ = yaml.safe_load(fin)
             deployment_name = deployment_["metadata"]["deployment_name"]
         
@@ -136,13 +142,13 @@ def binary_to_nc(
 
         _log.info(f'Generating 1m gridded data')
         outname_1m = ncprocess.make_gridfiles(
-            outname_tssci, paths["griddir"], paths["deploymentyaml"], 
+            outname_tssci, paths["griddir"], deploymentyaml, 
             dz = 1, fnamesuffix=f"-{mode}-1m")
         _log.info(f'Finished making 1m gridded data: {outname_1m}')
 
         _log.info(f'Generating 5m gridded data')
         outname_5m = ncprocess.make_gridfiles(
-            outname_tssci, paths["griddir"], paths["deploymentyaml"], 
+            outname_tssci, paths["griddir"], deploymentyaml, 
             dz = 5, fnamesuffix=f"-{mode}-5m")
         _log.info(f'Finished making 5m gridded data: {outname_5m}')
 
@@ -439,3 +445,4 @@ def rt_file_mgmt(
         _log.info(f'No {subdir_name} files to copy')
 
     return 0
+

@@ -8,7 +8,7 @@ contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Coss
 contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Research Fish Biologist, Glider Pilot, Data Manager'
 creator_email: christian.reiss@noaa.gov
 creator_name: 'Christian Reiss'
-creator_url: https://www.fisheries.noaa.gov/about/antarctic-ecosystem-research-division-southwest-fisheries-science-center
+creator_url: https://www.fisheries.noaa.gov/about/southwest-fisheries-science-center
 format_version: IOOS_Glider_NetCDF_v2.0.nc
 glider_name: <glider name>
 glider_serial: <glider number>
@@ -26,7 +26,7 @@ keywords: 'AUVS > Autonomous Underwater Vehicles,
 keywords_vocabulary: GCMD Science Keywords
 license: 'This data may be redistributed and used without restriction. 
           Data provided as is with no expressed or implied assurance of quality assurance or quality control.'
-metadata_conventions: Unidata Dataset Discovery v1.0, COARDS, CF-1.6
+Metadata_Conventions: Unidata Dataset Discovery v1.0, COARDS, CF-1.8
 metadata_link: ' '
 naming_authority: gov.noaa.fisheries
 platform_type: 'Slocum Glider'
