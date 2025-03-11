@@ -11,7 +11,7 @@ creator_name: 'Christian Reiss'
 creator_url: https://www.fisheries.noaa.gov/about/southwest-fisheries-science-center
 format_version: IOOS_Glider_NetCDF_v2.0.nc
 glider_name: <glider name>
-glider_serial: <glider number>
+glider_serial: ''
 glider_model: 'Teledyne Webb Research Slocum G3 glider'
 glider_instrument_name: slocum
 institution: 'NOAA SWFSC Ecosystem Science Division'

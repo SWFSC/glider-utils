@@ -36,11 +36,6 @@ db_factory_cal = ['Factory - Initial', 'Factory - Recal']
 # Factory - recalib
 
 
-
-
-
-
-
 def instrument_attrs(instr_name, devices, x, y):
     """
     instr_name: str
@@ -138,7 +133,6 @@ def make_deployment_config(
         
         # Get metadata info  
         metadata["deployment_id"] = str(glider_deployment_id)
-        metadata["glider_serial"] = " "
 
         # Filter the Devices table for this deployment
         db_devices = vDeployment_Device[vDeployment_Device['Glider_Deployment_ID'] == glider_deployment_id]
@@ -202,10 +196,11 @@ def make_deployment_config(
         _log.info("no database URL provided, and thus no connection attempted")
 
     deployment_split = pathutils.split_deployment(deployment)
-
     metadata["deployment_name"] = deployment
     metadata["project"] = project
     metadata["glider_name"] = deployment_split[0]
+    metadata["glider_serial"] = ""
+
     if project == "FREEBYRD":
         metadata["sea_name"] = "Southern Ocean"
     elif project in ["ECOSWIM", "SANDIEGO", "REFOCUS"]: 
@@ -214,7 +209,7 @@ def make_deployment_config(
         metadata["sea_name"] = "<sea name>"
 
     deployment_yaml = {
-        "metadata" : metadata, 
+        "metadata" : dict(sorted(metadata.items(), key = lambda v: v[0].upper())), 
         "glider_devices" : instruments, 
         "netcdf_variables" : netcdf_vars, 
         "profile_variables" : prof_vars
@@ -223,6 +218,6 @@ def make_deployment_config(
     yaml_out = os.path.join(out_path, f"{deployment}-{mode}.yml")
     _log.info(f"writing {yaml_out}")
     with open(yaml_out, 'w') as file:
-        yaml.dump(deployment_yaml, file)
+        yaml.dump(deployment_yaml, file, sort_keys=False)
 
     return yaml_out
