@@ -21,7 +21,8 @@ _log = logging.getLogger(__name__)
 
 def binary_to_nc(
     deployment, project, mode, deployments_path, config_path, 
-    write_timeseries=False, write_gridded=False, write_profiles=False, 
+    write_timeseries=False, write_gridded=False, 
+    write_profiles=False, 
     write_imagery=False, imagery_path=None, 
     min_dt='2017-01-01', profile_force = False
 ): 
@@ -132,14 +133,14 @@ def binary_to_nc(
         #     raise FileNotFoundError(f'Not writing timeseries, and could not find {outname_tssci}')
         # _log.info(f'Reading in outname_tssci ({outname_tssci})')
 
-    #--------------------------------------------
-    # TODO: Profiles
-    if write_profiles:
-        _log.info(f'Generating profile nc files')
-        esdpyglider.esd_extract_timeseries_profiles(
-            outname_tssci, paths["profdir"], deploymentyaml, profile_force=False)
-    else:
-        _log.info(f'Not writing profiles')
+    # #--------------------------------------------
+    # # TODO: Profiles
+    # if write_profiles:
+    #     _log.info(f'Generating profile nc files')
+    #     esdpyglider.esd_extract_timeseries_profiles(
+    #         outname_tssci, paths["profdir"], deploymentyaml, profile_force=False)
+    # else:
+    #     _log.info(f'Not writing profiles')
 
 
     #--------------------------------------------
@@ -588,3 +589,181 @@ def imagery_timeseries(ds_eng, ds_sci, imagery_dir, ext = 'jpg'):
     df.to_csv(csv_file, index=False)
 
     return df
+
+
+
+def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
+    """
+    ESD's version of extract_timeseries_profiles, from:
+    https://github.com/c-proof/pyglider/blob/main/pyglider/ncprocess.py#L19
+    
+    Extract and save each profile from a timeseries netCDF.
+
+    Parameters
+    ----------
+    inname : str or Path
+        netcdf file to break into profiles
+
+    outdir : str or Path
+        directory to place profiles
+
+    deploymentyaml : str or Path
+        location of deployment yaml file for the netCDF file.  This should
+        be the same yaml file that was used to make the timeseries file.
+
+    force : bool, default False
+        Force an overwite even if profile netcdf already exists
+    """
+    try:
+        os.mkdir(outdir)
+    except FileExistsError:
+        pass
+
+    deployment = utils._get_deployment(deploymentyaml)
+    deployment["glider_serial"] = "" #ESD doesn't use glider serial number as part of name
+
+    # ESD: include all instrument vars
+    
+
+    meta = deployment['metadata']
+    with xr.open_dataset(inname) as ds:
+        _log.info('Extracting profiles: opening %s', inname)
+        profiles = np.unique(ds.profile_index)
+        profiles = [p for p in profiles if (~np.isnan(p) and not (p % 1) and (p > 0))]
+        for p in profiles:
+            ind = np.where(ds.profile_index == p)[0]
+            dss = ds.isel(time=ind)
+            outname = outdir + '/' + utils.get_file_id(dss) + '.nc'
+            _log.info('Checking %s', outname)
+            if force or (not os.path.exists(outname)):
+                # this is the id for the whole file, not just this profile..
+                dss['trajectory'] = utils.get_file_id(ds).encode()
+                trajlen = len(utils.get_file_id(ds).encode())
+                dss['trajectory'].attrs['cf_role'] = 'trajectory_id'
+                dss['trajectory'].attrs['comment'] = (
+                    'A trajectory is a single'
+                    'deployment of a glider and may span multiple data files.'
+                )
+                dss['trajectory'].attrs['long_name'] = 'Trajectory/Deployment Name'
+
+                # profile-averaged variables....
+                profile_meta = deployment['profile_variables']
+                if 'water_velocity_eastward' in dss.keys():
+                    dss['u'] = dss.water_velocity_eastward.mean()
+                    dss['u'].attrs = profile_meta['u']
+
+                    dss['v'] = dss.water_velocity_northward.mean()
+                    dss['v'].attrs = profile_meta['v']
+                elif 'u' in profile_meta:
+                    dss['u'] = profile_meta['u'].get('_FillValue', np.nan)
+                    dss['u'].attrs = profile_meta['u']
+
+                    dss['v'] = profile_meta['v'].get('_FillValue', np.nan)
+                    dss['v'].attrs = profile_meta['v']
+                else:
+                    dss['u'] = np.nan
+                    dss['v'] = np.nan
+
+                dss['profile_id'] = np.int32(p)
+                dss['profile_id'].attrs = profile_meta['profile_id']
+                if '_FillValue' not in dss['profile_id'].attrs:
+                    dss['profile_id'].attrs['_FillValue'] = -1
+                dss['profile_id'].attrs['valid_min'] = np.int32(
+                    dss['profile_id'].attrs['valid_min']
+                )
+                dss['profile_id'].attrs['valid_max'] = np.int32(
+                    dss['profile_id'].attrs['valid_max']
+                )
+
+                dss['profile_time'] = dss.time.mean()
+                dss['profile_time'].attrs = profile_meta['profile_time']
+                # remove units so they can be encoded later:
+                try:
+                    del dss.profile_time.attrs['units']
+                    del dss.profile_time.attrs['calendar']
+                except KeyError:
+                    pass
+                dss['profile_lon'] = dss.longitude.mean()
+                dss['profile_lon'].attrs = profile_meta['profile_lon']
+                dss['profile_lat'] = dss.latitude.mean()
+                dss['profile_lat'].attrs = profile_meta['profile_lat']
+
+                dss['lat'] = dss['latitude']
+                dss['lon'] = dss['longitude']
+                dss['platform'] = np.int32(1)
+                comment = meta['glider_model'] + ' operated by ' + meta['institution']
+                dss['platform'].attrs['comment'] = comment
+                dss['platform'].attrs['id'] = (
+                    meta['glider_name'] + meta['glider_serial']
+                )
+                dss['platform'].attrs['instrument'] = 'instrument_ctd'
+                dss['platform'].attrs['long_name'] = (
+                    meta['glider_model'] + dss['platform'].attrs['id']
+                )
+                dss['platform'].attrs['type'] = 'platform'
+                dss['platform'].attrs['wmo_id'] = meta['wmo_id']
+                if '_FillValue' not in dss['platform'].attrs:
+                    dss['platform'].attrs['_FillValue'] = -1
+
+                dss['lat_uv'] = np.nan
+                dss['lat_uv'].attrs = profile_meta['lat_uv']
+                dss['lon_uv'] = np.nan
+                dss['lon_uv'].attrs = profile_meta['lon_uv']
+                dss['time_uv'] = np.nan
+                dss['time_uv'].attrs = profile_meta['time_uv']
+
+                dss['instrument_ctd'] = np.int32(1.0)
+                dss['instrument_ctd'].attrs = profile_meta['instrument_ctd']
+                if '_FillValue' not in dss['instrument_ctd'].attrs:
+                    dss['instrument_ctd'].attrs['_FillValue'] = -1
+
+                dss.attrs['date_modified'] = str(np.datetime64('now')) + 'Z'
+
+                # ancillary variables: link and create with values of 2.  If
+                # we dont' want them all 2, then create these variables in the
+                # time series
+                to_fill = [
+                    'temperature',
+                    'pressure',
+                    'conductivity',
+                    'salinity',
+                    'density',
+                    'lon',
+                    'lat',
+                    'depth',
+                ]
+                for name in to_fill:
+                    qcname = name + '_qc'
+                    dss[name].attrs['ancillary_variables'] = qcname
+                    if qcname not in dss.keys():
+                        dss[qcname] = ('time', 2 * np.ones(len(dss[name]), np.int8))
+                        dss[qcname].attrs = utils.fill_required_qcattrs({}, name)
+                        # 2 is "not eval"
+                # outname = outdir + '/' + utils.get_file_id(dss) + '.nc'
+                _log.info('Writing %s', outname)
+                timeunits = 'seconds since 1970-01-01T00:00:00Z'
+                timecalendar = 'gregorian'
+                try:
+                    del dss.profile_time.attrs['_FillValue']
+                    del dss.profile_time.attrs['units']
+                except KeyError:
+                    pass
+                dss.to_netcdf(
+                    outname,
+                    encoding={
+                        'time': {
+                            'units': timeunits,
+                            'calendar': timecalendar,
+                            'dtype': 'float64',
+                        },
+                        'profile_time': {
+                            'units': timeunits,
+                            '_FillValue': -99999.0,
+                            'dtype': 'float64',
+                        },
+                    },
+                )
+
+                # add traj_strlen using bare ntcdf to make IOOS happy
+                with netCDF4.Dataset(outname, 'r+') as nc:
+                    nc.renameDimension('string%d' % trajlen, 'traj_strlen')
