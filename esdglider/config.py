@@ -71,16 +71,13 @@ def instrument_attrs(instr_name, devices, x, y):
 
 
 def make_deployment_config(
-    deployment: str, project: str, mode: str, out_path: str, 
-    db_url=None
+    deployment: str, project: str, out_path: str, db_url=None
 ):
     """
     deployment : str
         name of the glider deployment. Eg, amlr01-20200101
     project : str
         deployment project name, eg FREEBYRD
-    mode : str
-        mode for data being generated; either rt or delayed
     out_path : str
         path to which to write the output yaml file
     db_url : str
@@ -215,7 +212,7 @@ def make_deployment_config(
         "profile_variables" : prof_vars
     }
 
-    yaml_out = os.path.join(out_path, f"{deployment}-{mode}.yml")
+    yaml_out = os.path.join(out_path, f"{deployment}.yml")
     _log.info(f"writing {yaml_out}")
     with open(yaml_out, 'w') as file:
         yaml.dump(deployment_yaml, file, sort_keys=False)

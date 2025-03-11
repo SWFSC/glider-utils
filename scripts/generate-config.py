@@ -11,6 +11,9 @@ from a local computer to access the datbase
 sqlalchemy engine. It should not be committed to GitHub. 
 """
 
+path_config = "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-configs"
+
+
 if __name__ == "__main__":
     logging.basicConfig(
         format='%(module)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]', 
@@ -21,7 +24,6 @@ if __name__ == "__main__":
         conn_string = f.read()
 
     config.make_deployment_config(
-        # "calanus-20241019", "ECOSWIM", "delayed", 
-        "amlr01-20181216", "FREEBYRD", "delayed", 
-        "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-configs", 
-        conn_string)
+        # "calanus-20241019", "ECOSWIM", 
+        "amlr01-20181216", "FREEBYRD", 
+        path_config, conn_string)

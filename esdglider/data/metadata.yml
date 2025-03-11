@@ -3,7 +3,7 @@
 # Created by pyglider: history, id, processing_level, title
 
 acknowledgment: 'This work was supported by funding from NOAA.'
-comment: ''  
+comment: ' '  
 contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Cossio, Caleb Flaim, Jacob Partida, Eric Bjorkstedt, Jason C. Clarke, Samuel Woodman'
 contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Research Fish Biologist, Glider Pilot, Data Manager'
 creator_email: christian.reiss@noaa.gov
@@ -11,7 +11,7 @@ creator_name: 'Christian Reiss'
 creator_url: https://www.fisheries.noaa.gov/about/southwest-fisheries-science-center
 format_version: IOOS_Glider_NetCDF_v2.0.nc
 glider_name: <glider name>
-glider_serial: ' '
+glider_serial: ''
 glider_model: 'Teledyne Webb Research Slocum G3 glider'
 glider_instrument_name: slocum
 institution: 'NOAA SWFSC Ecosystem Science Division'

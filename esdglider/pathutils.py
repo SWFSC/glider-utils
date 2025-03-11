@@ -135,8 +135,7 @@ def esd_paths(project, deployment, mode, deployments_path, config_path):
 
     cacdir = os.path.join(deployments_path, 'cache')
     binarydir = os.path.join(glider_path, 'data', 'binary', mode)
-    deploymentyaml = os.path.join(config_path, 'deployment-config', 
-        f"{deployment}-{mode}.yml")
+    deploymentyaml = os.path.join(config_path, f"{deployment}.yml")
     # deploymentyaml = os.path.join(glider_path, 'config', 
     #     f"{deployment_mode}.yml")
     engyaml = get_engyaml_path()
@@ -148,7 +147,6 @@ def esd_paths(project, deployment, mode, deployments_path, config_path):
     profdir = os.path.join(ncdir, 'ngdac', mode)
     griddir = os.path.join(ncdir, 'gridded')
 
-    # return cacdir, binarydir, deploymentyaml, tsdir, profdir, griddir
     return {
         "cacdir": cacdir,
         "binarydir": binarydir,
