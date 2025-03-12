@@ -146,6 +146,7 @@ def esd_paths(project, deployment, mode, deployments_path, config_path):
     _log.info(f"tsdir: {tsdir}")
     profdir = os.path.join(ncdir, 'ngdac', mode)
     griddir = os.path.join(ncdir, 'gridded')
+    plotdir = os.path.join(glider_path, 'data', 'plots')
 
     return {
         "cacdir": cacdir,
@@ -154,7 +155,8 @@ def esd_paths(project, deployment, mode, deployments_path, config_path):
         "engyaml": engyaml,
         "tsdir": tsdir,
         "profdir": profdir,
-        "griddir": griddir
+        "griddir": griddir, 
+        "plotdir": plotdir
     }
 
 
