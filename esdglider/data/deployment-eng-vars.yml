@@ -8,7 +8,6 @@ netcdf_variables:
     units:         seconds since 1970-01-01T00:00:00Z
     axis:          T
     observation_type: "measured"
-    coordinates:   time depth latitude longitude
 
   latitude:
     source:  m_lat
@@ -16,14 +15,12 @@ netcdf_variables:
     standard_name: latitude
     units:        degrees_north
     axis:         Y
-    coordinates:   time depth latitude longitude
-    conversion:   nmea2deg
     comment:     "Estimated between surface fixes"
     observation_type: measured
     platform:     platform
     reference:    WGS84
-    valid_max:    "90.0"
-    valid_min:    "-90.0"
+    valid_max:    90.0
+    valid_min:    -90.0
     coordinate_reference_frame:  urn:ogc:crs:EPSG::4326
 
   longitude:
@@ -32,14 +29,12 @@ netcdf_variables:
     standard_name: longitude
     units:        degrees_east
     axis:         X
-    coordinates:  time depth latitude longitude
-    conversion:   nmea2deg
     comment:     "Estimated between surface fixes"
     observation_type: measured
     platform:     platform
     reference:    WGS84
-    valid_max:    "180.0"
-    valid_min:    "-180.0"
+    valid_max:    180.0
+    valid_min:    -180.0
     coordinate_reference_frame:  urn:ogc:crs:EPSG::4326
 
   depth_measured:
@@ -48,34 +43,29 @@ netcdf_variables:
     standard_name: m_depth
     observation_type: measured
     units:        m
-    coordinates:  time 
     
   heading:
     source:  m_heading
     long_name:    glider heading angle
     standard_name: platform_orientation
     units:        rad
-    coordinates:  time depth latitude longitude
 
   pitch:
     source:  m_pitch
     long_name:    glider pitch angle
     standard_name: platform_pitch_angle
     units:        rad
-    coordinates:  time depth latitude longitude
 
   roll:
     source:  m_roll
     long_name:    glider roll angle
     standard_name: platform_roll_angle
     units:        rad
-    coordinates:  time depth latitude longitude
 
   total_num_inflections:
     source: m_tot_num_inflections
     long_name:    glider total number inflections
     units:        nodim
-    coordinates:  time depth latitude longitude
 
   # profile info:
   waypoint_latitude:
@@ -83,14 +73,12 @@ netcdf_variables:
     long_name:    waypoint latitude
     standard_name: latitude
     units:        degree_north
-    coordinates:  time depth latitude longitude
 
   waypoint_longitude:
     source:  c_wpt_lon
     long_name:    waypoint longitude
     standard_name: longitude
     units:        degree_east
-    coordinates:  time depth latitude longitude
 
   # data parameters - required for pyglider processing
   conductivity:
@@ -98,45 +86,42 @@ netcdf_variables:
     long_name:    water conductivity
     standard_name: sea_water_electrical_conductivity
     units:        S m-1
-    coordinates:  time depth latitude longitude
     instrument:    instrument_ctd
-    valid_min:    "0."
-    valid_max:    "10."
+    valid_min:    0.
+    valid_max:    10.
     observation_type: "measured"
-    accuracy:      "0.0003"
-    precision:     "0.0001"
-    resolution:     "0.00002"
+    accuracy:      0.0003
+    precision:     0.0001
+    resolution:    0.00002
 
   temperature:
     source:  sci_water_temp
     long_name:    water temperature
     standard_name: sea_water_temperature
     units:        Celsius
-    coordinates:  time depth latitude longitude
     instrument:   instrument_ctd
-    valid_min:    "-5"
-    valid_max:    "50"
+    valid_min:    -5
+    valid_max:    50
     observation_type: "measured"
-    accuracy:      "0.002"
-    precision:     "0.001"
-    resolution:    "0.0002"
+    accuracy:      0.002
+    precision:     0.001
+    resolution:    0.0002
 
   pressure:
     source:  sci_water_pressure
     long_name:    water pressure
     standard_name:  sea_water_pressure
     units:        dbar
-    coordinates:  time depth latitude longitude
     conversion:   bar2dbar
-    valid_min:    "0"
-    valid_max:    "2000"
+    valid_min:    0
+    valid_max:    2000
     positive:      "down"
     reference_datum:  "sea-surface"
     instrument:     "instrument_ctd"
     observation_type: "measured"
-    accuracy:         "1"
-    precision:        "2"
-    resolution:       "0.02"
+    accuracy:         1
+    precision:        2
+    resolution:       0.02
     comment:          "ctd pressure sensor"
 
   commanded_oil_volume:

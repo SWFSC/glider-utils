@@ -7,7 +7,6 @@ time:
   units:         seconds since 1970-01-01T00:00:00Z
   axis:          T
   observation_type: "measured"
-  coordinates:   time depth latitude longitude
 
 latitude:
   source:  m_lat
@@ -15,13 +14,12 @@ latitude:
   standard_name: latitude
   units:        degrees_north
   axis:         Y
-  coordinates:   time depth latitude longitude
   comment:     "Estimated between surface fixes"
   observation_type: measured
   platform:     platform
   reference:    WGS84
-  valid_max:    "90.0"
-  valid_min:    "-90.0"
+  valid_max:    90.0
+  valid_min:    -90.0
   coordinate_reference_frame:  urn:ogc:crs:EPSG::4326
 
 longitude:
@@ -30,13 +28,12 @@ longitude:
   standard_name: longitude
   units:        degrees_east
   axis:         X
-  coordinates:  time depth latitude longitude
   comment:     "Estimated between surface fixes"
   observation_type: measured
   platform:     platform
   reference:    WGS84
-  valid_max:    "180.0"
-  valid_min:    "-180.0"
+  valid_max:    180.0
+  valid_min:    -180.0
   coordinate_reference_frame:  urn:ogc:crs:EPSG::4326
 
 heading:
@@ -44,21 +41,18 @@ heading:
   long_name:    glider heading angle
   standard_name: platform_orientation
   units:        rad
-  coordinates:  time depth latitude longitude
 
 pitch:
   source:  m_pitch
   long_name:    glider pitch angle
   standard_name: platform_pitch_angle
   units:        rad
-  coordinates:  time depth latitude longitude
 
 roll:
   source:  m_roll
   long_name:    glider roll angle
   standard_name: platform_roll_angle
   units:        rad
-  coordinates:  time depth latitude longitude
 
 # profile info:
 waypoint_latitude:
@@ -66,14 +60,12 @@ waypoint_latitude:
   long_name:    waypoint latitude
   standard_name: latitude
   units:        degree_north
-  coordinates:  time depth latitude longitude
 
 waypoint_longitude:
   source:  c_wpt_lon
   long_name:    waypoint longitude
   standard_name: longitude
   units:        degree_east
-  coordinates:  time depth latitude longitude
 
 # data parameters
 conductivity:
@@ -81,45 +73,42 @@ conductivity:
   long_name:    water conductivity
   standard_name: sea_water_electrical_conductivity
   units:        S m-1
-  coordinates:  time depth latitude longitude
   instrument:    instrument_ctd
-  valid_min:    "0."
-  valid_max:    "10."
+  valid_min:    0.
+  valid_max:    10.
   observation_type: "measured"
-  accuracy:      "0.0003"
-  precision:     "0.0001"
-  resolution:     "0.00002"
+  accuracy:      0.0003
+  precision:     0.0001
+  resolution:    0.00002
 
 temperature:
   source:  sci_water_temp
   long_name:    water temperature
   standard_name: sea_water_temperature
   units:        Celsius
-  coordinates:  time depth latitude longitude
   instrument:   instrument_ctd
-  valid_min:    "-5"
-  valid_max:    "50"
+  valid_min:    -5
+  valid_max:    50
   observation_type: "measured"
-  accuracy:      "0.002"
-  precision:     "0.001"
-  resolution:    "0.0002"
+  accuracy:      0.002
+  precision:     0.001
+  resolution:    0.0002
 
 pressure:
   source:  sci_water_pressure
   long_name:    water pressure
   standard_name:  sea_water_pressure
   units:        dbar
-  coordinates:  time depth latitude longitude
   conversion:   bar2dbar
-  valid_min:    "0"
-  valid_max:    "2000"
+  valid_min:    0
+  valid_max:    2000
   positive:      "down"
   reference_datum:  "sea-surface"
   instrument:     "instrument_ctd"
   observation_type: "measured"
-  accuracy:         "1"
-  precision:        "2"
-  resolution:       "0.02"
+  accuracy:         1
+  precision:        2
+  resolution:       0.02
   comment:          "ctd pressure sensor"
 
 
@@ -129,22 +118,18 @@ chlorophyll:
   long_name:    chlorophyll
   standard_name: concentration_of_chlorophyll_in_sea_water
   units:        mg m-3
-  coordinates:  time depth latitude longitude
   instrument:   "instrument_flbbcd"
-
 
 cdom:
   source:  sci_flbbcd_cdom_units
   long_name:    CDOM
   units:        ppb
-  coordinates:  time depth latitude longitude
   instrument:   "instrument_flbbcd"
 
 backscatter_700:
   source:  sci_flbbcd_bb_units
   long_name:    700 nm wavelength backscatter
   units:         "1"
-  coordinates:  time depth latitude longitude
   instrument:   "instrument_flbbcd"
 
 # Oxygen
@@ -153,23 +138,20 @@ oxygen_concentration:
   long_name:    oxygen concentration
   standard_name: mole_concentration_of_dissolved_molecular_oxygen_in_sea_water
   units:        umol l-1
-  coordinates:   time depth latitude longitude
   instrument:   "instrument_oxygen"
 
 # derived water speed:
-#   water_velocity_eastward:
-#     source:    m_final_water_vx
-#     long_name:      mean eastward water velocity in segment
-#     standard_name:  barotropic_eastward_sea_water_velocity
-#     units:          m s-1
-#     coordinates:   time depth latitude longitude
+water_velocity_eastward:
+  source:    m_final_water_vx
+  long_name:      mean eastward water velocity in segment
+  standard_name:  barotropic_eastward_sea_water_velocity
+  units:          m s-1
 
-#   water_velocity_northward:
-#     source:    m_final_water_vy
-#     long_name:      mean northward water velocity in segment
-#     standard_name:  barotropic_northward_sea_water_velocity
-#     units:          m s-1
-#     coordinates:   time depth latitude longitude
+water_velocity_northward:
+  source:    m_final_water_vy
+  long_name:      mean northward water velocity in segment
+  standard_name:  barotropic_northward_sea_water_velocity
+  units:          m s-1
 
 # TODO: add glidercam var(s)
 # TODO: add shadowgraph var(s)

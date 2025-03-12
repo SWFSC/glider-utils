@@ -68,7 +68,7 @@ def prof():
         project, deployment, mode, deployments_path, config_path)
     
     return process.ngdac_profiles(
-        outname_tssci, paths['profdir'], paths['deploymentyaml'])
+        outname_tssci, paths['profdir'], paths['deploymentyaml'], force=True)
 
 def yaml():
     with open("db/glider-db-prod.txt", "r") as f:
@@ -90,10 +90,11 @@ if __name__ == "__main__":
     #                 level=logging.INFO,
     #                 datefmt='%Y-%m-%d %H:%M:%S')
 
-    gcp.gcs_mount_bucket("amlr-gliders-deployments-dev", deployments_path, 
-                         ro=False)
+    gcp.gcs_mount_bucket(
+        "amlr-gliders-deployments-dev", deployments_path, ro=False)
     
     # scrape_sfmc()
-    outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
     # yaml()
-    # prof()
+    # outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
+    prof()
+

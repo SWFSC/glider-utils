@@ -15,10 +15,10 @@ file path operations
 def get_engyaml_path():
     """
     Get and return the path to the yaml with engineering NetCDF variables
-    Returns the path, so as to ber able to pass to binary_to_timeseries
+    Returns the path, so as to be able to pass to binary_to_timeseries
     """
 
-    ref = files('esdglider.data') / 'netcdf-variables-eng.yml'
+    ref = files('esdglider.data') / 'deployment-eng-vars.yml'
     with as_file(ref) as path:
         return str(path)
 
