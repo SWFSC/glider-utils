@@ -5,6 +5,7 @@ dependencies:
   - python=3.12
   - pip
   - ipykernel #for running things in GCP Jupyter notebooks  
+  - notebook #For exporting notebooks as html
   - google-crc32c
   - google-cloud-secret-manager
 
@@ -19,6 +20,9 @@ dependencies:
 
   - GliderTools
   - cmocean
+
+  # To read tifs using xarray
+  # - rioxarray
 
   - pip:
     - dbdreader
