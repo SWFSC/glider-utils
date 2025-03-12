@@ -68,7 +68,8 @@ def prof():
         project, deployment, mode, deployments_path, config_path)
     
     return process.ngdac_profiles(
-        outname_tssci, paths['profdir'], paths['deploymentyaml'], force=True)
+        outname_tssci, paths['profdir'], paths['deploymentyaml'], 
+        force=True)
 
 def yaml():
     with open("db/glider-db-prod.txt", "r") as f:
@@ -97,4 +98,5 @@ if __name__ == "__main__":
     # yaml()
     # outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
     prof()
+
 

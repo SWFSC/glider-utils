@@ -158,7 +158,7 @@ def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
     if not (ds_type in ['sci', 'eng']):
         raise ValueError('ds_type must be either sci or eng')
 
-    # ds = ds.sel(time=slice(min_dt, None))
+    # For out of range or nan time/lat/lon, drop rows
     num_orig = len(ds.time)
     ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
     if (num_orig-len(ds.time)) > 0:
@@ -173,13 +173,8 @@ def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
     if (num_orig-len(ds.time)) > 0:
         _log.info(f"Dropped {num_orig - len(ds.time)} nan " + 
                   "or out of range lat/lons")
-
-    # vars_to_check = ['conductivity', 'temperature', 'pressure', 'chlorophyll', 
-    #                  'cdom', 'backscatter_700', 'salinity', 
-    #                  'potential_density', 'density', 'potential_temperature'] 
-    # 'oxygen_concentration',
     
-    
+    # For science variables, change out of range values to nan
     if ds_type == "sci":
         drop_values = {
             'conductivity':[0, 60], 
