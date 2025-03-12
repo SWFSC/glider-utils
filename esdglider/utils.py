@@ -159,37 +159,51 @@ def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
         raise ValueError('ds_type must be either sci or eng')
 
     # ds = ds.sel(time=slice(min_dt, None))
-    num_times_orig = len(ds.time)
+    num_orig = len(ds.time)
     ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
-    _log.info(f"Checking for times that are either nan or before {min_dt}")
-    _log.info(f"Dropped {num_times_orig - len(ds.time)} times")
+    if (num_orig-len(ds.time)) > 0:
+        _log.info(f"Dropped {num_orig - len(ds.time)} times " +
+                  f"that were either nan or before {min_dt}")
+
+    num_orig = len(ds.time)
+    ll_good = (
+        (ds.longitude >= -180) & (ds.longitude <= 180) 
+        & (ds.latitude >= -90) & (ds.latitude <= 90))
+    ds = ds.where(ll_good, drop=True)
+    if (num_orig-len(ds.time)) > 0:
+        _log.info(f"Dropped {num_orig - len(ds.time)} nan " + 
+                  "or out of range lat/lons")
 
     # vars_to_check = ['conductivity', 'temperature', 'pressure', 'chlorophyll', 
     #                  'cdom', 'backscatter_700', 'salinity', 
     #                  'potential_density', 'density', 'potential_temperature'] 
     # 'oxygen_concentration',
-    drop_values = {'conductivity':[0, 60], 
-                   'temperature':[-5, 100], 
-                   'pressure':[-2, 1500], 
-                   'chlorophyll':[0, 30], 
-                   'cdom':[0, 30], 
-                   'backscatter_700':[0, 5],  
-                   'salinity':[0, 50], 
-                   'potential_density':[900, 1050], 
-                   'density':[1000, 1050], 
-                   'potential_temperature':[-5, 100]} 
-    # 'oxygen_concentration':[-100, 500],
+    
     
     if ds_type == "sci":
+        drop_values = {
+            'conductivity':[0, 60], 
+            'temperature':[-5, 100], 
+            'pressure':[-2, 1500], 
+            'chlorophyll':[0, 30], 
+            'cdom':[0, 30], 
+            'backscatter_700':[0, 5],  
+            # 'oxygen_concentration':[-100, 500],
+            'salinity':[0, 50], 
+            'potential_density':[900, 1050], 
+            'density':[1000, 1050], 
+            'potential_temperature':[-5, 100]
+        } 
         for var, value in drop_values.items():
             if not var in list(ds.keys()):
                 _log.debug(f"{var} not present in ds - skipping drop_values check")
                 continue
             num_orig = len(ds[var])
-            ds = ds.where((ds[var] >= value[0]) & (ds[var] <= value[1]), 
-                          drop=False)
-            _log.info(f"Changed {num_orig - len(ds[var])} {var} values " +
-                      f"outside range [{value[0]}, {value[1]}] to nan")
+            good = (ds[var] >= value[0]) & (ds[var] <= value[1])
+            ds[var] = ds[var].where(good, drop=False)
+            if num_orig - len(ds[var]) > 0:
+                _log.info(f"Changed {num_orig - len(ds[var])} {var} values " +
+                        f"outside range [{value[0]}, {value[1]}] to nan")
 
             # num_orig = len(ds[var])
             # ds = ds.where(ds[var] <= value[1], drop=False)
