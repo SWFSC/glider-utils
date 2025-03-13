@@ -242,6 +242,10 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
         _log.warning(f"There are {num_nan} nan depth values")
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
+    # Reorder data variables
+    new_start = ['latitude', 'longitude', 'depth', 'profile_index']
+    ds = utils.data_var_reorder(ds, new_start)
+
     # Update comment
     if not ('comment' in ds.attrs): 
         ds.attrs["comment"] = "engineering-only time series"
@@ -274,8 +278,14 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     ds = utils.drop_bogus(ds, "sci", min_dt)
 
     # Calculate profiles, using the CTD-derived depth values
-    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
     # TODO: update this to play nice with eng timeseries for rt data?
+    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+
+    # Reorder data variables
+    new_start = ['latitude', 'longitude', 'depth', 'profile_index', 
+                 'conductivity', 'temperature', 'pressure', 'salinity', 
+                 'density', 'potential_temperature', 'potential_density']
+    ds = utils.data_var_reorder(ds, new_start)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
 

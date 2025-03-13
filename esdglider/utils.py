@@ -248,3 +248,30 @@ def esd_file_id(ds):
         + dt.item().strftime('%Y%m%dT%H%M')
     )
     return id
+
+
+def data_var_reorder(ds, new_start):
+    """
+     Reorder the data variables of a dataset
+
+     new_start is a list of the data variable names from ds that 
+     will be moved to 'first' in the dataset
+
+     Returns ds, with reordered data variables
+    """
+
+    ds_vars_orig = list(ds.data_vars)
+    if not all([i in ds_vars_orig for i in new_start]):
+        _log.error(f"new_start: {new_start}")
+        _log.error(f"ds.data_vars: {ds_vars_orig}")
+        raise ValueError("All values of new_start must be in ds.data_vars")
+    
+    new_order = new_start + [i for i in ds.data_vars if i not in new_start]
+    ds = ds[new_order]
+    
+    # Double check that all values are present in new ds
+    if not (all([j in ds_vars_orig for j in new_order] + 
+                [j in new_order for j in ds_vars_orig])):
+        raise ValueError("Error reordering data variables")
+
+    return ds
