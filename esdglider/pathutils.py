@@ -102,11 +102,36 @@ def mkdir_pass(outdir):
 
 def esd_paths(project, deployment, mode, deployments_path, config_path):
     """
-    See arg documentation in process.binary_to_timeseries
-
-    Return paths needed by the binary_to_nc script.
-    Paths as described here:
+    Return a dictionary of paths for use by other esdglider functions.
+    These paths follow the directory structure outlined here:
     https://swfsc.github.io/glider-lab-manual/content/data-management.html
+
+    -----
+    Parameters
+
+    project : str
+        The project name of the deployment. 
+        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
+        
+    deployment : str
+        The name of the glider deployment. Eg, amlr01-20210101
+
+    mode : str
+        Mode of the glider dat being processed. 
+        Must be either 'rt', for real-time, or 'delayed
+        
+    deployments_path : str
+        The path to the top-level folder of the glider data. 
+        This is inteded to be the path to the mounted glider deployments bucket
+        
+    config_path : str
+        The path to the directory that contains the yaml with the
+        deployment config
+    
+    -----
+    Returns:
+    A dictionary with the ESD paths
+    
     """
     prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']    
     if not os.path.isdir(deployments_path):
@@ -115,10 +140,9 @@ def esd_paths(project, deployment, mode, deployments_path, config_path):
     else:
         dir_expected = prj_list + ['cache']
         if not all(x in os.listdir(deployments_path) for x in dir_expected):
-            _log.error(f"The expected folders ({', '.join(dir_expected)}) " + 
+            _log.warning(f"The expected folders ({', '.join(dir_expected)}) " + 
                 f'were not found in the provided directory ({deployments_path}). ' + 
                 'Did you provide the right path via deployments_path?')
-            return 
 
     year = year_path(project, deployment)
 

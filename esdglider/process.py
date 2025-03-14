@@ -19,23 +19,48 @@ _log = logging.getLogger(__name__)
 
 
 def binary_to_nc(
-    deployment, project, mode, deployments_path, config_path, 
-    write_timeseries=False, write_gridded=False, 
+    deployment, mode, paths, 
+    # deployments_path, config_path, 
+    write_timeseries=True, write_gridded=True, 
     min_dt='2017-01-01'
 ): 
                 
     """
-    Process raw ESD glider data...
+    Process binary ESD glider data to timeseries and/or gridded netCDF files
 
     The contents of this function used to just be in scripts/binary_to_nc.py.
     They were moved to this structure for easier development and debugging
 
     Parameters
     ----------
-    deployment :
-    ...
-    min_dt : see utils.drop_bogus
+    deployment : str
+        The name of the glider deployment. Eg, amlr01-20210101
 
+    mode : str
+        Mode of the glider dat being processed. 
+        Must be either 'rt', for real-time, or 'delayed
+
+    paths : dict
+        A dictionary of file/directory paths for various processing steps. 
+        Intended to be the output of esdglider.pathutils.esd_paths()
+        Must contain the following key/value pairs: 
+            "cacdir": cacdir,
+            "binarydir": binarydir,
+            "deploymentyaml": deploymentyaml,
+            "engyaml": engyaml,
+            "tsdir": tsdir,
+            "profdir": profdir,
+            "griddir": griddir, 
+            "plotdir": plotdir
+
+    write_timeseries, write_gridded : bool
+        Should the timeseries and gridded, respectively, 
+        xarray DataSets be both created and written to files?
+        Note: if True then already-existing files will be clobbered
+    
+    min_dt : datetime64, or object that can be converted to datetime64
+        See utils.drop_bogus; default is '2017-01-01'.
+        All timestamps from before this value will be dropped
 
     Returns
     ----------
@@ -52,9 +77,9 @@ def binary_to_nc(
         binary_search = '*.[S|T|s|t]bd'
 
     #--------------------------------------------
-    # Check/make file and directory paths
-    paths = pathutils.esd_paths(
-        project, deployment, mode, deployments_path, config_path)
+    # Check file and directory paths
+    # paths = pathutils.esd_paths(
+    #     project, deployment, mode, deployments_path, config_path)
     tsdir = paths["tsdir"]
     deploymentyaml = paths["deploymentyaml"]    
 
@@ -82,7 +107,7 @@ def binary_to_nc(
         if not os.path.isfile(deploymentyaml):
             raise FileNotFoundError(f'Could not find {deploymentyaml}')
 
-        # Engineering
+        # Engineering - uses m_depth as time base
         _log.info(f'Generating engineering timeseries')
         outname_tseng = slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
@@ -91,8 +116,6 @@ def binary_to_nc(
             fnamesuffix=f"-{mode}-eng", 
             time_base="m_depth", 
             profile_filt_time = None)
-            # profile_filt_time=profile_filt_time, 
-            # profile_min_time=profile_min_time, maxgap=maxgap)
 
         _log.info(f'Post-processing engineering timeseries')
         tseng = xr.load_dataset(outname_tseng)
@@ -101,9 +124,7 @@ def binary_to_nc(
         tseng.to_netcdf(outname_tseng)
         _log.info(f'Finished eng timeseries postproc: {outname_tseng}')
 
-        # Science
-        # Note - uses sci_water_temp as time_base sensor
-        # TODO: make script to check that we aren't shooting ourselves in foot using CTD as base
+        # Science - uses sci_water_temp as time_base sensor
         _log.info(f'Generating science timeseries')
         outname_tssci = slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
@@ -112,8 +133,6 @@ def binary_to_nc(
             fnamesuffix=f"-{mode}-sci", 
             time_base='sci_water_temp', 
             profile_filt_time = None)
-            # profile_filt_time=profile_filt_time, 
-            # profile_min_time=profile_min_time, maxgap=maxgap)
 
         _log.info(f'Post-processing science timeseries')
         tssci = xr.load_dataset(outname_tssci)
@@ -133,10 +152,7 @@ def binary_to_nc(
         _log.info(f'Not writing timeseries')
         outname_tseng = os.path.join(tsdir, f"{deployment}-{mode}-eng.nc")
         outname_tssci = os.path.join(tsdir, f"{deployment}-{mode}-sci.nc")
-        # if not os.path.isfile(outname_tssci):
-        #     raise FileNotFoundError(f'Not writing timeseries, and could not find {outname_tssci}')
-        # _log.info(f'Reading in outname_tssci ({outname_tssci})')
-
+        
     #--------------------------------------------
     # Gridded data, 1m and 5m
     # TODO: filter to match SOCIB?
@@ -155,9 +171,9 @@ def binary_to_nc(
             dz = 5, fnamesuffix=f"-{mode}-5m")
 
     else:
+        _log.info(f'Not writing gridded data')
         outname_1m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-1m.nc")
         outname_5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
-        _log.info(f'Not writing gridded data')
 
     #--------------------------------------------
     # Write imagery metadata file
@@ -214,7 +230,7 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
 
     ds : `xarray.Dataset`
         engineering Dataset, usually passed from binary_to_nc.py
-    min_dt: see drop_bogus_times
+    min_dt: passed to drop_bogus_times
     
     returns Dataset
     """
@@ -258,12 +274,12 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
 def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     """
     Post-process science timeseries, including: 
-        - remove bogus times. Eg, 1970 or before deployment start date
+        - remove bogus times. Eg, 1970, or before deployment start date
         - Calculating profiles using depth (derived from ctd's pressure)
 
     ds : `xarray.Dataset`
         science Dataset, usually passed from binary_to_nc.py
-    min_dt: see drop_bogus_times
+    min_dt: passed to drop_bogus_times
     
     returns Dataset
     """

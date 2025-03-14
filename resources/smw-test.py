@@ -31,10 +31,9 @@ def scrape_sfmc():
         secret_id='sfmc-swoodman')
 
 
-def ts():
+def ts(paths):
     x = process.binary_to_nc(
-        deployment, project, mode, deployments_path, config_path, 
-        write_timeseries=True, write_gridded=True)
+        deployment, mode, paths, write_timeseries=True, write_gridded=True)
         # min_dt='2024-10-19 17:00:00')
     
     return x
@@ -59,14 +58,10 @@ def ts():
     # dssci = xr.open_dataset(outname_dssci)
     # met.imagery_metadata(dseng, dssci, i_path)
 
-def prof():
-    outname_tseng, outname_tssci, outname_1m, outname_5m = process.binary_to_nc(
-        deployment, project, mode, deployments_path, config_path, 
-        write_timeseries=False, write_gridded=False)
-    
-    paths = putils.esd_paths(
-        project, deployment, mode, deployments_path, config_path)
-    
+def prof(paths):    
+    x1, outname_tssci, x2, x3 = process.binary_to_nc(
+        deployment, mode, paths, write_timeseries=False, write_gridded=False)
+        
     return process.ngdac_profiles(
         outname_tssci, paths['profdir'], paths['deploymentyaml'], 
         force=True)
@@ -94,9 +89,12 @@ if __name__ == "__main__":
     gcp.gcs_mount_bucket(
         "amlr-gliders-deployments-dev", deployments_path, ro=False)
     
+    paths = putils.esd_paths(
+        project, deployment, mode, deployments_path, config_path)
+    
     # scrape_sfmc()
     # yaml()
-    # outname_tseng, outname_tssci, outname_1m, outname_5m = ts()
-    prof()
+    outname_tseng, outname_tssci, outname_1m, outname_5m = ts(paths)
+    prof(paths)
 
 
