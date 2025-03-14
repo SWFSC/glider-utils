@@ -2,8 +2,8 @@
 
 import argparse
 import logging
-import esdglider.process as process
 import sys
+import esdglider.rt as rt
 
 
 def main(args):
@@ -24,14 +24,14 @@ def main(args):
             level=getattr(logging, args.loglevel.upper()), 
             datefmt="%Y-%m-%d %H:%M:%S")
     
-    process.scrape_sfmc(deployment=args.deployment, 
+    rt.scrape_sfmc(deployment=args.deployment, 
                 project=args.project, 
                 bucket=args.bucket, 
                 sfmc_path=args.sfmc_path, 
                 gcpproject_id=args.gcpproject_id, 
                 secret_id=args.secret_id)
     
-    logging.info("Completed process.scrape_sfmc")
+    logging.info("Completed rt.scrape_sfmc")
 
     
 
