@@ -130,7 +130,7 @@ def esd_paths(project, deployment, mode, deployments_path, config_path):
     
     -----
     Returns:
-    A dictionary with the ESD paths
+    A dictionary with the paths
     
     """
     prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']    

@@ -43,15 +43,7 @@ def binary_to_nc(
     paths : dict
         A dictionary of file/directory paths for various processing steps. 
         Intended to be the output of esdglider.pathutils.esd_paths()
-        Must contain the following key/value pairs: 
-            "cacdir": cacdir,
-            "binarydir": binarydir,
-            "deploymentyaml": deploymentyaml,
-            "engyaml": engyaml,
-            "tsdir": tsdir,
-            "profdir": profdir,
-            "griddir": griddir, 
-            "plotdir": plotdir
+        See this function for the expected key/value pairs
 
     write_timeseries, write_gridded : bool
         Should the timeseries and gridded, respectively, 
