@@ -55,7 +55,7 @@ def split_deployment(deployment):
 
 def year_path(project, deployment):
     """
-    From the glider project and deployment name, 
+    From the glider project and deployment name (both strings), 
     generate and return the year string to use in file paths 
     for ESD glider deployments
 

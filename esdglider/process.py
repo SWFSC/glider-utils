@@ -19,6 +19,17 @@ import pyglider.utils as pgutils
 _log = logging.getLogger(__name__)
 
 
+# For encoding time in netCDF files
+encoding_dict = {
+            'time': {
+                'units': 'seconds since 1970-01-01T00:00:00Z',
+                '_FillValue': np.nan,                
+                'calendar': 'gregorian',
+                'dtype': 'float64',
+            }
+        }
+
+
 def binary_to_nc(
     deployment, mode, paths, min_dt='2017-01-01', 
     # deployments_path, config_path, 
@@ -113,7 +124,7 @@ def binary_to_nc(
         tseng = xr.load_dataset(outname_tseng)
         tseng = postproc_eng_timeseries(tseng, min_dt=min_dt)
         tseng = postproc_attrs(tseng, mode)
-        tseng.to_netcdf(outname_tseng)
+        tseng.to_netcdf(outname_tseng, encoding=encoding_dict)
         _log.info(f'Finished eng timeseries postproc: {outname_tseng}')
 
         # Science - uses sci_water_temp as time_base sensor
@@ -130,7 +141,7 @@ def binary_to_nc(
         tssci = xr.load_dataset(outname_tssci)
         tssci = postproc_sci_timeseries(tssci, min_dt=min_dt)
         tssci = postproc_attrs(tssci, mode)
-        tssci.to_netcdf(outname_tssci)
+        tssci.to_netcdf(outname_tssci, encoding=encoding_dict)
         _log.info(f'Finished sci timeseries postproc: {outname_tssci}')
 
         num_profiles_eng = len(np.unique(tseng.profile_index.values))

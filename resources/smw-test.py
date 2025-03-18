@@ -33,8 +33,8 @@ def scrape_sfmc():
 
 def ts(paths):
     x = process.binary_to_nc(
-        deployment, mode, paths, write_timeseries=True, write_gridded=True)
-        # min_dt='2024-10-19 17:00:00')
+        deployment, mode, paths, # min_dt='2024-10-19 17:00:00'
+        write_timeseries=True, write_gridded=True)
     
     return x
 
@@ -59,9 +59,7 @@ def ts(paths):
     # met.imagery_metadata(dseng, dssci, i_path)
 
 def prof(paths):    
-    x1, outname_tssci, x2, x3 = process.binary_to_nc(
-        deployment, mode, paths, write_timeseries=False, write_gridded=False)
-        
+    outname_tssci = os.path.join(paths['tsdir'], f"{deployment}-{mode}-sci.nc")
     return process.ngdac_profiles(
         outname_tssci, paths['profdir'], paths['deploymentyaml'], 
         force=True)
@@ -69,7 +67,6 @@ def prof(paths):
 def yaml():
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
-
     return config.make_deployment_config(
         deployment, project, mode, 
         "C:/Users/sam.woodman/Downloads", conn_string)
@@ -87,8 +84,7 @@ if __name__ == "__main__":
     #                 datefmt='%Y-%m-%d %H:%M:%S')
 
     gcp.gcs_mount_bucket(
-        "amlr-gliders-deployments-dev", deployments_path, ro=False)
-    
+        "amlr-gliders-deployments-dev", deployments_path, ro=False)    
     paths = putils.esd_paths(
         project, deployment, mode, deployments_path, config_path)
     
