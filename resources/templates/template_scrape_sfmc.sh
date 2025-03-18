@@ -11,4 +11,4 @@
 # Scrape SFMC for definied deployment/project, using esdglider conda env
 DEPLOYMENT=calanus-20241019
 PROJECT=ECOSWIM
-/opt/conda-envs/esdglider/bin/python /opt/glider-utils/scripts/scrape-sfmc.py $DEPLOYMENT $PROJECT --loglevel=info --logfile=/opt/glider-scripts/$DEPLOYMENT-scrape-sfmc.log
+/opt/conda-envs/esdglider/bin/python /opt/glider-utils/scripts/scrape-sfmc.py $PROJECT $DEPLOYMENT --loglevel=info --logfile=/opt/glider-scripts/$DEPLOYMENT-scrape-sfmc.log

@@ -4,6 +4,7 @@ import sys
 import logging
 import argparse
 import esdglider.process as process
+import esdglider.pathutils as putils
 
 
 def main(args):
@@ -13,16 +14,21 @@ def main(args):
     logging.basicConfig(
         format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
         level=getattr(logging, args.loglevel.upper()))
+    
+    paths = putils.esd_paths(
+        args.project, 
+        args.deployment, 
+        args.mode, 
+        args.deployments_path, 
+        args.config_path)
 
     process.binary_to_nc(
         deployment=args.deployment, 
-        project=args.project, 
         mode=args.mode, 
-        deployments_path=args.deployments_path, 
-        config_path=args.config_path, 
+        paths=paths, 
+        min_dt=args.min_dt, 
         write_timeseries=args.write_timeseries, 
-        write_gridded=args.write_gridded, 
-        min_dt=args.min_dt)
+        write_gridded=args.write_gridded)
 
 
 if __name__ == '__main__':
@@ -30,14 +36,14 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter, 
         allow_abbrev=False)
 
-    arg_parser.add_argument('deployment', 
-        type=str,
-        help='Deployment name, eg amlr03-20220425')
-
     arg_parser.add_argument('project', 
         type=str,
         help='Project name for deployment', 
         choices=['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'])
+
+    arg_parser.add_argument('deployment', 
+        type=str,
+        help='Deployment name, eg amlr03-20220425')
 
     arg_parser.add_argument('mode', 
         type=str,

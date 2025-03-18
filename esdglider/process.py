@@ -7,6 +7,7 @@ import glob
 import yaml
 import netCDF4
 import importlib
+from datetime import datetime, timezone
 
 import esdglider.pathutils as pathutils
 import esdglider.utils as utils
@@ -19,11 +20,10 @@ _log = logging.getLogger(__name__)
 
 
 def binary_to_nc(
-    deployment, mode, paths, 
+    deployment, mode, paths, min_dt='2017-01-01', 
     # deployments_path, config_path, 
-    write_timeseries=True, write_gridded=True, 
-    min_dt='2017-01-01'
-): 
+    write_timeseries=True, write_gridded=True
+):     
                 
     """
     Process binary ESD glider data to timeseries and/or gridded netCDF files
@@ -44,15 +44,15 @@ def binary_to_nc(
         A dictionary of file/directory paths for various processing steps. 
         Intended to be the output of esdglider.pathutils.esd_paths()
         See this function for the expected key/value pairs
+    
+    min_dt : datetime64, or object that can be converted to datetime64
+        See utils.drop_bogus; default is '2017-01-01'.
+        All timestamps from before this value will be dropped
 
     write_timeseries, write_gridded : bool
         Should the timeseries and gridded, respectively, 
         xarray DataSets be both created and written to files?
         Note: if True then already-existing files will be clobbered
-    
-    min_dt : datetime64, or object that can be converted to datetime64
-        See utils.drop_bogus; default is '2017-01-01'.
-        All timestamps from before this value will be dropped
 
     Returns
     ----------
@@ -196,10 +196,10 @@ def postproc_attrs(ds, mode):
         pass
 
     ds.attrs['standard_name_vocabulary'] = 'CF Standard Name Table v72'
-    ds.attrs['history'] = (
-        f"{np.datetime64('now')}Z: Timeseries and gridded netCDF files " +
-        f"created using pyglider v{importlib.metadata.version("pyglider")} " + 
-        f"and esdglider v{importlib.metadata.version("esdglider")}"
+    ds.attrs['history'] = (        
+        f"{np.datetime64('now')}Z: netCDF files created using: " +
+        f"pyglider v{importlib.metadata.version("pyglider")}; " + 
+        f"esdglider v{importlib.metadata.version("esdglider")}"
     )
     ds.attrs['processing_level'] = (
         "Minimal data screening. " + 

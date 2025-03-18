@@ -24,12 +24,14 @@ def main(args):
             level=getattr(logging, args.loglevel.upper()), 
             datefmt="%Y-%m-%d %H:%M:%S")
     
-    rt.scrape_sfmc(deployment=args.deployment, 
-                project=args.project, 
-                bucket=args.bucket, 
-                sfmc_path=args.sfmc_path, 
-                gcpproject_id=args.gcpproject_id, 
-                secret_id=args.secret_id)
+    rt.scrape_sfmc(
+        project=args.project, 
+        deployment=args.deployment, 
+        bucket=args.bucket, 
+        sfmc_path=args.sfmc_path, 
+        gcpproject_id=args.gcpproject_id, 
+        secret_id=args.secret_id
+    )
     
     logging.info("Completed rt.scrape_sfmc")
 
@@ -40,14 +42,14 @@ if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(description=main.__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    arg_parser.add_argument('deployment', 
-        type=str,
-        help='Deployment name, eg amlr03-20220425')
-
     arg_parser.add_argument('project', 
         type=str,
         help='Glider project name', 
         choices=['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'])
+
+    arg_parser.add_argument('deployment', 
+        type=str,
+        help='Deployment name, eg amlr03-20220425')
 
     arg_parser.add_argument('--sfmcpath', 
         type=str,

@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 import collections
-import datetime as dt
+from datetime import datetime, timezone
 
 _log = logging.getLogger(__name__)
 
@@ -222,7 +222,7 @@ def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
     """
     solocam_substr = filename[index_dt:(index_dt+15)]
     _log.debug(f"datetime substring: {solocam_substr}")
-    solocam_dt = dt.datetime.strptime(solocam_substr, format)
+    solocam_dt = datetime.strptime(solocam_substr, format)
 
     return solocam_dt
 
@@ -245,7 +245,7 @@ def esd_file_id(ds):
         ds.attrs['glider_name']
         # + ds.attrs['glider_serial']
         + '-'
-        + dt.item().strftime('%Y%m%dT%H%M')
+        + dt.item().strftime("%Y%m%dT%H%M")
     )
     return id
 
@@ -275,3 +275,14 @@ def data_var_reorder(ds, new_start):
         raise ValueError("Error reordering data variables")
 
     return ds
+
+def datetime_now_utc(format='%Y-%m-%dT%H:%M:%SZ'):
+    """
+    format : str
+        format string; passed to strftime function
+        https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
+    
+    Returns the current date/time, in UTC, 
+        as a string specified controlled by 'format' input
+    """
+    return datetime.now(timezone.utc).strftime(format)
