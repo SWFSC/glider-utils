@@ -8,15 +8,23 @@ import esdglider.pathutils as putils
 import esdglider.gcp as gcp
 import esdglider.config as config
 import esdglider.process as process
+import esdglider.imagery as im
 
 
-deployment = 'calanus-20241019'
-project = "ECOSWIM"
+# deployment = 'calanus-20241019'
+# project = "ECOSWIM"
+# mode = 'delayed'
+
+deployment = 'amlr08-20220513'
+project = "SANDIEGO"
 mode = 'delayed'
-bucket_name = 'amlr-gliders-deployments-dev'
+
+deployment_bucket = 'amlr-gliders-deployments-dev'
+imagery_bucket = 'amlr-gliders-imagery-raw-dev'
 
 base_path = "/home/sam_woodman_noaa_gov"
-deployments_path = f'{base_path}/{bucket_name}'
+deployments_path = f'{base_path}/{deployment_bucket}'
+imagery_path = f'{base_path}/{imagery_bucket}'
 config_path = f"{base_path}/glider-lab/deployment-configs"
 
 
@@ -24,7 +32,7 @@ config_path = f"{base_path}/glider-lab/deployment-configs"
 def scrape_sfmc():
     process.scrape_sfmc(deployment=deployment, 
         project=project, 
-        bucket=bucket_name, 
+        bucket=deployment_bucket, 
         # sfmc_path='/var/sfmc', 
         sfmc_path=f'{base_path}/sfmc', 
         gcpproject_id='ggn-nmfs-usamlr-dev-7b99', 
@@ -71,6 +79,12 @@ def yaml():
         deployment, project, mode, 
         "C:/Users/sam.woodman/Downloads", conn_string)
 
+def imagery(ds_sci):
+    im.imagery_timeseries(
+        ds_sci, 
+        im.imagery_paths(project, deployment, imagery_path)
+    )
+
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -84,13 +98,18 @@ if __name__ == "__main__":
     #                 datefmt='%Y-%m-%d %H:%M:%S')
 
     gcp.gcs_mount_bucket(
-        "amlr-gliders-deployments-dev", deployments_path, ro=False)    
+        deployment_bucket, deployments_path, ro=False)
+    gcp.gcs_mount_bucket(
+        imagery_bucket, imagery_path, ro=False)    
     paths = putils.esd_paths(
         project, deployment, mode, deployments_path, config_path)
     
     # scrape_sfmc()
     # yaml()
-    outname_tseng, outname_tssci, outname_1m, outname_5m = ts(paths)
-    prof(paths)
+    # outname_tseng, outname_tssci, outname_1m, outname_5m = ts(paths)
+    # prof(paths)
 
-
+    # Imagery
+    outname_tssci = os.path.join(paths['tsdir'], f"{deployment}-{mode}-sci.nc")
+    dssci = xr.open_dataset(outname_tssci)
+    imagery(dssci)

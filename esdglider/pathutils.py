@@ -130,9 +130,9 @@ def esd_paths(project, deployment, mode, deployments_path, config_path):
     
     -----
     Returns:
-    A dictionary with the paths
-    
+        A dictionary with the relevant paths    
     """
+    
     prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']    
     if not os.path.isdir(deployments_path):
         _log.error(f'deployments_path ({deployments_path}) does not exist')
@@ -167,7 +167,6 @@ def esd_paths(project, deployment, mode, deployments_path, config_path):
     ncdir = os.path.join(glider_path, 'data', 'nc')
 
     tsdir = os.path.join(ncdir, 'timeseries')
-    _log.info(f"tsdir: {tsdir}")
     profdir = os.path.join(ncdir, 'ngdac', mode)
     griddir = os.path.join(ncdir, 'gridded')
     plotdir = os.path.join(glider_path, 'data', 'plots')

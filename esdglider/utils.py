@@ -207,27 +207,6 @@ def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
     return ds
 
 
-def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
-    """
-    Parse imagery filename to return associated datetime
-    Requires index of start of datetime part of string
-
-    filename : str : Full filename
-    index_start : int : The index of the start of the datetime string.
-        The datetime runs from this index to this index plus 15 characters
-    format : str : format passed to strptime
-
-    Returns:
-        Datetime object, with the datetime extracted from the imagery filename
-    """
-    solocam_substr = filename[index_dt:(index_dt+15)]
-    _log.debug(f"datetime substring: {solocam_substr}")
-    solocam_dt = datetime.strptime(solocam_substr, format)
-
-    return solocam_dt
-
-
-
 def esd_file_id(ds):
     """
     ESD's version of pyglider.utils.get_file_id.
