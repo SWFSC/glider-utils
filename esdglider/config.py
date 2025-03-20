@@ -5,7 +5,7 @@ import sqlalchemy
 import yaml
 
 from importlib.resources import files, as_file
-import esdglider.pathutils as pathutils
+import esdglider as eg
 
 _log = logging.getLogger(__name__)
 
@@ -192,7 +192,7 @@ def make_deployment_config(
     else:
         _log.info("no database URL provided, and thus no connection attempted")
 
-    deployment_split = pathutils.split_deployment(deployment)
+    deployment_split = eg.utils.split_deployment(deployment)
     metadata["deployment_name"] = deployment
     metadata["project"] = project
     metadata["glider_name"] = deployment_split[0]

@@ -5,8 +5,7 @@ import re
 import logging
 import subprocess
 
-import esdglider.gcp as gcp
-import esdglider.pathutils as putils
+import esdglider as eg
 
 _log = logging.getLogger(__name__)
 
@@ -29,14 +28,14 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
         raise ValueError ("Unsuccessful deployment_split")
     else:
         glider = deployment_split[0]
-        year = putils.year_path(project, deployment)
+        year = eg.utils.year_path(project, deployment)
 
     #--------------------------------------------
     # Create sfmc directory structure, if needed
     _log.info(f'Making sfmc deployment dirs at {sfmc_path}')
     sfmc_local_path = os.path.join(sfmc_path, f'sfmc-{deployment}/')
-    putils.mkdir_pass(sfmc_path)
-    putils.mkdir_pass(sfmc_local_path)
+    eg.utils.mkdir_pass(sfmc_path)
+    eg.utils.mkdir_pass(sfmc_local_path)
 
     # sfmc_pwd_file = os.path.join(sfmc_local_path, ".sfmcpwd.txt")
     # _log.debug(f'SFMC ssh password written to {sfmc_pwd_file}')
@@ -56,7 +55,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
     sfmc_server_path = f'swoodman@sfmc.webbresearch.com:{sfmc_glider}'
 
     rsync_args = [
-        'sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
+        'sshpass', '-p', eg.gcp.access_secret_version(gcpproject_id, secret_id), 
         'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
     # NOTE: sshpass via file does not currently work. Unsure why
     # rsync_args = ['sshpass', '-f', sfmc_pwd_file, 
@@ -79,7 +78,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
         _log.debug(f'stderr: {retcode.stdout}')
 
     # Check for unexpected file extensions
-    sfmc_file_ext = putils.find_extensions(sfmc_local_path)
+    sfmc_file_ext = eg.utils.find_extensions(sfmc_local_path)
     file_ext_expected = {".cac", ".CAC", ".sbd", ".tbd", ".ad2"} 
                         #  ".ccc", ".scd", ".tcd", ".cam"
     file_ext_weird = sfmc_file_ext.difference(file_ext_expected)
@@ -98,7 +97,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
 
     # cache files
     name_cac  = 'cac'
-    putils.mkdir_pass(os.path.join(sfmc_local_path, name_cac))
+    eg.utils.mkdir_pass(os.path.join(sfmc_local_path, name_cac))
     rt_file_mgmt(
         sfmc_file_ext, '.[Cc][Aa][Cc]', name_cac, sfmc_local_path, 
         f'gs://{bucket}/cache', rsync_delete=False)
@@ -106,7 +105,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
     # sbd/tbd files
     name_stbd = 'stbd'
     bucket_stbd = os.path.join(bucket_deployment, 'data', 'binary', 'rt')
-    putils.mkdir_pass(os.path.join(sfmc_local_path, name_stbd))
+    eg.utils.mkdir_pass(os.path.join(sfmc_local_path, name_stbd))
     rt_file_mgmt(
         sfmc_file_ext, '.[SsTt]bd', name_stbd, sfmc_local_path, bucket_stbd)
 
@@ -127,7 +126,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
     # ad2 files
     name_ad2  = 'ad2'
     bucket_ad2 = f"gs://amlr-gliders-acoustics-dev/{project}/{year}/{deployment}/data/rt/"
-    putils.mkdir_pass(os.path.join(sfmc_local_path, name_ad2))
+    eg.utils.mkdir_pass(os.path.join(sfmc_local_path, name_ad2))
     rt_file_mgmt(sfmc_file_ext, '.ad2', name_ad2, sfmc_local_path, bucket_ad2)
 
     # # cam files TODO

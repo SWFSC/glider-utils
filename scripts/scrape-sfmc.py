@@ -3,7 +3,7 @@
 import argparse
 import logging
 import sys
-import esdglider.rt as rt
+import esdglider as eg
 
 
 def main(args):
@@ -24,7 +24,8 @@ def main(args):
             level=getattr(logging, args.loglevel.upper()), 
             datefmt="%Y-%m-%d %H:%M:%S")
     
-    rt.scrape_sfmc(
+    # TODO: extract paths call, a la slocum.binary_to_nc
+    eg.rt.scrape_sfmc(
         project=args.project, 
         deployment=args.deployment, 
         bucket=args.bucket, 

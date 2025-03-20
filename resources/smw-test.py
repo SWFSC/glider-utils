@@ -4,11 +4,13 @@ import os
 import logging
 import xarray as xr
 
-import esdglider.pathutils as putils
-import esdglider.gcp as gcp
-import esdglider.config as config
-import esdglider.process as process
-import esdglider.imagery as im
+import esdglider as eg
+
+# import esdglider.pathutils as putils
+# import esdglider.gcp as gcp
+# import esdglider.config as config
+# import esdglider.slocum as process
+# import esdglider.imagery as im
 
 
 # deployment = 'calanus-20241019'
@@ -30,7 +32,7 @@ config_path = f"{base_path}/glider-lab/deployment-configs"
 
 
 def scrape_sfmc():
-    process.scrape_sfmc(deployment=deployment, 
+    eg.slocum.scrape_sfmc(deployment=deployment, 
         project=project, 
         bucket=deployment_bucket, 
         # sfmc_path='/var/sfmc', 
@@ -40,7 +42,7 @@ def scrape_sfmc():
 
 
 def ts(paths):
-    x = process.binary_to_nc(
+    x = eg.slocum.binary_to_nc(
         deployment, mode, paths, # min_dt='2024-10-19 17:00:00'
         write_timeseries=True, write_gridded=True)
     
@@ -68,21 +70,21 @@ def ts(paths):
 
 def prof(paths):    
     outname_tssci = os.path.join(paths['tsdir'], f"{deployment}-{mode}-sci.nc")
-    return process.ngdac_profiles(
+    return eg.slocum.ngdac_profiles(
         outname_tssci, paths['profdir'], paths['deploymentyaml'], 
         force=True)
 
 def yaml():
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
-    return config.make_deployment_config(
+    return eg.config.make_deployment_config(
         deployment, project, mode, 
         "C:/Users/sam.woodman/Downloads", conn_string)
 
 def imagery(ds_sci):
-    im.imagery_timeseries(
+    eg.imagery.imagery_timeseries(
         ds_sci, 
-        im.imagery_paths(project, deployment, imagery_path)
+        eg.imagery.imagery_paths(project, deployment, imagery_path)
     )
 
 
@@ -97,11 +99,11 @@ if __name__ == "__main__":
     #                 level=logging.INFO,
     #                 datefmt='%Y-%m-%d %H:%M:%S')
 
-    gcp.gcs_mount_bucket(
+    eg.gcp.gcs_mount_bucket(
         deployment_bucket, deployments_path, ro=False)
-    gcp.gcs_mount_bucket(
+    eg.gcp.gcs_mount_bucket(
         imagery_bucket, imagery_path, ro=False)    
-    paths = putils.esd_paths(
+    paths = eg.slocum.get_path_esd(
         project, deployment, mode, deployments_path, config_path)
     
     # scrape_sfmc()

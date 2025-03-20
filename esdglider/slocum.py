@@ -9,8 +9,7 @@ import netCDF4
 import importlib
 from datetime import datetime, timezone
 
-import esdglider.pathutils as pathutils
-import esdglider.utils as utils
+import esdglider as eg
 
 import pyglider.slocum as slocum
 import pyglider.ncprocess as ncprocess
@@ -19,7 +18,8 @@ import pyglider.utils as pgutils
 _log = logging.getLogger(__name__)
 
 
-# For encoding time in netCDF files
+# For encoding time in netCDF files 
+# TODO: update to encode_times?
 encoding_dict = {
             'time': {
                 'units': 'seconds since 1970-01-01T00:00:00Z',
@@ -29,25 +29,107 @@ encoding_dict = {
             }
         }
 
-# def encode_times(ds):
-#     if "units" in ds.time.attrs.keys():
-#         ds.time.attrs.pop("units")
-#     if "calendar" in ds.time.attrs.keys():
-#         ds.time.attrs.pop("calendar")
-#     ds["time"].encoding["units"] = "seconds since 1970-01-01T00:00:00Z"
-#     for var_name in list(ds):
-#         if "time" in var_name.lower() and not var_name == "time":
-#             for drop_attr in ["units", "calendar", "dtype"]:
-#                 if drop_attr in ds[var_name].attrs.keys():
-#                     ds[var_name].attrs.pop(drop_attr)
-#             ds[var_name].encoding["units"] = "seconds since 1970-01-01T00:00:00Z"
-#     return ds
+def get_path_engyaml():
+    """
+    Get and return the path to the yaml with engineering NetCDF variables
+    Returns the path, so as to be able to pass to binary_to_timeseries
+    """
+
+    ref = importlib.resources.files('esdglider.data') / 'deployment-eng-vars.yml'
+    with importlib.resources.as_file(ref) as path:
+        return str(path)
+    
+
+def get_path_esd(project, deployment, mode, deployments_path, config_path):
+    """
+    Return a dictionary of paths for use by other esdglider functions.
+    These paths follow the directory structure outlined here:
+    https://swfsc.github.io/glider-lab-manual/content/data-management.html
+
+    -----
+    Parameters
+
+    project : str
+        The project name of the deployment. 
+        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
+        
+    deployment : str
+        The name of the glider deployment. Eg, amlr01-20210101
+
+    mode : str
+        Mode of the glider dat being processed. 
+        Must be either 'rt', for real-time, or 'delayed
+        
+    deployments_path : str
+        The path to the top-level folder of the glider data. 
+        This is inteded to be the path to the mounted glider deployments bucket
+        
+    config_path : str
+        The path to the directory that contains the yaml with the
+        deployment config
+    
+    -----
+    Returns:
+        A dictionary with the relevant paths    
+    """
+    
+    prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']    
+    if not os.path.isdir(deployments_path):
+        _log.error(f'deployments_path ({deployments_path}) does not exist')
+        return
+    else:
+        dir_expected = prj_list + ['cache']
+        if not all(x in os.listdir(deployments_path) for x in dir_expected):
+            _log.warning(f"The expected folders ({', '.join(dir_expected)}) " + 
+                f'were not found in the provided directory ({deployments_path}). ' + 
+                'Did you provide the right path via deployments_path?')
+
+    year = eg.utils.year_path(project, deployment)
+
+    glider_path = os.path.join(deployments_path, project, year, deployment)
+    if not os.path.isdir(glider_path):
+        _log.error(f'glider_path ({glider_path}) does not exist')
+        return
+    
+    # if write_imagery:
+    #     if not os.path.isdir(imagery_path):
+    #         _log.error('write_imagery is true, and thus imagery_path ' + 
+    #                       f'({imagery_path}) must be a valid path')
+    #         return
+
+    cacdir = os.path.join(deployments_path, 'cache')
+    binarydir = os.path.join(glider_path, 'data', 'binary', mode)
+    deploymentyaml = os.path.join(config_path, f"{deployment}.yml")
+    # deploymentyaml = os.path.join(glider_path, 'config', 
+    #     f"{deployment_mode}.yml")
+    engyaml = get_path_engyaml()
+
+    ncdir = os.path.join(glider_path, 'data', 'nc')
+
+    tsdir = os.path.join(ncdir, 'timeseries')
+    profdir = os.path.join(ncdir, 'ngdac', mode)
+    griddir = os.path.join(ncdir, 'gridded')
+    plotdir = os.path.join(glider_path, 'data', 'plots')
+
+    return {
+        "cacdir": cacdir,
+        "binarydir": binarydir,
+        "deploymentyaml": deploymentyaml,
+        "engyaml": engyaml,
+        "tsdir": tsdir,
+        "profdir": profdir,
+        "griddir": griddir, 
+        "plotdir": plotdir
+    }
 
 
 def binary_to_nc(
-    deployment, mode, paths, min_dt='2017-01-01', 
-    # deployments_path, config_path, 
-    write_timeseries=True, write_gridded=True
+    deployment, 
+    mode, 
+    paths, 
+    min_dt='2017-01-01', 
+    write_timeseries=True, 
+    write_gridded=True
 ):     
                 
     """
@@ -67,7 +149,7 @@ def binary_to_nc(
 
     paths : dict
         A dictionary of file/directory paths for various processing steps. 
-        Intended to be the output of esdglider.pathutils.esd_paths()
+        Intended to be the output of esdglider.slocum.paths_esd_gcp()
         See this function for the expected key/value pairs
     
     min_dt : datetime64, or object that can be converted to datetime64
@@ -95,8 +177,6 @@ def binary_to_nc(
 
     #--------------------------------------------
     # Check file and directory paths
-    # paths = pathutils.esd_paths(
-    #     project, deployment, mode, deployments_path, config_path)
     tsdir = paths["tsdir"]
     deploymentyaml = paths["deploymentyaml"]    
 
@@ -263,17 +343,17 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
     ds = ds.rename({"depth_measured": "depth"})
     
     # Remove times < min_dt
-    ds = utils.drop_bogus(ds, "eng", min_dt)
+    ds = eg.utils.drop_bogus(ds, "eng", min_dt)
 
     # Calculate profiles using measured depth
     if np.any(np.isnan(ds.depth.values)):
         num_nan = sum(np.isnan(ds.depth.values))
         _log.warning(f"There are {num_nan} nan depth values")
-    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+    ds = eg.utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
     # Reorder data variables
     new_start = ['latitude', 'longitude', 'depth', 'profile_index']
-    ds = utils.data_var_reorder(ds, new_start)
+    ds = eg.utils.data_var_reorder(ds, new_start)
 
     # Update comment
     if not ('comment' in ds.attrs): 
@@ -304,17 +384,17 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
     # Remove times < min_dt
-    ds = utils.drop_bogus(ds, "sci", min_dt)
+    ds = eg.utils.drop_bogus(ds, "sci", min_dt)
 
     # Calculate profiles, using the CTD-derived depth values
     # TODO: update this to play nice with eng timeseries for rt data?
-    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+    ds = eg.utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
     # Reorder data variables
     new_start = ['latitude', 'longitude', 'depth', 'profile_index', 
                  'conductivity', 'temperature', 'pressure', 'salinity', 
                  'density', 'potential_temperature', 'potential_density']
-    ds = utils.data_var_reorder(ds, new_start)
+    ds = eg.utils.data_var_reorder(ds, new_start)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
 
@@ -359,7 +439,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
     meta = deployment['metadata']
     with xr.open_dataset(inname) as ds:
         _log.info('Extracting profiles: opening %s', inname)
-        trajectory = utils.esd_file_id(ds).encode()
+        trajectory = eg.utils.esd_file_id(ds).encode()
         trajlen    = len(trajectory)
         
         # TODO: do floor like oceanGNS??
@@ -368,7 +448,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
         for p in profiles:
             ind = np.where(ds.profile_index == p)[0]
             dss = ds.isel(time=ind)
-            outname = outdir + '/' + utils.esd_file_id(dss) + '.nc'
+            outname = outdir + '/' + eg.utils.esd_file_id(dss) + '.nc'
             _log.info('Checking %s', outname)
             if force or (not os.path.exists(outname)):
                 # this is the id for the whole file, not just this profile..

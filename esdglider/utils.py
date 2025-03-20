@@ -1,6 +1,8 @@
+import os
 import numpy as np
 import logging
 import collections
+from pathlib import Path
 from datetime import datetime, timezone
 
 _log = logging.getLogger(__name__)
@@ -261,7 +263,105 @@ def datetime_now_utc(format='%Y-%m-%dT%H:%M:%SZ'):
         format string; passed to strftime function
         https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
     
-    Returns the current date/time, in UTC, 
-        as a string specified controlled by 'format' input
+    Returns a string with the current date/time, in UTC, 
+        controlled by 'format' input
     """
     return datetime.now(timezone.utc).strftime(format)
+
+
+def encode_times(ds):
+    """
+    Straight from:
+    https://github.com/voto-ocean-knowledge/votoutils/blob/main/votoutils/utilities/utilities.py
+    """
+    if "units" in ds.time.attrs.keys():
+        ds.time.attrs.pop("units")
+    if "calendar" in ds.time.attrs.keys():
+        ds.time.attrs.pop("calendar")
+    ds["time"].encoding["units"] = "seconds since 1970-01-01T00:00:00Z"
+    for var_name in list(ds):
+        if "time" in var_name.lower() and not var_name == "time":
+            for drop_attr in ["units", "calendar", "dtype"]:
+                if drop_attr in ds[var_name].attrs.keys():
+                    ds[var_name].attrs.pop(drop_attr)
+            ds[var_name].encoding["units"] = "seconds since 1970-01-01T00:00:00Z"
+    return ds
+
+
+def find_extensions(dir_path): #,  excluded = ['', '.txt', '.lnk']):
+    """
+    Get all the file extensions in the given directory
+    From https://stackoverflow.com/questions/45256250
+    """
+    extensions = set()
+    for _, _, files in Path(dir_path).walk():   
+        for f in files:
+            extensions.add(Path(f).suffix)
+            # ext = Path(f).suffix.lower()
+            # if not ext in excluded:
+            #     extensions.add(ext)
+    return extensions
+
+
+def split_deployment(deployment):
+    """
+    Split the deployment string into glider name, and date deployed
+    Splits by "-"
+    Returns a tuple of the glider name and deployment date
+    """
+    deployment_split = deployment.split('-')
+    deployment_date = deployment_split[1]
+    if len(deployment_date) != 8:
+        _log.error('The deployment must be the glider name followed by the deployment date')
+        raise ValueError(f'Invalid glider deployment date: {deployment_date}')
+    
+    return deployment_split
+
+
+def year_path(project, deployment):
+    """
+    From the glider project and deployment name (both strings), 
+    generate and return the year string to use in file paths 
+    for ESD glider deployments
+
+    For the FREEBYRD project, this will be the year of the second 
+    half of the Antarctic season. For instance, hypothetical
+    FREEBYRD deployments amlr01-20181231 and amlr01-20190101 are both 
+    during season '2018-19', and thus would return '2019'. 
+    
+    For all other projects, the value returned is simply the year. 
+    For example, ringo-20181231 would return 2018, 
+    and ringo-20190101 would return 2019
+    """
+    # deployment_split = deployment.split('-')
+    # deployment_date = deployment_split[1]
+    # if len(deployment_date) != 8:
+    #     _log.error('The deployment must be the glider name followed by the deployment date')
+    #     raise ValueError(f'Invalid glider deployment date: {deployment_date}')
+    deployment_split = split_deployment(deployment)
+    deployment_date = deployment_split[1]
+    year = deployment_date[0:4]
+
+    if project == 'FREEBYRD':
+        month = deployment_date[4:6]
+        if int(month) <= 7: 
+            year = f'{int(year)}'
+        else:
+            year = f'{int(year)+1}'
+
+    return year
+
+
+
+def mkdir_pass(outdir):
+    """
+    Convenience wrapper to try to make a directory path, 
+    and pass if it already exists
+    """
+    _log.debug(f"Trying to make directory {outdir}")
+    try:
+        os.mkdir(outdir)
+    except FileExistsError:
+        pass
+
+    return outdir

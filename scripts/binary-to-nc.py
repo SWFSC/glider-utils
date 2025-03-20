@@ -3,8 +3,7 @@
 import sys
 import logging
 import argparse
-import esdglider.process as process
-import esdglider.pathutils as putils
+import esdglider as eg
 
 
 def main(args):
@@ -15,14 +14,14 @@ def main(args):
         format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
         level=getattr(logging, args.loglevel.upper()))
     
-    paths = putils.esd_paths(
+    paths = eg.slocum.get_path_esd(
         args.project, 
         args.deployment, 
         args.mode, 
         args.deployments_path, 
         args.config_path)
 
-    process.binary_to_nc(
+    eg.slocum.binary_to_nc(
         deployment=args.deployment, 
         mode=args.mode, 
         paths=paths, 

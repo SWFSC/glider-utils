@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 from datetime import datetime
 
-import esdglider.pathutils as putils
+import esdglider as eg
 
 _log = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ def imagery_paths(project, deployment, imagery_path):
     if not os.path.isdir(imagery_path):
         raise FileNotFoundError(f'{imagery_path} does not exist')
 
-    year = putils.year_path(project, deployment)
+    year = eg.utils.year_path(project, deployment)
 
     imagery_deployment_path = os.path.join(
         imagery_path, project, year, deployment)
@@ -173,8 +173,7 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
     #--------------------------------------------
     # Export metadata file
     metadir = paths['metadir']
-    if not os.path.isdir(metadir):
-        os.makedirs(metadir)
+    eg.utils.mkdir_pass(metadir)
 
     csv_file = os.path.join(metadir, f'{deployment}-imagery-metadata.csv')
     _log.info(f'Writing imagery metadata to: {csv_file}')
