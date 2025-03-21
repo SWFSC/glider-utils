@@ -127,9 +127,7 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     attrs = collections.OrderedDict([
         ('long_name', 'profile index'),
         ('units', '1'),
-        ('comment',
-         'N = inside profile N, N + 0.5 = between profiles N and N + 1'),
-        ('sources', f'time depth'),
+        ('comment', 'N = inside profile N, N + 0.5 = between profiles N and N + 1'),        ('sources', f'time depth'),
         ('method', 'esdglider.utils.findProfiles'),
         ('stall', 20),
         ('shake', 200)])
@@ -138,8 +136,7 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     attrs = collections.OrderedDict([
         ('long_name', 'glider vertical speed direction'),
         ('units', '1'),
-        ('comment',
-         '-1 = ascending, 0 = inflecting or stalled, 1 = descending'),
+        ('comment', '-1 = ascending, 0 = inflecting or stalled, 1 = descending'),
         ('sources', f'time depth'),
         ('method', 'esdglider.utils.findProfiles')])
     ds['profile_direction'] = (('time'), prof_dir, attrs)
@@ -220,7 +217,7 @@ def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
     return ds
 
 
-def esd_file_id(ds):
+def get_file_id_esd(ds):
     """
     ESD's version of pyglider.utils.get_file_id.
     This version does not require a glider_serial
@@ -244,12 +241,12 @@ def esd_file_id(ds):
 
 def data_var_reorder(ds, new_start):
     """
-     Reorder the data variables of a dataset
+    Reorder the data variables of a dataset
 
-     new_start is a list of the data variable names from ds that 
-     will be moved to 'first' in the dataset
+    new_start is a list of the data variable names from ds that 
+    will be moved to 'first' in the dataset
 
-     Returns ds, with reordered data variables
+    Returns ds, with reordered data variables
     """
 
     ds_vars_orig = list(ds.data_vars)
@@ -344,11 +341,7 @@ def year_path(project, deployment):
     For example, ringo-20181231 would return 2018, 
     and ringo-20190101 would return 2019
     """
-    # deployment_split = deployment.split('-')
-    # deployment_date = deployment_split[1]
-    # if len(deployment_date) != 8:
-    #     _log.error('The deployment must be the glider name followed by the deployment date')
-    #     raise ValueError(f'Invalid glider deployment date: {deployment_date}')
+    
     deployment_split = split_deployment(deployment)
     deployment_date = deployment_split[1]
     year = deployment_date[0:4]

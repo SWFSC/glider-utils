@@ -3,7 +3,7 @@
 import argparse
 import logging
 import sys
-import esdglider as eg
+import esdglider.rt as rt
 
 
 def main(args):
@@ -25,7 +25,7 @@ def main(args):
             datefmt="%Y-%m-%d %H:%M:%S")
     
     # TODO: extract paths call, a la slocum.binary_to_nc
-    eg.rt.scrape_sfmc(
+    rt.scrape_sfmc(
         project=args.project, 
         deployment=args.deployment, 
         bucket=args.bucket, 

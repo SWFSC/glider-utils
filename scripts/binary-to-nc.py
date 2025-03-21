@@ -3,7 +3,7 @@
 import sys
 import logging
 import argparse
-import esdglider as eg
+import esdglider.slocum as slocum
 
 
 def main(args):
@@ -14,14 +14,14 @@ def main(args):
         format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
         level=getattr(logging, args.loglevel.upper()))
     
-    paths = eg.slocum.get_path_deployment(
+    paths = slocum.get_path_deployment(
         args.project, 
         args.deployment, 
         args.mode, 
         args.deployments_path, 
         args.config_path)
 
-    eg.slocum.binary_to_nc(
+    slocum.binary_to_nc(
         deployment=args.deployment, 
         mode=args.mode, 
         paths=paths, 

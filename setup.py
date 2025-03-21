@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-# from esdglider._version import __version__
 
 setup(name='esdglider',
       version="0.1.0-dev1",

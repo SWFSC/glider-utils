@@ -122,9 +122,10 @@ def binary_to_nc(
     The contents of this function used to just be in scripts/binary_to_nc.py.
     They were moved to this structure for easier development and debugging
 
+    -----
     Parameters
-    ----------
-    deployment : str
+
+        deployment : str
         The name of the glider deployment. Eg, amlr01-20210101
 
     mode : str
@@ -145,8 +146,9 @@ def binary_to_nc(
         xarray DataSets be both created and written to files?
         Note: if True then already-existing files will be clobbered
 
+    -----
     Returns
-    ----------
+
     A tuple of the filenames of the various netCDF files, as strings.
     In order: the engineering and science timeseries, 
     and the 1m and 5m gridded files
@@ -277,6 +279,8 @@ def postproc_attrs(ds, mode):
     """
     Update attrbites of xarray DataSet ds
     Used for both engineering and science timeseries
+
+    Returns the ds Dataset with updated attributes
     """
     try:
         del ds.attrs['glider_serial']
@@ -313,7 +317,7 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
         engineering Dataset, usually passed from binary_to_nc.py
     min_dt: passed to drop_bogus_times
     
-    returns Dataset
+    returns post-processed Dataset
     """
 
     _log.debug(f"begin eng postproc: ds has {len(ds.time)} values")
@@ -362,7 +366,7 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
         science Dataset, usually passed from binary_to_nc.py
     min_dt: passed to drop_bogus_times
     
-    returns Dataset
+    returns post-processed Dataset
     """
 
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
@@ -393,20 +397,22 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
     
     Extract and save each profile from a timeseries netCDF.
 
+    ------
     Parameters
-    ----------
+
     inname : str or Path
         netcdf file to break into profiles
-
     outdir : str or Path
         directory to place profiles
-
     deploymentyaml : str or Path
         location of deployment yaml file for the netCDF file.  This should
         be the same yaml file that was used to make the timeseries file.
-
     force : bool, default False
         Force an overwite even if profile netcdf already exists
+
+    ------
+    Returns
+        Nothing
     """
     try:
         os.makedirs(outdir)
@@ -424,7 +430,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
     meta = deployment['metadata']
     with xr.open_dataset(inname) as ds:
         _log.info('Extracting profiles: opening %s', inname)
-        trajectory = utils.esd_file_id(ds).encode()
+        trajectory = utils.get_file_id_esd(ds).encode()
         trajlen    = len(trajectory)
         
         # TODO: do floor like oceanGNS??
@@ -433,7 +439,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
         for p in profiles:
             ind = np.where(ds.profile_index == p)[0]
             dss = ds.isel(time=ind)
-            outname = outdir + '/' + utils.esd_file_id(dss) + '.nc'
+            outname = outdir + '/' + utils.get_file_id_esd(dss) + '.nc'
             _log.info('Checking %s', outname)
             if force or (not os.path.exists(outname)):
                 # this is the id for the whole file, not just this profile..

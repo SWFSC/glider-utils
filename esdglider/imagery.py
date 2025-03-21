@@ -16,11 +16,18 @@ def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
     Parse imagery filename to return associated datetime
     Requires index of start of datetime part of string
 
-    filename : str : Full filename
-    index_start : int : The index of the start of the datetime string.
+    -----
+    Parameters
+    
+    filename : str
+        Full filename
+    index_start : int
+        The index of the start of the datetime string.
         The datetime runs from this index to this index plus 15 characters
-    format : str : format passed to strptime
+    format : str 
+        format passed to strptime
 
+    -----
     Returns:
         The datetime extracted from the imagery filename. The datetime is
         returned as a 'datetime64[s]' object
@@ -45,15 +52,12 @@ def get_path_imagery(project, deployment, imagery_path):
 
     project : str
         The project name of the deployment. 
-        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
-        
+        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'        
     deployment : str
         The name of the glider deployment. Eg, amlr01-20210101
-
     mode : str
         Mode of the glider dat being processed. 
-        Must be either 'rt', for real-time, or 'delayed
-        
+        Must be either 'rt', for real-time, or 'delayed        
     imagery_path : str
         The path to the top-level folder of the imagery  data. 
         This is inteded to be the path to the mounted raw imagery bucket
@@ -86,15 +90,18 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
     Matches up imagery files with data from pyglider by imagery filename
     Uses interpolated variables (hardcoded in function)
     Returns data frame with iamgery+timeseries information
-    
-    Args:
-        ds : xarray Dataset
-            from science timeseries NetCDF
-        imagery_dir : str
-            path to folder with images, specifically the 'Dir####' folders
-        ext : str, optional
-            Imagery file extension. Default is 'jpg'.
 
+    -----
+    Parameters
+    
+    ds : xarray Dataset
+        from science timeseries NetCDF
+    imagery_dir : str
+        path to folder with images, specifically the 'Dir####' folders
+    ext : str, optional
+        Imagery file extension. Default is 'jpg'.
+
+    -----
     Returns:
         DataFrame: pd.DataFrame of imagery timeseries
     """
