@@ -13,6 +13,17 @@ ESD-specific utilities
 Mostly helpers for post-processing time series files created using pyglider
 """
 
+
+# For encoding time when writing to NetCDF 
+encoding_dict = {
+    'time': {
+        'units': 'seconds since 1970-01-01T00:00:00Z',
+        '_FillValue': np.nan,                
+        'calendar': 'gregorian',
+        'dtype': 'float64',
+    }
+}
+
 def findProfiles(stamp: np.ndarray,depth: np.ndarray,**kwargs):
 	"""
     Function copied exactly from:

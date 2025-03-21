@@ -14,7 +14,7 @@ def main(args):
         format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]', 
         level=getattr(logging, args.loglevel.upper()))
     
-    paths = eg.slocum.get_path_esd(
+    paths = eg.slocum.get_path_deployment(
         args.project, 
         args.deployment, 
         args.mode, 

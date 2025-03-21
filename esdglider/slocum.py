@@ -5,24 +5,13 @@ import xarray as xr
 import yaml
 import netCDF4
 import importlib
-
-import esdglider as eg
-
 import pyglider
+
+import esdglider.utils as utils
+
 
 _log = logging.getLogger(__name__)
 
-
-# For encoding time in netCDF files 
-# TODO: update to encode_times?
-encoding_dict = {
-            'time': {
-                'units': 'seconds since 1970-01-01T00:00:00Z',
-                '_FillValue': np.nan,                
-                'calendar': 'gregorian',
-                'dtype': 'float64',
-            }
-        }
 
 def get_path_engyaml():
     """
@@ -35,7 +24,7 @@ def get_path_engyaml():
         return str(path)
     
 
-def get_path_esd(project, deployment, mode, deployments_path, config_path):
+def get_path_deployment(project, deployment, mode, deployments_path, config_path):
     """
     Return a dictionary of paths for use by other esdglider functions.
     These paths follow the directory structure outlined here:
@@ -79,7 +68,7 @@ def get_path_esd(project, deployment, mode, deployments_path, config_path):
                 f'were not found in the provided directory ({deployments_path}). ' + 
                 'Did you provide the right path via deployments_path?')
 
-    year = eg.utils.year_path(project, deployment)
+    year = utils.year_path(project, deployment)
 
     glider_path = os.path.join(deployments_path, project, year, deployment)
     if not os.path.isdir(glider_path):
@@ -213,7 +202,7 @@ def binary_to_nc(
         tseng = xr.load_dataset(outname_tseng)
         tseng = postproc_eng_timeseries(tseng, min_dt=min_dt)
         tseng = postproc_attrs(tseng, mode)
-        tseng.to_netcdf(outname_tseng, encoding=encoding_dict)
+        tseng.to_netcdf(outname_tseng, encoding=utils.encoding_dict)
         _log.info(f'Finished eng timeseries postproc: {outname_tseng}')
 
         # Science - uses sci_water_temp as time_base sensor
@@ -230,7 +219,7 @@ def binary_to_nc(
         tssci = xr.load_dataset(outname_tssci)
         tssci = postproc_sci_timeseries(tssci, min_dt=min_dt)
         tssci = postproc_attrs(tssci, mode)
-        tssci.to_netcdf(outname_tssci, encoding=encoding_dict)
+        tssci.to_netcdf(outname_tssci, encoding=utils.encoding_dict)
         _log.info(f'Finished sci timeseries postproc: {outname_tssci}')
 
         num_profiles_eng = len(np.unique(tseng.profile_index.values))
@@ -338,17 +327,17 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
     ds = ds.rename({"depth_measured": "depth"})
     
     # Remove times < min_dt
-    ds = eg.utils.drop_bogus(ds, "eng", min_dt)
+    ds = utils.drop_bogus(ds, "eng", min_dt)
 
     # Calculate profiles using measured depth
     if np.any(np.isnan(ds.depth.values)):
         num_nan = sum(np.isnan(ds.depth.values))
         _log.warning(f"There are {num_nan} nan depth values")
-    ds = eg.utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
     # Reorder data variables
     new_start = ['latitude', 'longitude', 'depth', 'profile_index']
-    ds = eg.utils.data_var_reorder(ds, new_start)
+    ds = utils.data_var_reorder(ds, new_start)
 
     # Update comment
     if not ('comment' in ds.attrs): 
@@ -379,18 +368,18 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
     # Remove times < min_dt
-    ds = eg.utils.drop_bogus(ds, "sci", min_dt)
+    ds = utils.drop_bogus(ds, "sci", min_dt)
 
     # Calculate profiles, using the CTD-derived depth values
     # TODO: update this to play nice with eng timeseries for rt data?
-    ds = eg.utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
     # Reorder data variables
     new_start = [(
         'latitude', 'longitude', 'depth', 'profile_index', 
         'conductivity', 'temperature', 'pressure', 'salinity', 
         'density', 'potential_temperature', 'potential_density')]
-    ds = eg.utils.data_var_reorder(ds, new_start)
+    ds = utils.data_var_reorder(ds, new_start)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
 
@@ -435,7 +424,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
     meta = deployment['metadata']
     with xr.open_dataset(inname) as ds:
         _log.info('Extracting profiles: opening %s', inname)
-        trajectory = eg.utils.esd_file_id(ds).encode()
+        trajectory = utils.esd_file_id(ds).encode()
         trajlen    = len(trajectory)
         
         # TODO: do floor like oceanGNS??
@@ -444,7 +433,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
         for p in profiles:
             ind = np.where(ds.profile_index == p)[0]
             dss = ds.isel(time=ind)
-            outname = outdir + '/' + eg.utils.esd_file_id(dss) + '.nc'
+            outname = outdir + '/' + utils.esd_file_id(dss) + '.nc'
             _log.info('Checking %s', outname)
             if force or (not os.path.exists(outname)):
                 # this is the id for the whole file, not just this profile..

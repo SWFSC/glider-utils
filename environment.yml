@@ -21,9 +21,6 @@ dependencies:
   - GliderTools
   - cmocean
 
-  # To read tifs using xarray
-  # - rioxarray
-
   - pip:
     - dbdreader
     - git+https://github.com/c-proof/pyglider.git@main

@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 from datetime import datetime
 
-import esdglider as eg
+import esdglider.utils as utils
 
 _log = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
 
 
 
-def imagery_paths(project, deployment, imagery_path):
+def get_path_imagery(project, deployment, imagery_path):
     """
     Return a dictionary of paths for use by other esdglider functions.
     These paths follow the directory structure outlined here:
@@ -68,7 +68,7 @@ def imagery_paths(project, deployment, imagery_path):
     if not os.path.isdir(imagery_path):
         raise FileNotFoundError(f'{imagery_path} does not exist')
 
-    year = eg.utils.year_path(project, deployment)
+    year = utils.year_path(project, deployment)
 
     imagery_deployment_path = os.path.join(
         imagery_path, project, year, deployment)
@@ -173,7 +173,7 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
     #--------------------------------------------
     # Export metadata file
     metadir = paths['metadir']
-    eg.utils.mkdir_pass(metadir)
+    utils.mkdir_pass(metadir)
 
     csv_file = os.path.join(metadir, f'{deployment}-imagery-metadata.csv')
     _log.info(f'Writing imagery metadata to: {csv_file}')
