@@ -11,24 +11,26 @@ import esdglider.gcp as gcp
 import esdglider.config as config
 import esdglider.slocum as slocum
 import esdglider.imagery as imagery
+import esdglider.acoustics as acoustics
 
 
-# deployment = 'calanus-20241019'
-# project = "ECOSWIM"
-# mode = 'delayed'
-
-deployment = 'amlr08-20220513'
-project = "SANDIEGO"
+deployment = 'calanus-20241019'
+project = "ECOSWIM"
 mode = 'delayed'
 
+# deployment = 'amlr08-20220513'
+# project = "SANDIEGO"
+# mode = 'delayed'
+
 deployment_bucket = 'amlr-gliders-deployments-dev'
-imagery_bucket = 'amlr-gliders-imagery-raw-dev'
+imagery_bucket    = 'amlr-gliders-imagery-raw-dev'
+acoustics_bucket  = 'amlr-gliders-acoustics-dev'
 
 base_path = "/home/sam_woodman_noaa_gov"
 deployments_path = f'{base_path}/{deployment_bucket}'
-imagery_path = f'{base_path}/{imagery_bucket}'
-config_path = f"{base_path}/glider-lab/deployment-configs"
-
+imagery_path     = f'{base_path}/{imagery_bucket}'
+acoustics_path   = f'{base_path}/{acoustics_bucket}'
+config_path      = f"{base_path}/glider-lab/deployment-configs"
 
 
 def scrape_sfmc():
@@ -81,11 +83,6 @@ def yaml():
         deployment, project, mode, 
         "C:/Users/sam.woodman/Downloads", conn_string)
 
-def img(ds_sci):
-    imagery.imagery_timeseries(
-        ds_sci, 
-        imagery.get_path_imagery(project, deployment, imagery_path)
-    )
 
 
 if __name__ == "__main__":
@@ -102,7 +99,9 @@ if __name__ == "__main__":
     gcp.gcs_mount_bucket(
         deployment_bucket, deployments_path, ro=False)
     gcp.gcs_mount_bucket(
-        imagery_bucket, imagery_path, ro=False)    
+        imagery_bucket, imagery_path, ro=False)
+    gcp.gcs_mount_bucket(
+        acoustics_bucket, acoustics_path, ro=False)
     paths = slocum.get_path_deployment(
         project, deployment, mode, deployments_path, config_path)
     
@@ -111,7 +110,17 @@ if __name__ == "__main__":
     # outname_tseng, outname_tssci, outname_1m, outname_5m = ts(paths)
     # prof(paths)
 
-    # Imagery
     outname_tssci = os.path.join(paths['tsdir'], f"{deployment}-{mode}-sci.nc")
     dssci = xr.open_dataset(outname_tssci)
-    img(dssci)
+    
+    # # Imagery    
+    # imagery.imagery_timeseries(
+    #     dssci, 
+    #     imagery.get_path_imagery(project, deployment, imagery_path)
+    # )
+
+    # Acoustics
+    acoustics.echoview_metadata(
+        dssci, 
+        acoustics.get_path_acoutics(project, deployment, acoustics_path)
+    )

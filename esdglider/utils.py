@@ -356,7 +356,6 @@ def year_path(project, deployment):
     return year
 
 
-
 def mkdir_pass(outdir):
     """
     Convenience wrapper to try to make a directory path, 
@@ -369,3 +368,15 @@ def mkdir_pass(outdir):
         pass
 
     return outdir
+
+
+def line_prepender(filename, line):
+    """
+    Title: prepend-line-to-beginning-of-a-file
+    https://stackoverflow.com/questions/5914627
+    """
+    
+    with open(filename, 'r+') as f:
+        content = f.read()
+        f.seek(0, 0)
+        f.write(line.rstrip('\r\n') + '\n' + content)

@@ -43,7 +43,7 @@ def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
 
 def get_path_imagery(project, deployment, imagery_path):
     """
-    Return a dictionary of paths for use by other esdglider functions.
+    Return a dictionary of imagery-related paths
     These paths follow the directory structure outlined here:
     https://swfsc.github.io/glider-lab-manual/content/data-management.html
 
@@ -59,8 +59,8 @@ def get_path_imagery(project, deployment, imagery_path):
         Mode of the glider dat being processed. 
         Must be either 'rt', for real-time, or 'delayed        
     imagery_path : str
-        The path to the top-level folder of the imagery  data. 
-        This is inteded to be the path to the mounted raw imagery bucket
+        The path to the top-level folder of the imagery data. 
+        This is intended to be the path to the mounted raw imagery bucket
     
     -----
     Returns:
@@ -89,7 +89,7 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
     """
     Matches up imagery files with data from pyglider by imagery filename
     Uses interpolated variables (hardcoded in function)
-    Returns data frame with iamgery+timeseries information
+    Returns data frame with imagery+timeseries information
 
     -----
     Parameters
