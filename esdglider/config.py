@@ -3,9 +3,9 @@ import logging
 import pandas as pd
 import sqlalchemy
 import yaml
+import esdglider as eg
 
 from importlib.resources import files, as_file
-import esdglider as eg
 
 _log = logging.getLogger(__name__)
 

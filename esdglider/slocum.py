@@ -2,18 +2,13 @@ import os
 import logging
 import numpy as np
 import xarray as xr
-import pandas as pd
-import glob
 import yaml
 import netCDF4
 import importlib
-from datetime import datetime, timezone
 
 import esdglider as eg
 
-import pyglider.slocum as slocum
-import pyglider.ncprocess as ncprocess
-import pyglider.utils as pgutils
+import pyglider
 
 _log = logging.getLogger(__name__)
 
@@ -206,7 +201,7 @@ def binary_to_nc(
 
         # Engineering - uses m_depth as time base
         _log.info(f'Generating engineering timeseries')
-        outname_tseng = slocum.binary_to_timeseries(
+        outname_tseng = pyglider.slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
             [deploymentyaml, paths["engyaml"]], 
             search=binary_search, 
@@ -223,7 +218,7 @@ def binary_to_nc(
 
         # Science - uses sci_water_temp as time_base sensor
         _log.info(f'Generating science timeseries')
-        outname_tssci = slocum.binary_to_timeseries(
+        outname_tssci = pyglider.slocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
             deploymentyaml, 
             search=binary_search, 
@@ -258,12 +253,12 @@ def binary_to_nc(
             raise FileNotFoundError(f'Could not find {outname_tssci}')
 
         _log.info(f'Generating 1m gridded data')
-        outname_1m = ncprocess.make_gridfiles(
+        outname_1m = pyglider.ncprocess.make_gridfiles(
             outname_tssci, paths["griddir"], deploymentyaml, 
             dz = 1, fnamesuffix=f"-{mode}-1m")
 
         _log.info(f'Generating 5m gridded data')
-        outname_5m = ncprocess.make_gridfiles(
+        outname_5m = pyglider.ncprocess.make_gridfiles(
             outname_tssci, paths["griddir"], deploymentyaml, 
             dz = 5, fnamesuffix=f"-{mode}-5m")
 
@@ -391,9 +386,10 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     ds = eg.utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
     # Reorder data variables
-    new_start = ['latitude', 'longitude', 'depth', 'profile_index', 
-                 'conductivity', 'temperature', 'pressure', 'salinity', 
-                 'density', 'potential_temperature', 'potential_density']
+    new_start = [(
+        'latitude', 'longitude', 'depth', 'profile_index', 
+        'conductivity', 'temperature', 'pressure', 'salinity', 
+        'density', 'potential_temperature', 'potential_density')]
     ds = eg.utils.data_var_reorder(ds, new_start)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
@@ -554,7 +550,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
                     dss[name].attrs['ancillary_variables'] = qcname
                     if qcname not in dss.keys():
                         dss[qcname] = ('time', 2 * np.ones(len(dss[name]), np.int8))
-                        dss[qcname].attrs = pgutils.fill_required_qcattrs({}, name)
+                        dss[qcname].attrs = pyglider.utils.fill_required_qcattrs({}, name)
                         # 2 is "not eval"
 
                 _log.info('Writing %s', outname)

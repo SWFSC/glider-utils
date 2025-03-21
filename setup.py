@@ -1,6 +1,5 @@
 from setuptools import setup, find_packages
 
-
 setup(name='esdglider',
       version="0.1.0a1",
       description='Utility functions for processing ESD glider data',
@@ -8,7 +7,7 @@ setup(name='esdglider',
       author='Sam Woodman',
       author_email='sam.woodman@noaa.gov',
       license='Apache 2.0',
-      packages=find_packages(),
+      packages=find_packages(exclude=('tests', 'docs')), 
       package_data = {'esdglider': ["esdglider/data/*"]},
       include_package_data=True,    
       python_requires='>=3.10',
@@ -18,8 +17,10 @@ setup(name='esdglider',
             'numpy', 
             'pandas',
             'xarray', 
-            "pyyaml"
-            # 'SQLAlchemy'
+            "pyyaml", 
+            "pyglider", 
+            "netCDF4", 
+            "SQLAlchemy"
       ],
       zip_safe=False)
 
