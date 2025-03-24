@@ -3,7 +3,6 @@ import logging
 import glob
 import numpy as np
 import pandas as pd
-import xarray as xr
 from datetime import datetime
 
 import esdglider.utils as utils
@@ -13,7 +12,7 @@ _log = logging.getLogger(__name__)
 
 def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
     """
-    Parse imagery filename to return associated datetime
+    Parse solocam (imagery) filename to return associated datetime
     Requires index of start of datetime part of string
 
     -----
@@ -32,6 +31,7 @@ def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
         The datetime extracted from the imagery filename. The datetime is
         returned as a 'datetime64[s]' object
     """
+    
     solocam_substr = filename[index_dt:(index_dt+15)]
     _log.debug(f"datetime substring: {solocam_substr}")
     solocam_dt = datetime.strptime(solocam_substr, format)

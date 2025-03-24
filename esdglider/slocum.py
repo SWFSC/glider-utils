@@ -90,10 +90,10 @@ def get_path_deployment(project, deployment, mode, deployments_path, config_path
 
     ncdir = os.path.join(glider_path, 'data', 'nc')
 
-    tsdir = os.path.join(ncdir, 'timeseries')
+    tsdir   = os.path.join(ncdir, 'timeseries')
     profdir = os.path.join(ncdir, 'ngdac', mode)
     griddir = os.path.join(ncdir, 'gridded')
-    plotdir = os.path.join(glider_path, 'data', 'plots')
+    plotdir = os.path.join(glider_path, 'plots')
 
     return {
         "cacdir": cacdir,
