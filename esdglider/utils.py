@@ -2,6 +2,7 @@ import os
 import numpy as np
 import logging
 import collections
+import gsw
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -380,3 +381,22 @@ def line_prepender(filename, line):
         content = f.read()
         f.seek(0, 0)
         f.write(line.rstrip('\r\n') + '\n' + content)
+
+
+def ts_calculations(ds):
+    """
+    Code adapted from Jacob Partida
+    Calculate variables for temperature/salinity plots
+    """
+    s_lims = (np.floor(np.min(ds.salinity)-0.5),
+    np.ceil(np.max(ds.salinity)+0.5))
+
+    t_lims = (np.floor(np.min(ds.potential_temperature)-0.5),
+            np.ceil(np.max(ds.potential_temperature)+0.5))
+    # print(t_lims)
+    S = np.arange(s_lims[0],s_lims[1]+0.1,0.1)
+    T = np.arange(t_lims[0],t_lims[1]+0.1,0.1)
+    Tg, Sg = np.meshgrid(T,S)
+    sigma = gsw.sigma0(Sg,Tg)
+
+    return Sg, Tg, sigma
