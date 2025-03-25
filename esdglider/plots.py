@@ -7,6 +7,7 @@ import matplotlib.dates as mdates
 from matplotlib import colormaps 
 from matplotlib.gridspec import GridSpec
 from mpl_toolkits.basemap import Basemap
+import xarray as xr
 
 import esdglider.utils as utils
 
@@ -42,7 +43,8 @@ adjustments_labels = {
     "backscatter_700":"$log_{10}$", 
 }
 
-units = {"latitude":"deg",
+units = {
+    "latitude":"deg",
     "longitude":"deg",
     "depth":"m",
     "heading":"deg",
@@ -64,7 +66,8 @@ units = {"latitude":"deg",
     "density":"kg $\\bullet m^{-3}$",
     "potential_temperature":"°C",
     "profile_index":"1",
-    "profile_direction":"1"}
+    "profile_direction":"1"
+}
 
 sci_colors = {
     "cdom":cmo.solar, 
@@ -78,40 +81,225 @@ sci_colors = {
     "potential_density":colormaps['cividis']
 }
 
+sci_vars = [
+    "temperature", 
+    "salinity", 
+    "density", 
+    "chlorophyll", 
+    "cdom", 
+    "oxygen_concentration", 
+    "backscatter_700"
+]
+
+eng_vars = [
+    "heading",
+    "pitch",
+    "roll",
+    "total_num_inflections",
+    "commanded_oil_volume",
+    "measured_oil_volume",
+    "total_amphr",
+    "amphr",
+    "battery_voltage",
+    "vacuum",
+    "leak_detect",
+    "leak_detect_forward",
+    "leak_detect_science",
+    "battpos",
+    "target_depth",
+    "altitude",
+    "distance_over_ground",
+    "profile_index",
+    "profile_direction"
+]
 
 
-# def get_path_plots():
-#     """
-#     Return a dictionary of plotting-related paths
+def sci_gridded_loop(
+        ds: xr.Dataset, 
+        base_path: str | None = None, 
+        show: bool = False
+    ):
+    """
+    A loop/wrapper function to use a gridded science dataset to make plots 
+    of all sci_vars variables. 
+    Specifically, for each sci_var present in the dataset, 
+    create timesection, spatialsection, and spatialgrid plots
 
-#     -----
-#     Parameters
+    Arguments let the user specify if these plots should be saved, and/or shown
+
+    ------
+    Parameters
+
+    ds : xarray Dataset
+        Gridded science dataset
+    base_path : str
+        The 'base' of the plot path. If None, then the plot will not be saved
+        Intended to be the 'plotdir' output of slocum.get_path_deployments
+    show : bool
+        Boolean indicating if the plots should be shown, via plt.show()
+
+    ------
+    Returns
+        base_path value
+    """
+
+    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
+
+    for var in sci_vars:
+        _log.debug(f"var {var}")
+        if not var in list(ds.data_vars):
+            _log.info(f"Variable {var} not present in gridded science ds. Skipping plots")
+            continue
+
+        s1 = sci_timesection_plot(ds, var, base_path=base_path)
+        s2 = sci_spatialsection_plot(ds, var, base_path=base_path)
+        s3 = sci_spatialgrid_plot(ds, var, base_path=base_path)
+
+        if show:
+            s1.show()
+            s2.show()
+            s3.show()
+
+    return base_path
+
+
+def eng_tvt_loop(
+        ds: xr.Dataset, 
+        base_path: str | None = None, 
+        show: bool = False
+    ):
+    """
+    A loop/wrapper function to 
+    a) create the dictionary used for engineering thisvsthat plots and 
+    b) create said plots using the tvt function
+
+    Arguments let the user specify if these plots should be saved, and/or shown
+
+    ds : xarray Dataset
+        Timeseries engineering dataset
+    base_path : str
+        The 'base' of the plot path. If None, then the plot will not be saved
+        Intended to be the 'plotdir' output of slocum.get_path_deployments
+    show : bool
+        Boolean indicating if the plots should be shown, via plt.show()
+
+    ------
+    Returns
+        base_path value
+    """
+    eng_dict = eng_plots_to_make(ds)
+    for key in eng_dict.keys():
+        s1 = eng_tvt_plot(ds, eng_dict, key, base_path=base_path)
+
+        if show:
+            s1.show()
+
+    return base_path
+
+
+def sci_timeseries_loop(
+        ds: xr.Dataset, 
+        base_path: str | None = None, 
+        show: bool = False
+    ):
+    """
+    A loop/wrapper function to use a timeseries science dataset to make plots 
+    of all sci_vars variables. 
+    Specifically, for each sci_var present in the dataset, 
+    create a timeseries plot
+
+    Arguments let the user specify if these plots should be saved, and/or shown
+
+    ------
+    Parameters
+
+    ds : xarray Dataset
+        Timeseries science dataset
+    base_path : str
+        The 'base' of the plot path. If None, then the plot will not be saved
+        Intended to be the 'plotdir' output of slocum.get_path_deployments
+    show : bool
+        Boolean indicating if the plots should be shown, via plt.show()
+
+    ------
+    Returns
+        base_path value
+    """
+
+    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
+
+    for var in sci_vars:
+        _log.debug(f"var {var}")
+        if not var in list(ds.data_vars):
+            _log.info(f"Variable {var} not present in timeseries science ds. Skipping plots")
+            continue
+
+        s1 = sci_timeseries_plot(ds, var, base_path=base_path)
+
+        if show:
+            s1.show()
+
+    return base_path
+
+
+def eng_timeseries_loop(
+        ds: xr.Dataset, 
+        base_path: str | None = None, 
+        show: bool = False
+    ):
+    """
+    A loop/wrapper function to use a timeseries engineering dataset to make plots 
+    of all eng_vars variables. 
+    Specifically, for each eng_vars present in the dataset, 
+    create a timeseries plot
+
+    Arguments let the user specify if these plots should be saved, and/or shown
+
+    ------
+    Parameters
+
+    ds : xarray Dataset
+        Timeseries science dataset
+    base_path : str
+        The 'base' of the plot path. If None, then the plot will not be saved
+        Intended to be the 'plotdir' output of slocum.get_path_deployments
+    show : bool
+        Boolean indicating if the plots should be shown, via plt.show()
+
+    ------
+    Returns
+        base_path value
+    """
+
+    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
+
+    for var in eng_vars:
+        _log.debug(f"var {var}")
+        if not var in list(ds.data_vars):
+            _log.info(f"Variable {var} not present in timeseries eng ds. Skipping plots")
+            continue
+
+        s1 = eng_timeseries_plot(ds, var, base_path=base_path)
+
+        if show:
+            s1.show()
+
+    return base_path
 
 
 
-    
-#     -----
-#     Returns:
-#         A dictionary with the relevant paths
-#     """
-
-#     path_base = "/home/sam_woodman_noaa_gov/deployment_plots"
-#     sci_save_path = os.path.join(path_base, deployment, "science")
-#     eng_save_path = os.path.join(path_base, deployment, "engineering")
-
-#     # sci_save_path = f"/Users/cflaim/Documents/deployment_reports/{project}/{deployment}/plots/science/"
-#     # eng_save_path = f"/Users/cflaim/Documents/deployment_reports/{project}/{deployment}/plots/engineering/"
-#     sci_dirs_to_check = ["TS", "timeSections", "spatialSections", "maps", "miscPlots", "timeSeries"]
-#     eng_dirs_to_check = ["timeSeries", "thisVsThat"]
-
-
-#     return {
-
-#     }
-
-def save_plot(file_dir, file_name, plt):
-    # if not plots_path is None:
-    #     file_dir = os.path.join(plots_path, "engineering", "thisVsThat")
+def save_plot(
+        file_dir: str, 
+        file_name: str, 
+        plt: plt
+    ):
+    """
+    Wrapper function to:
+        Ensure 'file_dir' (a string) is a directory, and make it if necessary
+        Save the matplotlib 'plt' object to 'file_name' (str) in 'file_dir'
+    """
+    # if not base_path is None:
+    #     file_dir = os.path.join(base_path, "engineering", "thisVsThat")
     if not os.path.isdir(file_dir):
         os.makedirs(file_dir)
     file_path = os.path.join(file_dir, file_name)
@@ -119,10 +307,14 @@ def save_plot(file_dir, file_name, plt):
     plt.savefig(file_path)
 
 
-def sci_timesection_plot(ds, var, plots_path=None):
+def sci_timesection_plot(
+        ds: xr.Dataset, 
+        var: str, 
+        base_path: str | None = None
+    ):
     """
     Create timesection plots: variable plotted on time and depth
-    Saves the plot to path: plots_path/science/timeSections
+    Saves the plot to path: base_path/science/timeSections
 
     ------
     Parameters
@@ -134,7 +326,7 @@ def sci_timesection_plot(ds, var, plots_path=None):
     var : str
         The name of the variable to plot
 
-    plots_path : str
+    base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
 
@@ -178,9 +370,9 @@ def sci_timesection_plot(ds, var, plots_path=None):
     #     label.set(rotation=15, horizontalalignment='center')
     fig.autofmt_xdate()
     # fig_cnt += 1
-    if not plots_path is None:
+    if not base_path is None:
         path_file = os.path.join(
-            plots_path, "science", "timeSections", 
+            base_path, "science", "timeSections", 
             f"{deployment}_{var}_timesection.png"
         )
         plt.savefig(path_file)
@@ -190,10 +382,14 @@ def sci_timesection_plot(ds, var, plots_path=None):
     return plt
 
 
-def sci_spatialsection_plot(ds, var, plots_path=None):
+def sci_spatialsection_plot(
+        ds: xr.Dataset, 
+        var: str, 
+        base_path: str | None = None
+    ):
     """
     Create spatialsection plots: variable plotted on lat or lon, and depth
-    Saves the plot to path: plots_path/science/spatialSections
+    Saves the plot to path: base_path/science/spatialSections
 
     ------
     Parameters
@@ -205,7 +401,7 @@ def sci_spatialsection_plot(ds, var, plots_path=None):
     var : str
         The name of the variable to plot
 
-    plots_path : str
+    base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
 
@@ -266,9 +462,9 @@ def sci_spatialsection_plot(ds, var, plots_path=None):
         label.set(rotation=15, horizontalalignment='center')
     # fig_cnt += 1
 
-    if plots_path is not None:
+    if base_path is not None:
         save_plot(
-            os.path.join(plots_path, "science", "spatialSections"), 
+            os.path.join(base_path, "science", "spatialSections"), 
             f"{deployment}_{var}_spatialSections.png", 
             plt
         )
@@ -278,10 +474,14 @@ def sci_spatialsection_plot(ds, var, plots_path=None):
     return plt
 
 
-def sci_spatialgrid_plot(ds, var, plots_path=None):
+def sci_spatialgrid_plot(
+        ds: xr.Dataset, 
+        var: str, 
+        base_path: str | None = None
+    ):
     """
     Create spatial grid plots: plot variable value by lat/lon/depth
-    If specified, saves the plot to path: plots_path/science/spatialGrids
+    If specified, saves the plot to path: base_path/science/spatialGrids
 
     ------
     Parameters
@@ -293,7 +493,7 @@ def sci_spatialgrid_plot(ds, var, plots_path=None):
     var : str
         The name of the variable to plot
 
-    plots_path : str
+    base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments.
 
@@ -341,9 +541,9 @@ def sci_spatialgrid_plot(ds, var, plots_path=None):
 
     fig.colorbar(p, location='top', ax=[ax2, ax0])
 
-    if plots_path is not None:
+    if base_path is not None:
         save_plot(
-            os.path.join(plots_path, "science", "spatialGrids"), 
+            os.path.join(base_path, "science", "spatialGrids"), 
             f"{deployment}_{var}_spatialGrids.png", 
             plt
         )
@@ -351,7 +551,7 @@ def sci_spatialgrid_plot(ds, var, plots_path=None):
     return plt
 
 
-def eng_plots_to_make(ds):
+def eng_plots_to_make(ds: xr.Dataset):
     """
     Create dictionary used to make engineering plots. 
     This output is intended to be passed to eng_tvt_plot()
@@ -405,10 +605,15 @@ def eng_plots_to_make(ds):
 
     return plots_to_make
     
-def eng_tvt_plot(ds, eng_dict, key, plots_path=None):
+def eng_tvt_plot(
+        ds: xr.Dataset, 
+        eng_dict: dict, 
+        key: str, 
+        base_path: str | None = None
+    ):
     """
     Creates 'this vs that' plots of engineering variables
-    Saves the plot to path: plots_path/engineering/thisVsThat
+    Saves the plot to path: base_path/engineering/thisVsThat
 
     ------
     Parameters
@@ -424,7 +629,7 @@ def eng_tvt_plot(ds, eng_dict, key, plots_path=None):
     key : str
         The name of the variable (i.e., key from eng_dict) to plot
 
-    plots_path : str
+    base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
 
@@ -467,9 +672,9 @@ def eng_tvt_plot(ds, eng_dict, key, plots_path=None):
     #     label.set(rotation=15, horizontalalignment='center')
     # plt.show()
 
-    if plots_path is not None:
+    if base_path is not None:
         save_plot(
-            os.path.join(plots_path, "engineering", "thisVsThat"), 
+            os.path.join(base_path, "engineering", "thisVsThat"), 
             f"{deployment}_{key}_engmisc.png", 
             plt
         )
@@ -477,10 +682,14 @@ def eng_tvt_plot(ds, eng_dict, key, plots_path=None):
     return plt
 
 
-def eng_timeseries_plot(ds, var, plots_path=None):
+def eng_timeseries_plot(
+        ds: xr.Dataset, 
+        var: str, 
+        base_path: str | None = None
+    ):
     """
     Create timeseries plots of engineering variables
-    Saves the plot to path: plots_path/engineering/timeSeries
+    Saves the plot to path: base_path/engineering/timeSeries
 
     ------
     Parameters
@@ -492,7 +701,7 @@ def eng_timeseries_plot(ds, var, plots_path=None):
     var : str
         The name of the variable to plot
 
-    plots_path : str
+    base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
 
@@ -524,9 +733,9 @@ def eng_timeseries_plot(ds, var, plots_path=None):
     # fig.colorbar(p, location="right").set_label(log_label(var), size=14)
     fig.autofmt_xdate()
 
-    if plots_path is not None:
+    if base_path is not None:
         save_plot(
-            os.path.join(plots_path, "engineering", "timeSeries"), 
+            os.path.join(base_path, "engineering", "timeSeries"), 
             f"{deployment}_{var}_timeseries.png", 
             plt
         )
@@ -536,10 +745,14 @@ def eng_timeseries_plot(ds, var, plots_path=None):
     return plt
 
 
-def sci_timeseries_plot(ds, var, plots_path=None):
+def sci_timeseries_plot(
+        ds: xr.Dataset, 
+        var: str, 
+        base_path: str | None = None
+    ):
     """
     Create timeseries plots of science variables
-    Saves the plot to path: plots_path/science/timeSeries
+    Saves the plot to path: base_path/science/timeSeries
 
     ------
     Parameters
@@ -551,7 +764,7 @@ def sci_timeseries_plot(ds, var, plots_path=None):
     var : str
         The name of the variable to plot
 
-    plots_path : str
+    base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
 
@@ -579,9 +792,9 @@ def sci_timeseries_plot(ds, var, plots_path=None):
     fig.colorbar(p, location="right").set_label(log_label(var), size=14)
     fig.autofmt_xdate()
 
-    if plots_path is not None:
+    if base_path is not None:
         save_plot(
-            os.path.join(plots_path, "science", "timeSeries"), 
+            os.path.join(base_path, "science", "timeSeries"), 
             f"{deployment}_{var}_timeseries.png", 
             plt
         )
@@ -591,10 +804,14 @@ def sci_timeseries_plot(ds, var, plots_path=None):
     return plt
 
 
-def ts_plot(ds, var, plots_path=None):
+def ts_plot(
+        ds: xr.Dataset, 
+        var: str, 
+        base_path: str | None = None
+    ):
     """
     Create ts plots of science variables
-    Saves the plot to path: plots_path/science/TS
+    Saves the plot to path: base_path/science/TS
 
     ------
     Parameters
@@ -606,7 +823,7 @@ def ts_plot(ds, var, plots_path=None):
     var : str
         The name of the variable to plot
 
-    plots_path : str
+    base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
 
@@ -638,9 +855,9 @@ def ts_plot(ds, var, plots_path=None):
     ax.set_ylabel("Potential temperature [°C]", fontsize=14)
     
     # plt.savefig(f"{sci_save_path}/TS/{deployment}_{var}_tsPlot.png")
-    if plots_path is not None:
+    if base_path is not None:
         save_plot(
-            os.path.join(plots_path, "science", "TS"), 
+            os.path.join(base_path, "science", "TS"), 
             f"{deployment}_{var}_tsPlot.png", 
             plt
         )
@@ -648,10 +865,15 @@ def ts_plot(ds, var, plots_path=None):
     return plt
 
 
-def sci_surface_map(ds, var, bar, plots_path=None):
+def sci_surface_map(
+        ds: xr.Dataset, 
+        var: str, 
+        bar: xr.Dataset, 
+        base_path: str | None = None
+    ):
     """
     Create surface maps of science variables
-    Saves the plot to path: plots_path/science/maps
+    Saves the plot to path: base_path/science/maps
 
     ------
     Parameters
@@ -669,7 +891,7 @@ def sci_surface_map(ds, var, bar, plots_path=None):
         TODO: make a function for pulling this file from ERDDAP, if necessary
         Eg: https://coastwatch.pfeg.noaa.gov/erddap/griddap/ETOPO_2022_v1_15s.nc?z%5B(30):1:(45)%5D%5B(-135):1:(-120)%5D
 
-    plots_path : str
+    base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
 
@@ -739,9 +961,9 @@ def sci_surface_map(ds, var, bar, plots_path=None):
 
     # plt.savefig(f"{sci_save_path}/maps/{deployment}_{var}_map_0-10.png")
     # plt.show()
-    if plots_path is not None:
+    if base_path is not None:
         save_plot(
-            os.path.join(plots_path, "science", "maps"), 
+            os.path.join(base_path, "science", "maps"), 
             f"{deployment}_{var}_map_0-10.png", 
             plt
         )
