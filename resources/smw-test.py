@@ -111,12 +111,6 @@ if __name__ == "__main__":
 
     outname_tssci = os.path.join(paths['tsdir'], f"{deployment}-{mode}-sci.nc")
     dssci = xr.load_dataset(outname_tssci)
-
-    outname_tseng = os.path.join(paths['tsdir'], f"{deployment}-{mode}-eng.nc")
-    dseng = xr.load_dataset(outname_tseng)
-
-    outname_grsci = os.path.join(paths['griddir'], f"{deployment}_grid-{mode}-5m.nc")
-    dssci_g = xr.load_dataset(outname_grsci)
     # # Imagery    
     # imagery.imagery_timeseries(
     #     dssci, 
@@ -130,6 +124,12 @@ if __name__ == "__main__":
     # )
 
     # Plots
+    outname_tseng = os.path.join(paths['tsdir'], f"{deployment}-{mode}-eng.nc")
+    dseng = xr.load_dataset(outname_tseng)
+
+    outname_grsci = os.path.join(paths['griddir'], f"{deployment}_grid-{mode}-5m.nc")
+    dssci_g = xr.load_dataset(outname_grsci)
+
     base_path = paths['plotdir']
     plots.sci_gridded_loop(dssci_g, base_path)
     plots.sci_timeseries_loop(dssci, base_path)

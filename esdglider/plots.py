@@ -28,7 +28,11 @@ def log_label(var):
         return f"{adjustments_labels[var]}({var} [{units[var]}])"
     else:
         return f"{var} [{units[var]}]"
-    
+
+def show_close(plt: plt, show: bool = False):
+    if show: 
+        plt.show
+    plt.close()    
 
 adjustments = {
     "temperature": return_var, 
@@ -159,12 +163,9 @@ def sci_gridded_loop(
         s2 = sci_spatialsection_plot(ds, var, base_path=base_path)
         s3 = sci_spatialgrid_plot(ds, var, base_path=base_path)
 
-        if show:
-            s1.show()
-            s2.show()
-            s3.show()
-
-    return base_path
+        show_close(s1)
+        show_close(s2)
+        show_close(s3)
 
 
 def eng_tvt_loop(
@@ -191,14 +192,12 @@ def eng_tvt_loop(
     Returns
         base_path value
     """
+
+    _log.info("loop: making engineering tvt plots")
     eng_dict = eng_plots_to_make(ds)
     for key in eng_dict.keys():
         s1 = eng_tvt_plot(ds, eng_dict, key, base_path=base_path)
-
-        if show:
-            s1.show()
-
-    return base_path
+        show_close(s1)
 
 
 def sci_timeseries_loop(
@@ -232,6 +231,7 @@ def sci_timeseries_loop(
 
     # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
 
+    _log.info("loop: making science timeseries plots")
     for var in sci_vars:
         _log.debug(f"var {var}")
         if not var in list(ds.data_vars):
@@ -239,11 +239,7 @@ def sci_timeseries_loop(
             continue
 
         s1 = sci_timeseries_plot(ds, var, base_path=base_path)
-
-        if show:
-            s1.show()
-
-    return base_path
+        show_close(s1)
 
 
 def eng_timeseries_loop(
@@ -276,6 +272,7 @@ def eng_timeseries_loop(
     """
 
     # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
+    _log.info("loop: making engineering timeseries plots")
 
     for var in eng_vars:
         _log.debug(f"var {var}")
@@ -284,11 +281,7 @@ def eng_timeseries_loop(
             continue
 
         s1 = eng_timeseries_plot(ds, var, base_path=base_path)
-
-        if show:
-            s1.show()
-
-    return base_path
+        show_close(s1)
 
 
 def sci_ts_loop(
@@ -320,6 +313,7 @@ def sci_ts_loop(
         base_path value
     """
 
+    _log.info("loop: making ts plots")
     for var in sci_vars:
         _log.debug(f"var {var}")
         if not var in list(ds.data_vars):
@@ -327,11 +321,7 @@ def sci_ts_loop(
             continue
 
         s1 = ts_plot(ds, var, base_path=base_path)
-
-        if show:
-            s1.show()
-
-    return base_path
+        show_close(s1)
 
 
 def sci_surface_map_loop(
@@ -363,6 +353,8 @@ def sci_surface_map_loop(
     Returns
         base_path value
     """
+
+    _log.info("loop: making surface maps")
     for var in sci_vars:
         _log.debug(f"var {var}")
         if not var in list(ds.data_vars):
@@ -370,10 +362,7 @@ def sci_surface_map_loop(
             continue
 
         s1 = sci_surface_map(ds, var, bar, base_path)
-        if show:
-            s1.show()
-
-    return base_path
+        show_close(s1)
 
 
 def save_plot(
@@ -392,6 +381,7 @@ def save_plot(
         os.makedirs(file_dir)
     file_path = os.path.join(file_dir, file_name)
 
+    _log.debug(f"Saving {file_path}")
     plt.savefig(file_path)
 
 
@@ -427,6 +417,7 @@ def sci_timesection_plot(
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
         return 
 
+    _log.info(f"Making timesection plot for variable {var}")
     deployment = ds.deployment_name
     # glider = utils.split_deployment(deployment)[0]
     project = ds.project
@@ -502,6 +493,7 @@ def sci_spatialsection_plot(
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
         return 
 
+    _log.info(f"Making spatialsection plot for variable {var}")
     deployment = ds.deployment_name
     project = ds.project
 
@@ -592,6 +584,7 @@ def sci_spatialgrid_plot(
         matplotlib plt object
     """
 
+    _log.info(f"Making spatialgrid plot for variable {var}")
     gs = GridSpec(5, 5,left=0.1, right=0.9, bottom=0.1, top=0.9,wspace=0.05, hspace=0.05)
     deployment = ds.deployment_name
     project = ds.project
@@ -732,6 +725,7 @@ def eng_tvt_plot(
         raise ValueError(f"Variable name {key} not present in eng_dict. Skipping plot")
 
     deployment = ds.deployment_name
+    _log.info(f"Making tvt plot for dictionary key {key}")
 
     fig, ax = plt.subplots(figsize=(8.5,8.5))
 
@@ -801,6 +795,7 @@ def eng_timeseries_plot(
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
         return 
     
+    _log.info(f"Making eng timeseries plot for variable {var}")
     deployment = ds.deployment_name
     project = ds.project
 
@@ -864,6 +859,7 @@ def sci_timeseries_plot(
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
         return 
         
+    _log.info(f"Making sci timeseries plot for variable {var}")
     deployment = ds.deployment_name
     project = ds.project
 
@@ -923,6 +919,7 @@ def ts_plot(
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
         return 
 
+    _log.info(f"Making ts plot for variable {var}")
     deployment = ds.deployment_name
     start = ds.deployment_start[0:10]
     end = ds.deployment_end[0:10]
@@ -991,6 +988,7 @@ def sci_surface_map(
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
         return 
     
+    _log.info(f"Making surface map for variable {var}")
     deployment = ds.deployment_name
     start = ds.deployment_start[0:10]
     end = ds.deployment_end[0:10]
