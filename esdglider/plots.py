@@ -193,7 +193,7 @@ def eng_tvt_loop(
         base_path value
     """
 
-    _log.info("loop: making engineering tvt plots")
+    _log.info("LOOP: making engineering tvt plots")
     eng_dict = eng_plots_to_make(ds)
     for key in eng_dict.keys():
         s1 = eng_tvt_plot(ds, eng_dict, key, base_path=base_path)
@@ -231,7 +231,7 @@ def sci_timeseries_loop(
 
     # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
 
-    _log.info("loop: making science timeseries plots")
+    _log.info("LOOP: making science timeseries plots")
     for var in sci_vars:
         _log.debug(f"var {var}")
         if not var in list(ds.data_vars):
@@ -272,7 +272,7 @@ def eng_timeseries_loop(
     """
 
     # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
-    _log.info("loop: making engineering timeseries plots")
+    _log.info("LOOP: making engineering timeseries plots")
 
     for var in eng_vars:
         _log.debug(f"var {var}")
@@ -313,7 +313,7 @@ def sci_ts_loop(
         base_path value
     """
 
-    _log.info("loop: making ts plots")
+    _log.info("LOOP: making ts plots")
     for var in sci_vars:
         _log.debug(f"var {var}")
         if not var in list(ds.data_vars):
@@ -354,7 +354,7 @@ def sci_surface_map_loop(
         base_path value
     """
 
-    _log.info("loop: making surface maps")
+    _log.info("LOOP: making surface maps")
     for var in sci_vars:
         _log.debug(f"var {var}")
         if not var in list(ds.data_vars):
