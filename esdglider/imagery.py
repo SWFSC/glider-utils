@@ -28,8 +28,8 @@ def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
 
     -----
     Returns:
-        The datetime extracted from the imagery filename. The datetime is
-        returned as a 'datetime64[s]' object
+        The datetime extracted from the imagery filename. 
+        The datetime is returned as a 'datetime64[s]' object
     """
     
     solocam_substr = filename[index_dt:(index_dt+15)]
@@ -116,14 +116,15 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
     if not os.path.isdir(imagedir):
         raise FileNotFoundError(f'{imagedir} does not exist')
     else:
+        # NOTE: this should probably be a separate function, and return a tuple
         filepaths = glob.glob(f'{imagedir}/**/*.{ext}', recursive=True)
         _log.debug(f"Found {len(filepaths)} files with the extension {ext}")
         if len(filepaths) == 0:
             _log.error("Zero image files were found. Did you provide " +
-                       "the right path, and use the right file extension?")
+                        "the right path, and use the right file extension?")
             raise ValueError("No files for which to generate metadata")
-        imagery_files = [os.path.basename(x) for x in filepaths]
-        imagery_files.sort()
+        imagery_files = [os.path.basename(path) for path in filepaths]
+        imagery_dirs = [os.path.basename(os.path.dirname(path)) for path in filepaths]
 
     #--------------------------------------------
     # Extract info from imagery file names
@@ -147,10 +148,12 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
 
     except:
         _log.error('Datetimes could not be extracted from imagery filenames, ' + 
-                   f'and thus the imagery metadata will not be created')
+                    f'and thus the imagery metadata will not be created')
         raise ValueError('Datetimes could not be extracted from imagery filenames')
-
-    df = pd.DataFrame(data={'img_file': imagery_files, 'time': imagery_files_dt})
+    
+    df_data = {'img_file': imagery_files, 'img_dir' : imagery_dirs, 
+                'time': imagery_files_dt}
+    df = pd.DataFrame(data = df_data).sort_values(by='img_file', ignore_index=True)
     # df.to_csv("/home/sam_woodman_noaa_gov/test.csv", index_label="time")
 
     #--------------------------------------------

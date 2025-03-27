@@ -15,13 +15,13 @@ import esdglider.acoustics as acoustics
 import esdglider.plots as plots
 
 
-deployment = 'calanus-20241019'
-project = "ECOSWIM"
-mode = 'delayed'
-
-# deployment = 'amlr08-20220513'
-# project = "SANDIEGO"
+# deployment = 'calanus-20241019'
+# project = "ECOSWIM"
 # mode = 'delayed'
+
+deployment = 'amlr08-20220513'
+project = "SANDIEGO"
+mode = 'delayed'
 
 deployment_bucket = 'amlr-gliders-deployments-dev'
 imagery_bucket    = 'amlr-gliders-imagery-raw-dev'
@@ -99,8 +99,8 @@ if __name__ == "__main__":
     #                 datefmt='%Y-%m-%d %H:%M:%S')
 
     gcp.gcs_mount_bucket(deployment_bucket, deployments_path, ro=False)
-    # gcp.gcs_mount_bucket(imagery_bucket, imagery_path, ro=False)
-    # gcp.gcs_mount_bucket(acoustics_bucket, acoustics_path, ro=False)
+    gcp.gcs_mount_bucket(imagery_bucket, imagery_path, ro=False)
+    gcp.gcs_mount_bucket(acoustics_bucket, acoustics_path, ro=False)
     paths = slocum.get_path_deployment(
         project, deployment, mode, deployments_path, config_path)
     
@@ -112,32 +112,32 @@ if __name__ == "__main__":
     outname_tssci = os.path.join(paths['tsdir'], f"{deployment}-{mode}-sci.nc")
     dssci = xr.load_dataset(outname_tssci)
     # # Imagery    
-    # imagery.imagery_timeseries(
-    #     dssci, 
-    #     imagery.get_path_imagery(project, deployment, imagery_path)
-    # )
+    imagery.imagery_timeseries(
+        dssci, 
+        imagery.get_path_imagery(project, deployment, imagery_path)
+    )
 
-    # # Acoustics
-    # acoustics.echoview_metadata(
-    #     dssci, 
-    #     acoustics.get_path_acoutics(project, deployment, acoustics_path)
-    # )
+    # Acoustics
+    acoustics.echoview_metadata(
+        dssci, 
+        acoustics.get_path_acoutics(project, deployment, acoustics_path)
+    )
 
-    # Plots
-    outname_tseng = os.path.join(paths['tsdir'], f"{deployment}-{mode}-eng.nc")
-    dseng = xr.load_dataset(outname_tseng)
+    # # Plots
+    # outname_tseng = os.path.join(paths['tsdir'], f"{deployment}-{mode}-eng.nc")
+    # dseng = xr.load_dataset(outname_tseng)
 
-    outname_grsci = os.path.join(paths['griddir'], f"{deployment}_grid-{mode}-5m.nc")
-    dssci_g = xr.load_dataset(outname_grsci)
+    # outname_grsci = os.path.join(paths['griddir'], f"{deployment}_grid-{mode}-5m.nc")
+    # dssci_g = xr.load_dataset(outname_grsci)
 
-    base_path = paths['plotdir']
-    plots.sci_gridded_loop(dssci_g, base_path)
-    plots.sci_timeseries_loop(dssci, base_path)
-    plots.eng_timeseries_loop(dseng, base_path)
-    plots.eng_tvt_loop(dseng, base_path)
-    plots.sci_ts_loop(dssci, base_path)
+    # base_path = paths['plotdir']
+    # plots.sci_gridded_loop(dssci_g, base_path)
+    # plots.sci_timeseries_loop(dssci, base_path)
+    # plots.eng_timeseries_loop(dseng, base_path)
+    # plots.eng_tvt_loop(dseng, base_path)
+    # plots.sci_ts_loop(dssci, base_path)
 
-    bar_path = os.path.join("/home/sam_woodman_noaa_gov", "ETOPO_2022_v1_15s_N45W135_erddap.nc")
-    bar = xr.load_dataset(bar_path).rename({'latitude': 'lat', 'longitude': 'lon'})
-    bar = bar.where(bar.z <= 0, drop=True)
-    plots.sci_surface_map_loop(dssci_g, bar, base_path)
+    # bar_path = os.path.join("/home/sam_woodman_noaa_gov", "ETOPO_2022_v1_15s_N45W135_erddap.nc")
+    # bar = xr.load_dataset(bar_path).rename({'latitude': 'lat', 'longitude': 'lon'})
+    # bar = bar.where(bar.z <= 0, drop=True)
+    # plots.sci_surface_map_loop(dssci_g, bar, base_path)
