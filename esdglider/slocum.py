@@ -5,7 +5,10 @@ import xarray as xr
 import yaml
 import netCDF4
 import importlib
-import pyglider
+
+import pyglider.slocum as pgslocum
+import pyglider.ncprocess as pgncprocess
+import pyglider.utils as pgutils
 
 import esdglider.utils as utils
 
@@ -111,7 +114,7 @@ def binary_to_nc(
     deployment, 
     mode, 
     paths, 
-    min_dt='2017-01-01', 
+    min_dt, 
     write_timeseries=True, 
     write_gridded=True
 ):     
@@ -192,7 +195,7 @@ def binary_to_nc(
 
         # Engineering - uses m_depth as time base
         _log.info(f'Generating engineering timeseries')
-        outname_tseng = pyglider.slocum.binary_to_timeseries(
+        outname_tseng = pgslocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
             [deploymentyaml, paths["engyaml"]], 
             search=binary_search, 
@@ -202,14 +205,13 @@ def binary_to_nc(
 
         _log.info(f'Post-processing engineering timeseries')
         tseng = xr.load_dataset(outname_tseng)
-        tseng = postproc_eng_timeseries(tseng, min_dt=min_dt)
-        tseng = postproc_attrs(tseng, mode)
+        tseng = postproc_eng_timeseries(tseng, mode, min_dt=min_dt)
         tseng.to_netcdf(outname_tseng, encoding=utils.encoding_dict)
         _log.info(f'Finished eng timeseries postproc: {outname_tseng}')
 
         # Science - uses sci_water_temp as time_base sensor
         _log.info(f'Generating science timeseries')
-        outname_tssci = pyglider.slocum.binary_to_timeseries(
+        outname_tssci = pgslocum.binary_to_timeseries(
             paths["binarydir"], paths["cacdir"], tsdir, 
             deploymentyaml, 
             search=binary_search, 
@@ -219,8 +221,7 @@ def binary_to_nc(
 
         _log.info(f'Post-processing science timeseries')
         tssci = xr.load_dataset(outname_tssci)
-        tssci = postproc_sci_timeseries(tssci, min_dt=min_dt)
-        tssci = postproc_attrs(tssci, mode)
+        tssci = postproc_sci_timeseries(tssci, mode, min_dt=min_dt)
         tssci.to_netcdf(outname_tssci, encoding=utils.encoding_dict)
         _log.info(f'Finished sci timeseries postproc: {outname_tssci}')
 
@@ -244,12 +245,12 @@ def binary_to_nc(
             raise FileNotFoundError(f'Could not find {outname_tssci}')
 
         _log.info(f'Generating 1m gridded data')
-        outname_1m = pyglider.ncprocess.make_gridfiles(
+        outname_1m = pgncprocess.make_gridfiles(
             outname_tssci, paths["griddir"], deploymentyaml, 
             dz = 1, fnamesuffix=f"-{mode}-1m")
 
         _log.info(f'Generating 5m gridded data')
-        outname_5m = pyglider.ncprocess.make_gridfiles(
+        outname_5m = pgncprocess.make_gridfiles(
             outname_tssci, paths["griddir"], deploymentyaml, 
             dz = 5, fnamesuffix=f"-{mode}-5m")
 
@@ -282,12 +283,37 @@ def postproc_attrs(ds, mode):
 
     Returns the ds Dataset with updated attributes
     """
+    
     try:
         del ds.attrs['glider_serial']
     except KeyError:
         _log.warning("Unable to delete glider_serial attribute")
         pass
 
+    # Update attrs set by pyglider functions, now that drop_bogus has been run
+    good = ~np.isnan(ds.latitude.values + ds.longitude.values)
+    if np.any(good):
+        ds.attrs['geospatial_lat_max'] = np.max(ds.latitude.values[good])
+        ds.attrs['geospatial_lat_min'] = np.min(ds.latitude.values[good])
+        ds.attrs['geospatial_lon_max'] = np.max(ds.longitude.values[good])
+        ds.attrs['geospatial_lon_min'] = np.min(ds.longitude.values[good])
+    else:
+        ds.attrs['geospatial_lat_max'] = np.nan
+        ds.attrs['geospatial_lat_min'] = np.nan
+        ds.attrs['geospatial_lon_max'] = np.nan
+        ds.attrs['geospatial_lon_min'] = np.nan
+        
+    ds = pgutils.get_distance_over_ground(ds)
+
+    ds.attrs['id'] = utils.get_file_id_esd(ds)
+    ds.attrs['title'] = ds.attrs['id']
+    ds.attrs['deployment_start'] = str(ds.time.values[0])[:19]
+    ds.attrs['deployment_end']   = str(ds.time.values[-1])[:19]
+    dt = ds.time.values
+    ds.attrs['time_coverage_start'] = '%s' % dt[0]
+    ds.attrs['time_coverage_end'] = '%s' % dt[-1]
+
+    # ESD updates, or fixes of pyglider attributes
     ds.attrs['standard_name_vocabulary'] = 'CF Standard Name Table v72'
     ds.attrs['history'] = (        
         f"{np.datetime64('now')}Z: netCDF files created using: " +
@@ -306,7 +332,7 @@ def postproc_attrs(ds, mode):
     return ds
 
 
-def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
+def postproc_eng_timeseries(ds, mode, min_dt):
     """
     Post-process engineering timeseries, including: 
         - Removing CTD vars
@@ -331,7 +357,7 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
     ds = ds.rename({"depth_measured": "depth"})
     
     # Remove times < min_dt
-    ds = utils.drop_bogus(ds, "eng", min_dt)
+    ds = utils.drop_bogus(ds, min_dt)
 
     # Calculate profiles using measured depth
     if np.any(np.isnan(ds.depth.values)):
@@ -352,11 +378,12 @@ def postproc_eng_timeseries(ds, min_dt='2017-01-01'):
         ds.attrs["comment"] = ds.attrs["comment"] + "; engineering-only time series"
 
     _log.debug(f"end eng postproc: ds has {len(ds.time)} values")
+    ds = postproc_attrs(ds, mode)
 
     return ds
 
 
-def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
+def postproc_sci_timeseries(ds, mode, min_dt):
     """
     Post-process science timeseries, including: 
         - remove bogus times. Eg, 1970, or before deployment start date
@@ -372,20 +399,23 @@ def postproc_sci_timeseries(ds, min_dt='2017-01-01'):
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
     # Remove times < min_dt
-    ds = utils.drop_bogus(ds, "sci", min_dt)
+    ds = utils.drop_bogus(ds, min_dt)
+
+    # TODO: redo pyglider metadata things that are changed by min_dt
 
     # Calculate profiles, using the CTD-derived depth values
     # TODO: update this to play nice with eng timeseries for rt data?
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
     # Reorder data variables
-    new_start = [(
-        'latitude', 'longitude', 'depth', 'profile_index', 
+    new_start = ['latitude', 'longitude', 'depth', 'profile_index', 
         'conductivity', 'temperature', 'pressure', 'salinity', 
-        'density', 'potential_temperature', 'potential_density')]
+        'density', 'potential_temperature', 'potential_density']
     ds = utils.data_var_reorder(ds, new_start)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
+    ds = postproc_attrs(ds, mode)
+
 
     return ds
 
@@ -545,7 +575,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
                     dss[name].attrs['ancillary_variables'] = qcname
                     if qcname not in dss.keys():
                         dss[qcname] = ('time', 2 * np.ones(len(dss[name]), np.int8))
-                        dss[qcname].attrs = pyglider.utils.fill_required_qcattrs({}, name)
+                        dss[qcname].attrs = pgutils.fill_required_qcattrs({}, name)
                         # 2 is "not eval"
 
                 _log.info('Writing %s', outname)

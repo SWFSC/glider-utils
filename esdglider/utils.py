@@ -148,17 +148,15 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     return ds
 
 
-def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
+def drop_bogus(ds, min_dt='2017-01-01'):
     """
     Remove/drop bogus times and values 
 
-    Times from before min_dt are dropped; default is beofre Jan 2017, 
+    Times from before min_dt are dropped; default is beofre 2017, 
     which is beofre the ESD/AERD glider program. 
 
     ds: `xarray.Dataset`
         Dataset, with 'time' coordinate
-    ds_type: string
-        String of either 'sci' or 'eng'
     min_dt: string
         String to be passed to np.datetime64. Minimum datetime to keep.
         For instance, '1971-01-01', or '2020-03-06 12:00:00'
@@ -166,15 +164,15 @@ def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
     Returns: filtered Dataset
     """
 
-    if not (ds_type in ['sci', 'eng']):
-        raise ValueError('ds_type must be either sci or eng')
+    # if not (ds_type in ['sci', 'eng']):
+    #     raise ValueError('ds_type must be either sci or eng')
 
     # For out of range or nan time/lat/lon, drop rows
     num_orig = len(ds.time)
     ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
     if (num_orig-len(ds.time)) > 0:
         _log.info(f"Dropped {num_orig - len(ds.time)} times " +
-                  f"that were either nan or before {min_dt}")
+                    f"that were either nan or before {min_dt}")
 
     num_orig = len(ds.time)
     ll_good = (
@@ -183,37 +181,38 @@ def drop_bogus(ds, ds_type, min_dt='2017-01-01'):
     ds = ds.where(ll_good, drop=True)
     if (num_orig-len(ds.time)) > 0:
         _log.info(f"Dropped {num_orig - len(ds.time)} nan " + 
-                  "or out of range lat/lons")
+                    "or out of range lat/lons")
     
     # For science variables, change out of range values to nan
-    if ds_type == "sci":
-        drop_values = {
-            'conductivity':[0, 60], 
-            'temperature':[-5, 100], 
-            'pressure':[-2, 1500], 
-            'chlorophyll':[0, 30], 
-            'cdom':[0, 30], 
-            'backscatter_700':[0, 5],  
-            # 'oxygen_concentration':[-100, 500],
-            'salinity':[0, 50], 
-            'potential_density':[900, 1050], 
-            'density':[1000, 1050], 
-            'potential_temperature':[-5, 100]
-        } 
-        for var, value in drop_values.items():
-            if not var in list(ds.keys()):
-                _log.debug(f"{var} not present in ds - skipping drop_values check")
-                continue
-            num_orig = len(ds[var])
-            good = (ds[var] >= value[0]) & (ds[var] <= value[1])
-            ds[var] = ds[var].where(good, drop=False)
-            if num_orig - len(ds[var]) > 0:
-                _log.info(f"Changed {num_orig - len(ds[var])} {var} values " +
-                        f"outside range [{value[0]}, {value[1]}] to nan")
+    # if ds_type == "sci":
+    drop_values = {
+        'conductivity':[0, 60], 
+        'temperature':[-5, 100], 
+        'pressure':[-2, 1500], 
+        'chlorophyll':[0, 30], 
+        'cdom':[0, 30], 
+        'backscatter_700':[0, 5],  
+        # 'oxygen_concentration':[-100, 500],
+        'salinity':[0, 50], 
+        'potential_density':[900, 1050], 
+        'density':[1000, 1050], 
+        'potential_temperature':[-5, 100]
+    } 
 
-            # num_orig = len(ds[var])
-            # ds = ds.where(ds[var] <= value[1], drop=False)
-            # _log.info(f"Changed {num_orig - len(ds[var])} {var} values greater than {value[1]} to nan")
+    for var, value in drop_values.items():
+        if not var in list(ds.keys()):
+            _log.debug(f"{var} not present in ds - skipping drop_values check")
+            continue
+        num_orig = len(ds[var])
+        good = (ds[var] >= value[0]) & (ds[var] <= value[1])
+        ds[var] = ds[var].where(good, drop=False)
+        if num_orig - len(ds[var]) > 0:
+            _log.info(f"Changed {num_orig - len(ds[var])} {var} values " +
+                    f"outside range [{value[0]}, {value[1]}] to nan")
+
+        # num_orig = len(ds[var])
+        # ds = ds.where(ds[var] <= value[1], drop=False)
+        # _log.info(f"Changed {num_orig - len(ds[var])} {var} values greater than {value[1]} to nan")
 
     return ds
 

@@ -121,6 +121,22 @@ eng_vars = [
 ]
 
 
+def all_loops(dssci, dseng, dssci_g, base_path, bar_path):
+    # base_path = paths['plotdir']
+    _log.info("Doing all of the loops")
+    sci_gridded_loop(dssci_g, base_path)
+    sci_timeseries_loop(dssci, base_path)
+    eng_timeseries_loop(dseng, base_path)
+    eng_tvt_loop(dseng, base_path)
+    sci_ts_loop(dssci, base_path)
+
+    # bar_path = os.path.join("/home/sam_woodman_noaa_gov", "ETOPO_2022_v1_15s_N45W135_erddap.nc")
+    bar_path = os.path.join(bar_path)
+    bar = xr.load_dataset(bar_path).rename({'latitude': 'lat', 'longitude': 'lon'})
+    bar = bar.where(bar.z <= 0, drop=True)
+    sci_surface_map_loop(dssci_g, bar, base_path)
+
+
 def sci_gridded_loop(
         ds: xr.Dataset, 
         base_path: str | None = None, 
