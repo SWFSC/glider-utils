@@ -20,7 +20,7 @@ def access_secret_version(project_id, secret_id, version_id = 'latest'):
 
     TODO: update this to follow current sample code from Google:
     https://github.com/googleapis/google-cloud-python/blob/main/packages/google-cloud-secret-manager/samples/generated_samples/secretmanager_v1_generated_secret_manager_service_access_secret_version_sync.py
-    
+
     """
 
     # Create the Secret Manager client.
@@ -68,7 +68,7 @@ def gcs_mount_bucket(bucket, mountpoint, ro = False):
     Run the command to mount a bucket 'bucket' at 'mountpoint' using gcsfuse
     Command is run with '--implicit-dirs' argument.
     https://cloud.google.com/storage/docs/gcs-fuse
-    
+
     Parameters
     ----------
     bucket : str
@@ -93,5 +93,5 @@ def gcs_mount_bucket(bucket, mountpoint, ro = False):
     if ro:
         cmd[2:2] = ["-o", "ro"]
     subprocess.run(cmd)
-    
+
     return 0

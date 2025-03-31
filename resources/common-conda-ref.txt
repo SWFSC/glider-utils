@@ -4,7 +4,7 @@
 
 conda env  create --file glider-utils/environment.yml
 
-# Update conda env from file, removing (pruning) unspecified packages 
+# Update conda env from file, removing (pruning) unspecified packages
 conda env update --file glider-utils/environment.yml --prune
 
 # Install esdgliderutils as editable from local

@@ -19,18 +19,18 @@ def get_path_acoutics(project, deployment, acoustic_path):
     Parameters
 
     project : str
-        The project name of the deployment. 
-        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'        
+        The project name of the deployment.
+        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
     deployment : str
         The name of the glider deployment. Eg, amlr01-20210101
     acoustic_path : str
-        The path to the top-level folder of the acoustic data. 
+        The path to the top-level folder of the acoustic data.
         This is intended to be the path to the mounted acoustic bucket
-    
+
     -----
     Returns:
         A dictionary with the relevant acoustic paths
-    
+
     """
 
     if not os.path.isdir(acoustic_path):
@@ -44,7 +44,7 @@ def get_path_acoutics(project, deployment, acoustic_path):
         raise FileNotFoundError(f'{acoustic_deployment_path} does not exist')
 
     return {
-        # "imagedir": os.path.join(acoustic_deployment_path, 'images'), 
+        # "imagedir": os.path.join(acoustic_deployment_path, 'images'),
         "metadir":  os.path.join(acoustic_deployment_path, 'metadata')
     }
 
@@ -56,9 +56,9 @@ def echoview_metadata(ds, paths):
     Args:
         gdm (GliderDataModel): gdm object created by amlr_gdm
         glider_path (str): path to glider folder
-        deployment (str): 
+        deployment (str):
         mode (str): deployment-mode string, eg amlr##-YYYYmmdd-delayed
-        
+
     Returns:
         Tuple of the file names. In order: gps, pitch, roll, depth
     """
@@ -68,9 +68,9 @@ def echoview_metadata(ds, paths):
 
     # Prep - making paths, variables, etc used throughout
     path_echoview = os.path.join(paths["metadir"], 'echoview')
-    utils.mkdir_pass(paths["metadir"])    
+    utils.mkdir_pass(paths["metadir"])
     file_echoview_pre = os.path.join(path_echoview, depl)
-    utils.mkdir_pass(path_echoview)    
+    utils.mkdir_pass(path_echoview)
     _log.info(f'Writing echoview metadata files to {path_echoview}')
 
     ds_dt = ds.time.values.astype("datetime64[s]").astype(datetime.datetime)
@@ -80,8 +80,8 @@ def echoview_metadata(ds, paths):
     # Pitch
     _log.debug(f'pitch')
     pitch_df = pd.DataFrame({
-        'Pitch_date': mdy_str, 
-        'Pitch_time': hms_str, 
+        'Pitch_date': mdy_str,
+        'Pitch_time': hms_str,
         'Pitch_angle': [math.degrees(x) for x in ds['pitch'].values]
     })
     pitch_df.to_csv(f"{file_echoview_pre}-pitch.csv", index = False)
@@ -89,8 +89,8 @@ def echoview_metadata(ds, paths):
     # Roll
     _log.debug(f'roll')
     roll_df = pd.DataFrame({
-        'Roll_date': mdy_str, 
-        'Roll_time': hms_str, 
+        'Roll_date': mdy_str,
+        'Roll_time': hms_str,
         'Roll_angle': [math.degrees(x) for x in ds['roll'].values]
     })
     roll_df.to_csv(f"{file_echoview_pre}-roll.csv", index = False)
@@ -98,9 +98,9 @@ def echoview_metadata(ds, paths):
     # GPS
     _log.debug(f'gps')
     gps_df = pd.DataFrame({
-        'GPS_date': [i.strftime('%Y-%m-%d') for i in ds_dt], 
-        'GPS_time': hms_str, 
-        'Latitude': ds['latitude'].values, 
+        'GPS_date': [i.strftime('%Y-%m-%d') for i in ds_dt],
+        'GPS_time': hms_str,
+        'Latitude': ds['latitude'].values,
         'Longitude': ds['longitude'].values
     })
     gps_df.to_csv(f"{file_echoview_pre}-gps.csv", index = False)
@@ -108,9 +108,9 @@ def echoview_metadata(ds, paths):
     # Depth
     _log.debug(f'depth')
     depth_df = pd.DataFrame({
-        'Depth_date': [i.strftime('%Y%m%d') for i in ds_dt], 
-        'Depth_time': [f"{i.strftime('%H%M%S')}0000" for i in ds_dt], 
-        'Depth': ds['depth'].values, 
+        'Depth_date': [i.strftime('%Y%m%d') for i in ds_dt],
+        'Depth_time': [f"{i.strftime('%H%M%S')}0000" for i in ds_dt],
+        'Depth': ds['depth'].values,
         'repthree': 3
     })
     depth_file = f"{file_echoview_pre}-depth.evl"

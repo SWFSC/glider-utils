@@ -13,12 +13,12 @@ _log = logging.getLogger(__name__)
 
 # Names of Components in the ESD Glider Database
 db_components = {
-    "ctd"         : 'CTD', 
-    "flbbcd"      : 'flbbcd Fluorometer', 
-    "oxygen"      : 'Oxygen Optode', 
-    "shadowgraph" : ['Shadowgraph cameras (11cm)', 'Shadowgraph cameras (14cm)'], 
-    "glidercam"   : 'Internal Camera Modules', 
-    "azfp"        : 'AZFP', 
+    "ctd"         : 'CTD',
+    "flbbcd"      : 'flbbcd Fluorometer',
+    "oxygen"      : 'Oxygen Optode',
+    "shadowgraph" : ['Shadowgraph cameras (11cm)', 'Shadowgraph cameras (14cm)'],
+    "glidercam"   : 'Internal Camera Modules',
+    "azfp"        : 'AZFP',
     "echosounder" : 'Signature 100 compact echosounder'
 }
 # db_ctd         = 'CTD'
@@ -120,23 +120,23 @@ def make_deployment_config(
         # Confirm that exactly one deployment in the db matched deployment name
         if db_depl.shape[0] != 1:
             _log.error(
-                'Exactly one row from the Glider_Deployment table ' + 
-                f'must match the deployment name {deployment}. ' + 
+                'Exactly one row from the Glider_Deployment table ' +
+                f'must match the deployment name {deployment}. ' +
                 f'Currently, {db_depl.shape[0]} rows matched')
             raise ValueError('Invalid Glider_Deployment match')
-        
-        # Extract the Glider and Glider_Deployment IDs, 
+
+        # Extract the Glider and Glider_Deployment IDs,
         glider_id = db_depl['Glider_ID'].values[0]
         glider_deployment_id = db_depl['Glider_Deployment_ID'].values[0]
-        
-        # Get metadata info  
+
+        # Get metadata info
         metadata["deployment_id"] = str(glider_deployment_id)
 
         # Filter the Devices table for this deployment
         db_devices = vDeployment_Device[vDeployment_Device['Glider_Deployment_ID'] == glider_deployment_id]
         db_cals = vDeployment_Device_Calibration [vDeployment_Device_Calibration ['Glider_Deployment_ID'] == glider_deployment_id]
         components = db_devices['Component'].values
-        
+
         # Based on the instruments on the glider:
         # 1) Remove netcdf vars from yamls, if necessary
         # 2) Add instrument_ metadata \
@@ -150,14 +150,14 @@ def make_deployment_config(
         key = 'ctd'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)    
+                key, devices, db_devices, db_cals)
         else:
             raise ValueError('Glider must have a CTD')
-        
+
         key = 'flbbcd'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)    
+                key, devices, db_devices, db_cals)
         else:
             netcdf_vars.pop('chlorophyll', None)
             netcdf_vars.pop('cdom', None)
@@ -166,28 +166,28 @@ def make_deployment_config(
         key = 'oxygen'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)    
+                key, devices, db_devices, db_cals)
         else:
             netcdf_vars.pop('oxygen_concentration', None)
 
         # TODO: how to handle multiple shadowgraph models?
         # if not set(db_components['shadowgraph']).isdisjoint(components):
-        #     pass 
+        #     pass
 
         key = 'glidercam'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)    
-        
+                key, devices, db_devices, db_cals)
+
         key = 'azfp'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)    
+                key, devices, db_devices, db_cals)
 
         key = 'echosounder'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)       
+                key, devices, db_devices, db_cals)
 
 
     else:
@@ -201,15 +201,15 @@ def make_deployment_config(
 
     if project == "FREEBYRD":
         metadata["sea_name"] = "Southern Ocean"
-    elif project in ["ECOSWIM", "SANDIEGO", "REFOCUS"]: 
+    elif project in ["ECOSWIM", "SANDIEGO", "REFOCUS"]:
         metadata["sea_name"] = "Coastal Waters of California"
     else:
         metadata["sea_name"] = "<sea name>"
 
     deployment_yaml = {
-        "metadata" : dict(sorted(metadata.items(), key = lambda v: v[0].upper())), 
-        "glider_devices" : instruments, 
-        "netcdf_variables" : netcdf_vars, 
+        "metadata" : dict(sorted(metadata.items(), key = lambda v: v[0].upper())),
+        "glider_devices" : instruments,
+        "netcdf_variables" : netcdf_vars,
         "profile_variables" : prof_vars
     }
 

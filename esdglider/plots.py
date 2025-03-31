@@ -4,7 +4,7 @@ import numpy as np
 import cmocean.cm as cmo
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from matplotlib import colormaps 
+from matplotlib import colormaps
 from matplotlib.gridspec import GridSpec
 from mpl_toolkits.basemap import Basemap
 import xarray as xr
@@ -30,24 +30,24 @@ def log_label(var):
         return f"{var} [{units[var]}]"
 
 def show_close(plt: plt, show: bool = False):
-    if show: 
+    if show:
         plt.show
-    plt.close()    
+    plt.close()
 
 adjustments = {
-    "temperature": return_var, 
-    "chlorophyll":np.log10, 
-    "cdom":np.log10, 
-    "backscatter_700":np.log10, 
+    "temperature": return_var,
+    "chlorophyll":np.log10,
+    "cdom":np.log10,
+    "backscatter_700":np.log10,
     "oxygen_concentration":return_var,
-    "salinity":return_var, 
+    "salinity":return_var,
     "density":return_var
 }
 
 adjustments_labels = {
-    "chlorophyll":"$log_{10}$", 
-    "cdom":"$log_{10}$", 
-    "backscatter_700":"$log_{10}$", 
+    "chlorophyll":"$log_{10}$",
+    "cdom":"$log_{10}$",
+    "backscatter_700":"$log_{10}$",
 }
 
 units = {
@@ -77,24 +77,24 @@ units = {
 }
 
 sci_colors = {
-    "cdom":cmo.solar, 
-    "chlorophyll": cmo.algae, 
-    "oxygen_concentration":cmo.tempo, 
-    "backscatter_700":colormaps['terrain'], 
-    "temperature":cmo.thermal, 
-    "potential_temperature":cmo.thermal, 
-    "salinity":cmo.haline, 
-    "density":colormaps['cividis'], 
+    "cdom":cmo.solar,
+    "chlorophyll": cmo.algae,
+    "oxygen_concentration":cmo.tempo,
+    "backscatter_700":colormaps['terrain'],
+    "temperature":cmo.thermal,
+    "potential_temperature":cmo.thermal,
+    "salinity":cmo.haline,
+    "density":colormaps['cividis'],
     "potential_density":colormaps['cividis']
 }
 
 sci_vars = [
-    "temperature", 
-    "salinity", 
-    "density", 
-    "chlorophyll", 
-    "cdom", 
-    "oxygen_concentration", 
+    "temperature",
+    "salinity",
+    "density",
+    "chlorophyll",
+    "cdom",
+    "oxygen_concentration",
     "backscatter_700"
 ]
 
@@ -138,14 +138,14 @@ def all_loops(dssci, dseng, dssci_g, base_path, bar_path):
 
 
 def sci_gridded_loop(
-        ds: xr.Dataset, 
-        base_path: str | None = None, 
+        ds: xr.Dataset,
+        base_path: str | None = None,
         show: bool = False
     ):
     """
-    A loop/wrapper function to use a gridded science dataset to make plots 
-    of all sci_vars variables. 
-    Specifically, for each sci_var present in the dataset, 
+    A loop/wrapper function to use a gridded science dataset to make plots
+    of all sci_vars variables.
+    Specifically, for each sci_var present in the dataset,
     create timesection, spatialsection, and spatialgrid plots
 
     Arguments let the user specify if these plots should be saved, and/or shown
@@ -185,13 +185,13 @@ def sci_gridded_loop(
 
 
 def eng_tvt_loop(
-        ds: xr.Dataset, 
-        base_path: str | None = None, 
+        ds: xr.Dataset,
+        base_path: str | None = None,
         show: bool = False
     ):
     """
     A loop/wrapper function to:
-    a) create the dictionary used for engineering thisvsthat plots and 
+    a) create the dictionary used for engineering thisvsthat plots and
     b) create said plots using the tvt function
 
     Arguments let the user specify if these plots should be saved, and/or shown
@@ -217,14 +217,14 @@ def eng_tvt_loop(
 
 
 def sci_timeseries_loop(
-        ds: xr.Dataset, 
-        base_path: str | None = None, 
+        ds: xr.Dataset,
+        base_path: str | None = None,
         show: bool = False
     ):
     """
-    A loop/wrapper function to use a timeseries science dataset to make plots 
-    of all sci_vars variables. 
-    Specifically, for each sci_var present in the dataset, 
+    A loop/wrapper function to use a timeseries science dataset to make plots
+    of all sci_vars variables.
+    Specifically, for each sci_var present in the dataset,
     create a timeseries plot
 
     Arguments let the user specify if these plots should be saved, and/or shown
@@ -259,14 +259,14 @@ def sci_timeseries_loop(
 
 
 def eng_timeseries_loop(
-        ds: xr.Dataset, 
-        base_path: str | None = None, 
+        ds: xr.Dataset,
+        base_path: str | None = None,
         show: bool = False
     ):
     """
-    A loop/wrapper function to use a timeseries engineering dataset to make plots 
-    of all eng_vars variables. 
-    Specifically, for each eng_vars present in the dataset, 
+    A loop/wrapper function to use a timeseries engineering dataset to make plots
+    of all eng_vars variables.
+    Specifically, for each eng_vars present in the dataset,
     create a timeseries plot
 
     Arguments let the user specify if these plots should be saved, and/or shown
@@ -301,14 +301,14 @@ def eng_timeseries_loop(
 
 
 def sci_ts_loop(
-        ds: xr.Dataset, 
-        base_path: str | None = None, 
+        ds: xr.Dataset,
+        base_path: str | None = None,
         show: bool = False
     ):
     """
-    A loop/wrapper function to use a timeseries science dataset to make plots 
-    of all sci_vars variables. 
-    Specifically, for each sci_vars present in the dataset, 
+    A loop/wrapper function to use a timeseries science dataset to make plots
+    of all sci_vars variables.
+    Specifically, for each sci_vars present in the dataset,
     create a ts plot
 
     Arguments let the user specify if these plots should be saved, and/or shown
@@ -341,15 +341,15 @@ def sci_ts_loop(
 
 
 def sci_surface_map_loop(
-        ds: xr.Dataset, 
-        bar: xr.Dataset, 
-        base_path: str | None = None, 
+        ds: xr.Dataset,
+        bar: xr.Dataset,
+        base_path: str | None = None,
         show: bool = False
     ):
     """
-    A loop/wrapper function to use a timeseries science dataset to make plots 
-    of all sci_vars variables. 
-    Specifically, for each sci_vars present in the dataset, 
+    A loop/wrapper function to use a timeseries science dataset to make plots
+    of all sci_vars variables.
+    Specifically, for each sci_vars present in the dataset,
     create a surface map using the bar dataset
 
     Arguments let the user specify if these plots should be saved, and/or shown
@@ -382,8 +382,8 @@ def sci_surface_map_loop(
 
 
 def save_plot(
-        file_dir: str, 
-        file_name: str, 
+        file_dir: str,
+        file_name: str,
         plt: plt
     ):
     """
@@ -402,8 +402,8 @@ def save_plot(
 
 
 def sci_timesection_plot(
-        ds: xr.Dataset, 
-        var: str, 
+        ds: xr.Dataset,
+        var: str,
         base_path: str | None = None
     ):
     """
@@ -414,7 +414,7 @@ def sci_timesection_plot(
     Parameters
 
     ds : xarray dataset
-        Gridded glider science dataset. 
+        Gridded glider science dataset.
         This is intended to be a gridded dataset produced by slocum.binary_to_nc
 
     var : str
@@ -431,7 +431,7 @@ def sci_timesection_plot(
 
     if not var in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
-        return 
+        return
 
     _log.info(f"Making timesection plot for variable {var}")
     deployment = ds.deployment_name
@@ -440,7 +440,7 @@ def sci_timesection_plot(
 
     fig, ax = plt.subplots(figsize=(11, 8.5))
     std = np.nanstd(ds[var])
-    mean = np.nanmean(ds[var])    
+    mean = np.nanmean(ds[var])
 
     #     caption = f"Figure {fig_cnt}: Colorized {var} [{units[var]}] plotted with time on the x-axis and depth on the y-axis. \
     # {var[0].upper()}{var[1:]} was obsrved to have a minimum of {sci_ds_g[var].min():0.2f} {units[var]}, \
@@ -467,8 +467,8 @@ def sci_timesection_plot(
     # fig_cnt += 1
     if not base_path is None:
         save_plot(
-            os.path.join(base_path, "science", "timeSections"), 
-            f"{deployment}_{var}_timesection.png", 
+            os.path.join(base_path, "science", "timeSections"),
+            f"{deployment}_{var}_timesection.png",
             plt
         )
 
@@ -478,8 +478,8 @@ def sci_timesection_plot(
 
 
 def sci_spatialsection_plot(
-        ds: xr.Dataset, 
-        var: str, 
+        ds: xr.Dataset,
+        var: str,
         base_path: str | None = None
     ):
     """
@@ -490,7 +490,7 @@ def sci_spatialsection_plot(
     Parameters
 
     ds : xarray dataset
-        Gridded glider science dataset. 
+        Gridded glider science dataset.
         This is intended to be a gridded dataset produced by slocum.binary_to_nc
 
     var : str
@@ -507,7 +507,7 @@ def sci_spatialsection_plot(
 
     if not var in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
-        return 
+        return
 
     _log.info(f"Making spatialsection plot for variable {var}")
     deployment = ds.deployment_name
@@ -524,7 +524,7 @@ def sci_spatialsection_plot(
 # deviation of {std:0.2f}. These data were collected by a Teledyne Slocum g3 glider named {glider} off of {location} \
 # from {pd.to_datetime(sci_ds_g.time.values.min()).strftime("%Y-%m-%d")} to {pd.to_datetime(sci_ds_g.time.values.max()).strftime("%Y-%m-%d")}. \
 # These data are spatially bound by {sci_ds_g.longitude.min():0.3f}°W, {sci_ds_g.longitude.max():0.3f}°W, {sci_ds_g.latitude.min():0.3f}°N, and {sci_ds_g.latitude.max():0.3f}°N."
-        
+
     ### Lon
     p1 = axs[0].pcolormesh(ds.longitude, ds.depth, add_log(var, ds), cmap=sci_colors[var])
     # p1 = axs[0].pcolormesh(sci_ds_g.longitude, sci_ds_g.depth, sci_ds_g[var], cmap=sci_colors[var])
@@ -534,9 +534,9 @@ def sci_spatialsection_plot(
 
     axs[0].set_xlabel(f"Longitude [Deg]", size=label_size)
     axs[0].set_ylabel(f"Depth [m]", size=label_size)
-    axs[0].text(0.05, 0.95, "A.", size=16, ha='left', fontweight="bold", 
+    axs[0].text(0.05, 0.95, "A.", size=16, ha='left', fontweight="bold",
                 transform=axs[0].transAxes, color="white", antialiased=True)
-    
+
     ### Lat
     p2 = axs[1].pcolormesh(ds.latitude, ds.depth, add_log(var, ds), cmap=sci_colors[var])
     # p2 = axs[1].pcolormesh(sci_ds_g.latitude, sci_ds_g.depth, sci_ds_g[var], cmap=sci_colors[var])
@@ -544,12 +544,12 @@ def sci_spatialsection_plot(
     # axs[1].invert_yaxis()
 
     axs[1].set_xlabel(f"Latitude [Deg]", size=label_size)
-    axs[1].text(0.05, 0.95, "B.", size=16, ha='left', fontweight="bold", 
+    axs[1].text(0.05, 0.95, "B.", size=16, ha='left', fontweight="bold",
                 transform=axs[1].transAxes, color="white", antialiased=True)
     # axs[1].set_ylabel(f"Depth [m]", size=14)
 
     fig.suptitle(
-        f"Deployemnt {deployment} for project {project}\n std={std:0.2f} mean={mean:0.2f}", 
+        f"Deployemnt {deployment} for project {project}\n std={std:0.2f} mean={mean:0.2f}",
         size=title_size)
 
     # t = fig.text(0, -0.18, caption, horizontalalignment='left', verticalalignment='center', transform=axs[0].transAxes, wrap=True)
@@ -562,19 +562,19 @@ def sci_spatialsection_plot(
 
     if base_path is not None:
         save_plot(
-            os.path.join(base_path, "science", "spatialSections"), 
-            f"{deployment}_{var}_spatialSections.png", 
+            os.path.join(base_path, "science", "spatialSections"),
+            f"{deployment}_{var}_spatialSections.png",
             plt
         )
-        
+
     # plt.savefig(f"{sci_save_path}/spatialSections/{deployment}_{var}_spatialSections.png")
     # plt.show()
     return plt
 
 
 def sci_spatialgrid_plot(
-        ds: xr.Dataset, 
-        var: str, 
+        ds: xr.Dataset,
+        var: str,
         base_path: str | None = None
     ):
     """
@@ -585,7 +585,7 @@ def sci_spatialgrid_plot(
     Parameters
 
     ds : xarray dataset
-        Gridded glider science dataset. 
+        Gridded glider science dataset.
         This is intended to be a gridded dataset produced by slocum.binary_to_nc
 
     var : str
@@ -612,12 +612,12 @@ def sci_spatialgrid_plot(
     ax2 = fig.add_subplot(gs[0:3, 3:5])
     # std = np.nanstd(sci_ds_g[var])
     # mean = np.nanmean(sci_ds_g[var])
-    
+
     # _,_,var_ = np.meshgrid(sci_ds_g.longitude.values, sci_ds_g.latitude.values, sci_ds_g[var].sel(depth=0, method='nearest'))
     # ax0.pcolormesh(sci_ds_g.longitude, sci_ds_g.latitude, var_[:,:,0], cmap=sci_colors[var])
-    
+
     p = ax0.scatter(
-        ds.longitude, ds.latitude, c=ds[var].sel(depth=0, method='nearest'), 
+        ds.longitude, ds.latitude, c=ds[var].sel(depth=0, method='nearest'),
         cmap=sci_colors[var])
 
     ax0.set_ylabel("Latitude [Deg]", size=label_size)
@@ -631,7 +631,7 @@ def sci_spatialgrid_plot(
     ax1.invert_yaxis()
 
     ax2.pcolormesh(
-        ds.depth, ds.latitude, np.transpose(add_log(var, ds).values), 
+        ds.depth, ds.latitude, np.transpose(add_log(var, ds).values),
         cmap=sci_colors[var])
     ax2.set_xlabel("Depth [m]", size=label_size)
     ax2.set_yticks([])
@@ -642,8 +642,8 @@ def sci_spatialgrid_plot(
 
     if base_path is not None:
         save_plot(
-            os.path.join(base_path, "science", "spatialGrids"), 
-            f"{deployment}_{var}_spatialGrids.png", 
+            os.path.join(base_path, "science", "spatialGrids"),
+            f"{deployment}_{var}_spatialGrids.png",
             plt
         )
 
@@ -652,62 +652,62 @@ def sci_spatialgrid_plot(
 
 def eng_plots_to_make(ds: xr.Dataset):
     """
-    Create dictionary used to make engineering plots. 
+    Create dictionary used to make engineering plots.
     This output is intended to be passed to eng_tvt_plot()
 
     ------
     Parameters
 
     ds : xarray dataset
-        Timeseries glider engineering dataset. 
+        Timeseries glider engineering dataset.
         This is intended to be produced by slocum.binary_to_nc
     """
     plots_to_make = {
         "oilVol":{
-            "X":ds["commanded_oil_volume"], 
+            "X":ds["commanded_oil_volume"],
             "Y":[ds["measured_oil_volume"]],
             "C":["C0"],
             "cb":False},
         "diveEnergy":{
-            "X":ds["total_num_inflections"], 
+            "X":ds["total_num_inflections"],
             "Y":[ds["amphr"], ds["total_amphr"]],
             "C":["C0", "C1"],
             "cb":False},
         "diveDepth":{
-            "X":ds["target_depth"], 
+            "X":ds["target_depth"],
             "Y":[ds["depth"]],
             "C":["C0"],
             "cb":False},
         "inflections":{
-            "X":ds["total_num_inflections"], 
+            "X":ds["total_num_inflections"],
             "Y":[ds["total_amphr"]],
             "C":["C0"],
             "cb":False},
         "diveAmpHr":{
-            "X":ds["depth"], 
+            "X":ds["depth"],
             "Y":[ds["amphr"]],
             "C":["C0"],
             "cb":False},
         "leakDetect":{
-            "X":ds["time"], 
-            "Y":[ds["leak_detect"].rolling(time=900).mean(), 
-                ds["leak_detect_forward"].rolling(time=900).mean(), 
-                ds["leak_detect_science"].rolling(time=900).mean()], 
+            "X":ds["time"],
+            "Y":[ds["leak_detect"].rolling(time=900).mean(),
+                ds["leak_detect_forward"].rolling(time=900).mean(),
+                ds["leak_detect_science"].rolling(time=900).mean()],
             "C":["C0", "C1", "C2"],
             "cb":False},
         "vacuumDepth":{
-            "X":ds["time"], 
-            "Y":[ds["vacuum"]], 
+            "X":ds["time"],
+            "Y":[ds["vacuum"]],
             "C":[ds["depth"]],
             "cb":True}
     }
 
     return plots_to_make
-    
+
 def eng_tvt_plot(
-        ds: xr.Dataset, 
-        eng_dict: dict, 
-        key: str, 
+        ds: xr.Dataset,
+        eng_dict: dict,
+        key: str,
         base_path: str | None = None
     ):
     """
@@ -718,12 +718,12 @@ def eng_tvt_plot(
     Parameters
 
     ds : xarray dataset
-        Timeseries glider engineering dataset. 
+        Timeseries glider engineering dataset.
         This is intended to be produced by slocum.binary_to_nc
 
     eng_dict : dictionary
         Dictionary produced by eng_plots_to_make()
-        Used by this function to get 
+        Used by this function to get
 
     key : str
         The name of the variable (i.e., key from eng_dict) to plot
@@ -750,10 +750,10 @@ def eng_tvt_plot(
             plot = ax.scatter(eng_dict[key]["X"], eng_dict[key]["Y"][i])
         else:
             plot = ax.scatter(
-                eng_dict[key]["X"], eng_dict[key]["Y"][i], 
-                label=eng_dict[key]["Y"][i].name, 
+                eng_dict[key]["X"], eng_dict[key]["Y"][i],
+                label=eng_dict[key]["Y"][i].name,
                 c = eng_dict[key]["C"][i])
-            
+
         if eng_dict[key]["cb"]:
             fig.colorbar(plot)
 
@@ -771,8 +771,8 @@ def eng_tvt_plot(
 
     if base_path is not None:
         save_plot(
-            os.path.join(base_path, "engineering", "thisVsThat"), 
-            f"{deployment}_{key}_engmisc.png", 
+            os.path.join(base_path, "engineering", "thisVsThat"),
+            f"{deployment}_{key}_engmisc.png",
             plt
         )
 
@@ -780,8 +780,8 @@ def eng_tvt_plot(
 
 
 def eng_timeseries_plot(
-        ds: xr.Dataset, 
-        var: str, 
+        ds: xr.Dataset,
+        var: str,
         base_path: str | None = None
     ):
     """
@@ -792,7 +792,7 @@ def eng_timeseries_plot(
     Parameters
 
     ds : xarray dataset
-        Timeseries glider engineering dataset. 
+        Timeseries glider engineering dataset.
         This is intended to be produced by slocum.binary_to_nc
 
     var : str
@@ -809,8 +809,8 @@ def eng_timeseries_plot(
 
     if not var in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
-        return 
-    
+        return
+
     _log.info(f"Making eng timeseries plot for variable {var}")
     deployment = ds.deployment_name
     project = ds.project
@@ -822,8 +822,8 @@ def eng_timeseries_plot(
     # ax.invert_yaxis()
     ax.set_title(f"Deployment {deployment} for project {project}", size=title_size)
     # ax.set_title(
-    #     f"Deployment {deployment} for project {project}, between " + 
-    #     f"{ds.deployment_start[0:10]} and {ds.deployment_end[0:10]}", 
+    #     f"Deployment {deployment} for project {project}, between " +
+    #     f"{ds.deployment_start[0:10]} and {ds.deployment_end[0:10]}",
     #     size=title_size)
 
     p = ax.scatter(ds.time, ds[var], s=3)
@@ -833,8 +833,8 @@ def eng_timeseries_plot(
 
     if base_path is not None:
         save_plot(
-            os.path.join(base_path, "engineering", "timeSeries"), 
-            f"{deployment}_{var}_timeseries.png", 
+            os.path.join(base_path, "engineering", "timeSeries"),
+            f"{deployment}_{var}_timeseries.png",
             plt
         )
     # plt.savefig(f"{eng_save_path}/timeSeries/{deployment}_{var}_timeseries.png")
@@ -844,8 +844,8 @@ def eng_timeseries_plot(
 
 
 def sci_timeseries_plot(
-        ds: xr.Dataset, 
-        var: str, 
+        ds: xr.Dataset,
+        var: str,
         base_path: str | None = None
     ):
     """
@@ -856,7 +856,7 @@ def sci_timeseries_plot(
     Parameters
 
     ds : xarray dataset
-        Timeseries glider science dataset. 
+        Timeseries glider science dataset.
         This is intended to be a gridded dataset produced by slocum.binary_to_nc
 
     var : str
@@ -870,11 +870,11 @@ def sci_timeseries_plot(
     Returns
         matplotlib plt object
     """
-    
+
     if not var in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
-        return 
-        
+        return
+
     _log.info(f"Making sci timeseries plot for variable {var}")
     deployment = ds.deployment_name
     project = ds.project
@@ -893,8 +893,8 @@ def sci_timeseries_plot(
 
     if base_path is not None:
         save_plot(
-            os.path.join(base_path, "science", "timeSeries"), 
-            f"{deployment}_{var}_timeseries.png", 
+            os.path.join(base_path, "science", "timeSeries"),
+            f"{deployment}_{var}_timeseries.png",
             plt
         )
 
@@ -904,8 +904,8 @@ def sci_timeseries_plot(
 
 
 def ts_plot(
-        ds: xr.Dataset, 
-        var: str, 
+        ds: xr.Dataset,
+        var: str,
         base_path: str | None = None
     ):
     """
@@ -916,7 +916,7 @@ def ts_plot(
     Parameters
 
     ds : xarray dataset
-        Timeseries glider science dataset. 
+        Timeseries glider science dataset.
         This is intended to be produced by slocum.binary_to_nc
 
     var : str
@@ -933,32 +933,32 @@ def ts_plot(
 
     if not var in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
-        return 
+        return
 
     _log.info(f"Making ts plot for variable {var}")
     deployment = ds.deployment_name
     start = ds.deployment_start[0:10]
     end = ds.deployment_end[0:10]
 
-    Sg, Tg, sigma = utils.ts_calculations(ds) 
+    Sg, Tg, sigma = utils.ts_calculations(ds)
 
     fig, ax = plt.subplots(figsize=(9.5, 8.5))
 
     C0 = ax.contour(Sg, Tg, sigma, colors='grey', zorder=1)
     C0l = plt.clabel(C0, colors='k', fontsize=9)
-    p0 = ax.scatter(ds.salinity, ds.potential_temperature, c=add_log(var, ds), 
+    p0 = ax.scatter(ds.salinity, ds.potential_temperature, c=add_log(var, ds),
                     cmap=sci_colors[var],s=5)
     cbar0 = fig.colorbar(p0, orientation="vertical", location='right', shrink=1).set_label(label=log_label(var), size=label_size)
 
     ax.set_title(f"{deployment} from {start} to {end}", size=title_size)
     ax.set_xlabel("Salinity [PSU]", size=label_size)
     ax.set_ylabel("Potential temperature [°C]", size=label_size)
-    
+
     # plt.savefig(f"{sci_save_path}/TS/{deployment}_{var}_tsPlot.png")
     if base_path is not None:
         save_plot(
-            os.path.join(base_path, "science", "TS"), 
-            f"{deployment}_{var}_tsPlot.png", 
+            os.path.join(base_path, "science", "TS"),
+            f"{deployment}_{var}_tsPlot.png",
             plt
         )
 
@@ -966,9 +966,9 @@ def ts_plot(
 
 
 def sci_surface_map(
-        ds: xr.Dataset, 
-        var: str, 
-        bar: xr.Dataset, 
+        ds: xr.Dataset,
+        var: str,
+        bar: xr.Dataset,
         base_path: str | None = None
     ):
     """
@@ -979,14 +979,14 @@ def sci_surface_map(
     Parameters
 
     ds : xarray dataset
-        Timeseries glider science dataset. 
+        Timeseries glider science dataset.
         This is intended to be produced by slocum.binary_to_nc
 
     var : str
         The name of the variable to plot
 
     bar : xarray dataset
-        dataset of ETOPO 15 arc-second global relief model. 
+        dataset of ETOPO 15 arc-second global relief model.
         Likely downloaded from ERDDAP - must span glider lat/lon
         TODO: make a function for pulling this file from ERDDAP, if necessary
         Eg: https://coastwatch.pfeg.noaa.gov/erddap/griddap/ETOPO_2022_v1_15s.nc?z%5B(30):1:(45)%5D%5B(-135):1:(-120)%5D
@@ -1002,8 +1002,8 @@ def sci_surface_map(
 
     if not var in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
-        return 
-    
+        return
+
     _log.info(f"Making surface map for variable {var}")
     deployment = ds.deployment_name
     start = ds.deployment_start[0:10]
@@ -1020,10 +1020,10 @@ def sci_surface_map(
     ax.set_xlabel('\n\n\nLongitude [Deg]', size=14)
     ax.set_ylabel('Latitude [Deg]\n\n\n', size=14)
     m = Basemap(
-        llcrnrlon=glider_lon_min-map_lon_border, 
+        llcrnrlon=glider_lon_min-map_lon_border,
         llcrnrlat=glider_lat_min-map_lat_border,
-        urcrnrlon=glider_lon_max+3*map_lon_border, 
-        urcrnrlat=glider_lat_max+map_lat_border, 
+        urcrnrlon=glider_lon_max+3*map_lon_border,
+        urcrnrlat=glider_lat_max+map_lat_border,
         projection="merc", resolution='f', ax=ax) # create map object
     # with open(f"/opt/slocumRtDataVisTool/mapPickles/{self.glider}_{glider_lon_mean:0.0f}_{glider_lat_mean:0.0f}", "wb") as fd:
     #     pickle.dump(m, fd, protocol=-1)
@@ -1033,23 +1033,23 @@ def sci_surface_map(
     m.fillcontinents('#e0b479')
     m.drawlsmask(ocean_color = "#7bcbe3", resolution='f')
     m.drawparallels(
-        np.linspace(glider_lat_min-map_lat_border, glider_lat_max+map_lat_border, 5), 
+        np.linspace(glider_lat_min-map_lat_border, glider_lat_max+map_lat_border, 5),
         labels=[1,0,0,1], fmt="%0.2f")
     m.drawmeridians(
-        np.linspace(glider_lon_min-map_lon_border, glider_lon_max+map_lon_border, 5), 
+        np.linspace(glider_lon_min-map_lon_border, glider_lon_max+map_lon_border, 5),
         labels=[1,0,0,1], fmt="%0.3f", rotation=20)
     m.drawmapscale(
-        glider_lon_max+map_lon_border*1.5, 
-        glider_lat_min-map_lat_border/1.5, 
-        glider_lon_max-map_lon_border, 
-        glider_lat_min+map_lat_border, 
+        glider_lon_max+map_lon_border*1.5,
+        glider_lat_min-map_lat_border/1.5,
+        glider_lon_max-map_lon_border,
+        glider_lat_min+map_lat_border,
         length=25,
         barstyle='fancy')
 
     x, y = m(ds.longitude.values, ds.latitude.values)
     p = m.scatter(
-        x, y, 
-        c=ds[var].where(ds.depth<=10, drop=True).mean(dim="depth"), 
+        x, y,
+        c=ds[var].where(ds.depth<=10, drop=True).mean(dim="depth"),
         cmap=sci_colors[var], s=10, zorder=2.5)
     lon, lat = np.meshgrid(bar.z.lon, bar.z.lat)
     lon, lat = m(lon, lat)
@@ -1064,8 +1064,8 @@ def sci_surface_map(
     # plt.show()
     if base_path is not None:
         save_plot(
-            os.path.join(base_path, "science", "maps"), 
-            f"{deployment}_{var}_map_0-10.png", 
+            os.path.join(base_path, "science", "maps"),
+            f"{deployment}_{var}_map_0-10.png",
             plt
         )
 

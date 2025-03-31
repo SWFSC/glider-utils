@@ -11,7 +11,7 @@ import esdglider.utils as utils
 _log = logging.getLogger(__name__)
 
 
-def scrape_sfmc(deployment, project, bucket, sfmc_path, 
+def scrape_sfmc(deployment, project, bucket, sfmc_path,
                 gcpproject_id, secret_id):
     """
     rsync files from sfmc, and send them to correct bucket directories;
@@ -51,15 +51,15 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
     # rsync with SFMC
     _log.info(f'Starting rsync with SFMC dockerver for {glider}')
     sfmc_glider = os.path.join(
-        '/var/opt/sfmc-dockserver/stations/noaa/gliders', 
+        '/var/opt/sfmc-dockserver/stations/noaa/gliders',
         glider, 'from-glider/')
     sfmc_server_path = f'swoodman@sfmc.webbresearch.com:{sfmc_glider}'
 
     rsync_args = [
-        'sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id), 
+        'sshpass', '-p', gcp.access_secret_version(gcpproject_id, secret_id),
         'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
     # NOTE: sshpass via file does not currently work. Unsure why
-    # rsync_args = ['sshpass', '-f', sfmc_pwd_file, 
+    # rsync_args = ['sshpass', '-f', sfmc_pwd_file,
     #               'rsync', "-aP", "--delete", sfmc_server_path, sfmc_local_path]
     # os.remove(sfmc_pwd_file) #delete sfmc_pwd_file
     # _log.debug(f'Removed SFMC ssh password file')
@@ -80,13 +80,13 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
 
     # Check for unexpected file extensions
     sfmc_file_ext = utils.find_extensions(sfmc_local_path)
-    file_ext_expected = {".cac", ".CAC", ".sbd", ".tbd", ".ad2"} 
+    file_ext_expected = {".cac", ".CAC", ".sbd", ".tbd", ".ad2"}
                         #  ".ccc", ".scd", ".tcd", ".cam"
     file_ext_weird = sfmc_file_ext.difference(file_ext_expected)
     if len(file_ext_weird) > 0:
         x = os.listdir(sfmc_local_path)
-        logging.warning(f'File with the following extensions ({file_ext_weird}) ' + 
-            'were downloaded from the SFMC, ' + 
+        logging.warning(f'File with the following extensions ({file_ext_weird}) ' +
+            'were downloaded from the SFMC, ' +
             'but will not be organized copied to the GCP bucket')
         # logging.warning(f'File list: TODO')
 
@@ -100,7 +100,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
     name_cac  = 'cac'
     utils.mkdir_pass(os.path.join(sfmc_local_path, name_cac))
     rt_file_mgmt(
-        sfmc_file_ext, '.[Cc][Aa][Cc]', name_cac, sfmc_local_path, 
+        sfmc_file_ext, '.[Cc][Aa][Cc]', name_cac, sfmc_local_path,
         f'gs://{bucket}/cache', rsync_delete=False)
 
     # sbd/tbd files
@@ -111,10 +111,10 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
         sfmc_file_ext, '.[SsTt]bd', name_stbd, sfmc_local_path, bucket_stbd)
 
     # Do not bother with compressed files, because the SFMC uncompresses them
-    
+
     # name_ccc  = 'ccc'
     # putils.mkdir_pass(os.path.join(sfmc_local_path, name_ccc))
-    # rt_file_mgmt(sfmc_file_ext, '.ccc', name_ccc, sfmc_local_path, 
+    # rt_file_mgmt(sfmc_file_ext, '.ccc', name_ccc, sfmc_local_path,
     #              f'gs://{bucket}/cache-compressed')
 
     # # scd/tcd files
@@ -131,7 +131,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
     rt_file_mgmt(sfmc_file_ext, '.ad2', name_ad2, sfmc_local_path, bucket_ad2)
 
     # # cam files TODO
-    # name_cam  = 'cam'    
+    # name_cam  = 'cam'
     # putils.mkdir_pass(os.path.join(sfmc_local_path, name_cam))
     # rt_files_mgmt(sfmc_file_ext, '.cam', name_cam, sfmc_local_path, bucket_cam)
 
@@ -140,12 +140,12 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path,
 
 
 def rt_file_mgmt(
-    sfmc_ext_all, ext_regex, subdir_name, local_path, bucket_path, 
+    sfmc_ext_all, ext_regex, subdir_name, local_path, bucket_path,
     rsync_delete = True
 ):
     """
     Move real-time files from the local sfmc folder (local_path)
-    to their subdirectory (subdir_path). 
+    to their subdirectory (subdir_path).
     Then uses gcloud to rsync to their place in the bucket (bucket_path)
 
     The rsync_delete flag indicates if the --delete-unmatched-destination-objects
@@ -153,7 +153,7 @@ def rt_file_mgmt(
 
     ext_regex_path does include * for copying files (eg is '.[st]bd')
     """
-    
+
     if (any(re.search(ext_regex, i) for i in sfmc_ext_all)):
         # Check paths
         if not os.path.isdir(local_path):
@@ -175,7 +175,7 @@ def rt_file_mgmt(
         # Do rsync
         _log.info(f'Rsyncing {subdir_name} subdirectory with bucket directory')
         rsync_args = ['gcloud', 'storage', 'rsync', '-r']
-        if rsync_delete: 
+        if rsync_delete:
             rsync_args.append("--delete-unmatched-destination-objects")
         rsync_args.extend([subdir_path, bucket_path])
 
@@ -191,8 +191,7 @@ def rt_file_mgmt(
             _log.info(f'Rsynced {subdir_name} files to {bucket_path}')
             _log.debug(f'Args: {retcode.args}')
             _log.debug(f'stderr: {retcode.stdout}')
-    else: 
+    else:
         _log.info(f'No {subdir_name} files to copy')
 
     return 0
-

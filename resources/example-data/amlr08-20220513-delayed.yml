@@ -1,7 +1,7 @@
-metadata:  
+metadata:
   # https://github.com/ioos/ioosngdac/wiki/NGDAC-NetCDF-File-Format-Version-2
   acknowledgment: 'This work was supported by funding from NOAA.'
-  comment: ' '  
+  comment: ' '
   contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Cossio, George Cutter, Samuel Woodman'
   contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Data Manager'
   creator_email: christian.reiss@noaa.gov
@@ -23,7 +23,7 @@ metadata:
              Oceans, Salinity/Density, Conductivity, Oceans,
              Salinity/Density, Density, Oceans, Salinity/Density, Salinity"
   keywords_vocabulary: GCMD Science Keywords
-  license: 'This data may be redistributed and used without restriction. 
+  license: 'This data may be redistributed and used without restriction.
             Data provided as is with no expressed or implied assurance of quality assurance or quality control.'
   metadata_link: " "
   Metadata_Conventions: CF-1.6, Unidata Dataset Discovery v1.0
@@ -43,8 +43,8 @@ metadata:
   sea_name: 'North Pacific Ocean'
   source: 'Observational data from a profiling glider'
   standard_name_vocabulary: CF STandard Name Table v49
-  summary: 'These data are part of the U.S. Antarctic Marine Living Resources (AMLR) Program Operation SANDIEGO. 
-            SANDIEGO is for test deployments off San Diego in the 
+  summary: 'These data are part of the U.S. Antarctic Marine Living Resources (AMLR) Program Operation SANDIEGO.
+            SANDIEGO is for test deployments off San Diego in the
             Southern California waters of the Pacific Ocean.
             This deployment is to test a new shadowgraph, along with a new Nortek echosounder.'
   transmission_system: "IRIDIUM"
@@ -78,17 +78,17 @@ glider_devices:
   acoustics:
     make_model: 'NORTEK Inc Signature 100 Compact Echsounder'
     serial_number: "1778"
-    calibration_date: 
+    calibration_date:
     calibration_report: ""
     comment: ""
-    factory_calibrated: 
+    factory_calibrated:
   imagery:
     make_model: 'Williamson and Associates Shadowgraph Camera (11cm)'
     serial_number: "001"
-    calibration_date: 
+    calibration_date:
     calibration_report: ""
     comment: ""
-    factory_calibrated: 
+    factory_calibrated:
 
 # map between glider variables and netcdf variables.  This shouldn't
 # change too much.
@@ -142,7 +142,7 @@ netcdf_variables:
     standard_name: depth
     observation_type: measured
     units:        m
-    coordinates:  time 
+    coordinates:  time
 
   heading:
     source:  m_heading
@@ -263,7 +263,7 @@ derived water speed:
     standard_name:  barotropic_eastward_sea_water_velocity
     units:          m s-1
     coordinates:   time depth latitude longitude
-  
+
   water_velocity_northward:
     source:    m_final_water_vy
     long_name:      mean northward water velocity in segment
@@ -381,7 +381,7 @@ profile_variables:
     serial_number: 9714
     type: instrument
     user_calibrated: ""
-    
+
   instrument_optode:
     calibration_date: "2021-02-14"
     calibration_report: ""
@@ -397,11 +397,11 @@ profile_variables:
     user_calibrated: ""
 
   instrument_ad2cp:
-    calibration_date: 
+    calibration_date:
     calibration_report: ""
     comment: ""
     deployment: ' '
-    factory_calibrated: 
+    factory_calibrated:
     long_name: 'NORTEK Inc Signature 100 Compact Echsounder'
     make_model: 'NORTEK Inc Signature 100 Compact Echsounder'
     owner: 'NOAA NMFS SWFSC Antarctic Ecosystem Research Division'
@@ -411,11 +411,11 @@ profile_variables:
     user_calibrated: ""
 
   instrument_solocam:
-    calibration_date: 
+    calibration_date:
     calibration_report: ""
     comment: ""
     deployment: ' '
-    factory_calibrated: 
+    factory_calibrated:
     long_name: 'Williamson and Associates Shadowgraph Camera (11cm)'
     make_model: 'Williamson and Associates Shadowgraph Camera (11cm)'
     owner: 'NOAA NMFS SWFSC Antarctic Ecosystem Research Division'

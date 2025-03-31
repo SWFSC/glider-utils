@@ -25,7 +25,7 @@ def get_path_engyaml():
     ref = importlib.resources.files('esdglider.data') / 'deployment-eng-vars.yml'
     with importlib.resources.as_file(ref) as path:
         return str(path)
-    
+
 
 def get_path_deployment(project, deployment, mode, deployments_path, config_path):
     """
@@ -37,38 +37,38 @@ def get_path_deployment(project, deployment, mode, deployments_path, config_path
     Parameters
 
     project : str
-        The project name of the deployment. 
+        The project name of the deployment.
         Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
-        
+
     deployment : str
         The name of the glider deployment. Eg, amlr01-20210101
 
     mode : str
-        Mode of the glider dat being processed. 
+        Mode of the glider dat being processed.
         Must be either 'rt', for real-time, or 'delayed
-        
+
     deployments_path : str
-        The path to the top-level folder of the glider data. 
+        The path to the top-level folder of the glider data.
         This is inteded to be the path to the mounted glider deployments bucket
-        
+
     config_path : str
         The path to the directory that contains the yaml with the
         deployment config
-    
+
     -----
     Returns:
-        A dictionary with the relevant paths    
+        A dictionary with the relevant paths
     """
-    
-    prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']    
+
+    prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']
     if not os.path.isdir(deployments_path):
         _log.error(f'deployments_path ({deployments_path}) does not exist')
         return
     else:
         dir_expected = prj_list + ['cache']
         if not all(x in os.listdir(deployments_path) for x in dir_expected):
-            _log.warning(f"The expected folders ({', '.join(dir_expected)}) " + 
-                f'were not found in the provided directory ({deployments_path}). ' + 
+            _log.warning(f"The expected folders ({', '.join(dir_expected)}) " +
+                f'were not found in the provided directory ({deployments_path}). ' +
                 'Did you provide the right path via deployments_path?')
 
     year = utils.year_path(project, deployment)
@@ -77,17 +77,17 @@ def get_path_deployment(project, deployment, mode, deployments_path, config_path
     if not os.path.isdir(glider_path):
         _log.error(f'glider_path ({glider_path}) does not exist')
         return
-    
+
     # if write_imagery:
     #     if not os.path.isdir(imagery_path):
-    #         _log.error('write_imagery is true, and thus imagery_path ' + 
+    #         _log.error('write_imagery is true, and thus imagery_path ' +
     #                       f'({imagery_path}) must be a valid path')
     #         return
 
     cacdir = os.path.join(deployments_path, 'cache')
     binarydir = os.path.join(glider_path, 'data', 'binary', mode)
     deploymentyaml = os.path.join(config_path, f"{deployment}.yml")
-    # deploymentyaml = os.path.join(glider_path, 'config', 
+    # deploymentyaml = os.path.join(glider_path, 'config',
     #     f"{deployment_mode}.yml")
     engyaml = get_path_engyaml()
 
@@ -105,20 +105,20 @@ def get_path_deployment(project, deployment, mode, deployments_path, config_path
         "engyaml": engyaml,
         "tsdir": tsdir,
         "profdir": profdir,
-        "griddir": griddir, 
+        "griddir": griddir,
         "plotdir": plotdir
     }
 
 
 def binary_to_nc(
-    deployment, 
-    mode, 
-    paths, 
-    min_dt, 
-    write_timeseries=True, 
+    deployment,
+    mode,
+    paths,
+    min_dt,
+    write_timeseries=True,
     write_gridded=True
-):     
-                
+):
+
     """
     Process binary ESD glider data to timeseries and/or gridded netCDF files
 
@@ -132,20 +132,20 @@ def binary_to_nc(
         The name of the glider deployment. Eg, amlr01-20210101
 
     mode : str
-        Mode of the glider dat being processed. 
+        Mode of the glider dat being processed.
         Must be either 'rt', for real-time, or 'delayed
 
     paths : dict
-        A dictionary of file/directory paths for various processing steps. 
+        A dictionary of file/directory paths for various processing steps.
         Intended to be the output of esdglider.slocum.paths_esd_gcp()
         See this function for the expected key/value pairs
-    
+
     min_dt : datetime64, or object that can be converted to datetime64
         See utils.drop_bogus; default is '2017-01-01'.
         All timestamps from before this value will be dropped
 
     write_timeseries, write_gridded : bool
-        Should the timeseries and gridded, respectively, 
+        Should the timeseries and gridded, respectively,
         xarray DataSets be both created and written to files?
         Note: if True then already-existing files will be clobbered
 
@@ -153,7 +153,7 @@ def binary_to_nc(
     Returns
 
     A tuple of the filenames of the various netCDF files, as strings.
-    In order: the engineering and science timeseries, 
+    In order: the engineering and science timeseries,
     and the 1m and 5m gridded files
 
     """
@@ -167,7 +167,7 @@ def binary_to_nc(
     #--------------------------------------------
     # Check file and directory paths
     tsdir = paths["tsdir"]
-    deploymentyaml = paths["deploymentyaml"]    
+    deploymentyaml = paths["deploymentyaml"]
 
     # Get deployment and thus file name from yaml file
     with open(deploymentyaml) as fin:
@@ -180,7 +180,7 @@ def binary_to_nc(
         )
 
     #--------------------------------------------
-    # TODO: handle compressed files, if necessary. 
+    # TODO: handle compressed files, if necessary.
     # Although maybe this should be in another function?
 
     #--------------------------------------------
@@ -189,18 +189,18 @@ def binary_to_nc(
         if not os.path.exists(tsdir):
             _log.info(f'Creating directory at: {tsdir}')
             os.makedirs(tsdir)
-        
+
         if not os.path.isfile(deploymentyaml):
             raise FileNotFoundError(f'Could not find {deploymentyaml}')
 
         # Engineering - uses m_depth as time base
         _log.info(f'Generating engineering timeseries')
         outname_tseng = pgslocum.binary_to_timeseries(
-            paths["binarydir"], paths["cacdir"], tsdir, 
-            [deploymentyaml, paths["engyaml"]], 
-            search=binary_search, 
-            fnamesuffix=f"-{mode}-eng", 
-            time_base="m_depth", 
+            paths["binarydir"], paths["cacdir"], tsdir,
+            [deploymentyaml, paths["engyaml"]],
+            search=binary_search,
+            fnamesuffix=f"-{mode}-eng",
+            time_base="m_depth",
             profile_filt_time = None)
 
         _log.info(f'Post-processing engineering timeseries')
@@ -212,11 +212,11 @@ def binary_to_nc(
         # Science - uses sci_water_temp as time_base sensor
         _log.info(f'Generating science timeseries')
         outname_tssci = pgslocum.binary_to_timeseries(
-            paths["binarydir"], paths["cacdir"], tsdir, 
-            deploymentyaml, 
-            search=binary_search, 
-            fnamesuffix=f"-{mode}-sci", 
-            time_base='sci_water_temp', 
+            paths["binarydir"], paths["cacdir"], tsdir,
+            deploymentyaml,
+            search=binary_search,
+            fnamesuffix=f"-{mode}-sci",
+            time_base='sci_water_temp',
             profile_filt_time = None)
 
         _log.info(f'Post-processing science timeseries')
@@ -227,7 +227,7 @@ def binary_to_nc(
 
         num_profiles_eng = len(np.unique(tseng.profile_index.values))
         num_profiles_sci = len(np.unique(tssci.profile_index.values))
-        if num_profiles_eng != num_profiles_sci: 
+        if num_profiles_eng != num_profiles_sci:
             _log.warning("The eng and sci timeseries have different total numbers of profiles")
             _log.debug(f"Number of eng profiles: {num_profiles_eng}")
             _log.debug(f"Number of sci profiles: {num_profiles_sci}")
@@ -236,7 +236,7 @@ def binary_to_nc(
         _log.info(f'Not writing timeseries')
         outname_tseng = os.path.join(tsdir, f"{deployment}-{mode}-eng.nc")
         outname_tssci = os.path.join(tsdir, f"{deployment}-{mode}-sci.nc")
-        
+
     #--------------------------------------------
     # Gridded data, 1m and 5m
     # TODO: filter to match SOCIB?
@@ -246,12 +246,12 @@ def binary_to_nc(
 
         _log.info(f'Generating 1m gridded data')
         outname_1m = pgncprocess.make_gridfiles(
-            outname_tssci, paths["griddir"], deploymentyaml, 
+            outname_tssci, paths["griddir"], deploymentyaml,
             dz = 1, fnamesuffix=f"-{mode}-1m")
 
         _log.info(f'Generating 5m gridded data')
         outname_5m = pgncprocess.make_gridfiles(
-            outname_tssci, paths["griddir"], deploymentyaml, 
+            outname_tssci, paths["griddir"], deploymentyaml,
             dz = 5, fnamesuffix=f"-{mode}-5m")
 
     else:
@@ -264,11 +264,11 @@ def binary_to_nc(
     # if write_imagery:
     #     _log.info("write_imagery is True, and thus writing imagery metadata file")
     #     if mode == 'rt':
-    #         _log.warning('You are creating imagery file metadata ' + 
-    #             'using real-time data. ' + 
+    #         _log.warning('You are creating imagery file metadata ' +
+    #             'using real-time data. ' +
     #             'This may result in inaccurate imagery file metadata')
     #     amlr_imagery_metadata(
-    #         gdm, deployment, glider_path, 
+    #         gdm, deployment, glider_path,
     #         os.path.join(imagery_path, 'gliders', args.ugh_imagery_year, deployment)
     #     )
 
@@ -283,7 +283,7 @@ def postproc_attrs(ds, mode):
 
     Returns the ds Dataset with updated attributes
     """
-    
+
     try:
         del ds.attrs['glider_serial']
     except KeyError:
@@ -302,7 +302,7 @@ def postproc_attrs(ds, mode):
         ds.attrs['geospatial_lat_min'] = np.nan
         ds.attrs['geospatial_lon_max'] = np.nan
         ds.attrs['geospatial_lon_min'] = np.nan
-        
+
     ds = pgutils.get_distance_over_ground(ds)
 
     ds.attrs['id'] = utils.get_file_id_esd(ds)
@@ -315,13 +315,13 @@ def postproc_attrs(ds, mode):
 
     # ESD updates, or fixes of pyglider attributes
     ds.attrs['standard_name_vocabulary'] = 'CF Standard Name Table v72'
-    ds.attrs['history'] = (        
+    ds.attrs['history'] = (
         f"{np.datetime64('now')}Z: netCDF files created using: " +
-        f"pyglider v{importlib.metadata.version("pyglider")}; " + 
+        f"pyglider v{importlib.metadata.version("pyglider")}; " +
         f"esdglider v{importlib.metadata.version("esdglider")}"
     )
     ds.attrs['processing_level'] = (
-        "Minimal data screening. " + 
+        "Minimal data screening. " +
         "Data provided as is, with no expressed or implied assurance " +
         "of quality assurance or quality control."
     )
@@ -334,7 +334,7 @@ def postproc_attrs(ds, mode):
 
 def postproc_eng_timeseries(ds, mode, min_dt):
     """
-    Post-process engineering timeseries, including: 
+    Post-process engineering timeseries, including:
         - Removing CTD vars
         - Calculating profiles using depth (m_depth)
         - Updating attributes
@@ -342,7 +342,7 @@ def postproc_eng_timeseries(ds, mode, min_dt):
     ds : `xarray.Dataset`
         engineering Dataset, usually passed from binary_to_nc.py
     min_dt: passed to drop_bogus_times
-    
+
     returns post-processed Dataset
     """
 
@@ -350,12 +350,12 @@ def postproc_eng_timeseries(ds, mode, min_dt):
 
     # Drop CTD variables required or created by binary_to_timeseries
     ds = ds.drop_vars([
-        "depth", "conductivity", "temperature", "pressure", "salinity", 
+        "depth", "conductivity", "temperature", "pressure", "salinity",
         "potential_density", "density", "potential_temperature"])
-    
+
     # With depth (CTD) gone, rename depth_measured
     ds = ds.rename({"depth_measured": "depth"})
-    
+
     # Remove times < min_dt
     ds = utils.drop_bogus(ds, min_dt)
 
@@ -370,7 +370,7 @@ def postproc_eng_timeseries(ds, mode, min_dt):
     ds = utils.data_var_reorder(ds, new_start)
 
     # Update comment
-    if not ('comment' in ds.attrs): 
+    if not ('comment' in ds.attrs):
         ds.attrs["comment"] = "engineering-only time series"
     elif not ds.attrs["comment"].strip():
         ds.attrs["comment"] = "engineering-only time series"
@@ -385,14 +385,14 @@ def postproc_eng_timeseries(ds, mode, min_dt):
 
 def postproc_sci_timeseries(ds, mode, min_dt):
     """
-    Post-process science timeseries, including: 
+    Post-process science timeseries, including:
         - remove bogus times. Eg, 1970, or before deployment start date
         - Calculating profiles using depth (derived from ctd's pressure)
 
     ds : `xarray.Dataset`
         science Dataset, usually passed from binary_to_nc.py
     min_dt: passed to drop_bogus_times
-    
+
     returns post-processed Dataset
     """
 
@@ -408,8 +408,8 @@ def postproc_sci_timeseries(ds, mode, min_dt):
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
     # Reorder data variables
-    new_start = ['latitude', 'longitude', 'depth', 'profile_index', 
-        'conductivity', 'temperature', 'pressure', 'salinity', 
+    new_start = ['latitude', 'longitude', 'depth', 'profile_index',
+        'conductivity', 'temperature', 'pressure', 'salinity',
         'density', 'potential_temperature', 'potential_density']
     ds = utils.data_var_reorder(ds, new_start)
 
@@ -424,7 +424,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
     """
     ESD's version of extract_timeseries_profiles, from:
     https://github.com/c-proof/pyglider/blob/main/pyglider/ncprocess.py#L19
-    
+
     Extract and save each profile from a timeseries netCDF.
 
     ------
@@ -462,7 +462,7 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
         _log.info('Extracting profiles: opening %s', inname)
         trajectory = utils.get_file_id_esd(ds).encode()
         trajlen    = len(trajectory)
-        
+
         # TODO: do floor like oceanGNS??
         profiles = np.unique(ds.profile_index)
         profiles = [p for p in profiles if (~np.isnan(p) and not (p % 1) and (p > 0))]

@@ -1,5 +1,5 @@
 # Sample Python code to mount GCS bucket
-# Note: could also us os.system 
+# Note: could also us os.system
 from subprocess import run
 
 # Specify the bucket name, and local mount location

@@ -8,10 +8,10 @@ For more detailed information about the Ecosystem Science Division's (ESD) glide
 
 ## esdglider Conda Environment
 
-Create the esdglider conda environment, which contains all of the packages needed to 1) use the esdglider package and 2) additional glider-utils operations. To isntall the esdglider package in the conda environment, see below. From the directory above where this repo is cloned: 
+Create the esdglider conda environment, which contains all of the packages needed to 1) use the esdglider package and 2) additional glider-utils operations. To isntall the esdglider package in the conda environment, see below. From the directory above where this repo is cloned:
 
 ```bash
-conda env create -f glider-utils/environment.yml 
+conda env create -f glider-utils/environment.yml
 ```
 
 To update the environment after making any changes to the yml file:
@@ -71,7 +71,7 @@ ESD glider utility references and resources. Most relevant are an example data f
 
 ## Scripts
 
-Python scripts that are functionally wrappers around esdglider functions. These scripts use argparse, and are designed to be run via the command line on GCP virtual machines. Templates for shell scripts that run these Python scripts can be found in the resources folder. Some common aspects of these scripts incldue specifying the log level, and specifying a log file to which to write these logs. 
+Python scripts that are functionally wrappers around esdglider functions. These scripts use argparse, and are designed to be run via the command line on GCP virtual machines. Templates for shell scripts that run these Python scripts can be found in the resources folder. Some common aspects of these scripts incldue specifying the log level, and specifying a log file to which to write these logs.
 
 This folder also contains individual 'test' scripts for reference, eg smw-test.py.
 

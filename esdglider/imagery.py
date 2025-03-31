@@ -17,21 +17,21 @@ def solocam_filename_dt(filename, index_dt, format='%Y%m%d-%H%M%S'):
 
     -----
     Parameters
-    
+
     filename : str
         Full filename
     index_start : int
         The index of the start of the datetime string.
         The datetime runs from this index to this index plus 15 characters
-    format : str 
+    format : str
         format passed to strptime
 
     -----
     Returns:
-        The datetime extracted from the imagery filename. 
+        The datetime extracted from the imagery filename.
         The datetime is returned as a 'datetime64[s]' object
     """
-    
+
     solocam_substr = filename[index_dt:(index_dt+15)]
     _log.debug(f"datetime substring: {solocam_substr}")
     solocam_dt = datetime.strptime(solocam_substr, format)
@@ -51,24 +51,24 @@ def get_path_imagery(project, deployment, imagery_path):
     Parameters
 
     project : str
-        The project name of the deployment. 
-        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'        
+        The project name of the deployment.
+        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
     deployment : str
         The name of the glider deployment. Eg, amlr01-20210101
     mode : str
-        Mode of the glider dat being processed. 
-        Must be either 'rt', for real-time, or 'delayed        
+        Mode of the glider dat being processed.
+        Must be either 'rt', for real-time, or 'delayed
     imagery_path : str
-        The path to the top-level folder of the imagery data. 
+        The path to the top-level folder of the imagery data.
         This is intended to be the path to the mounted raw imagery bucket
-    
+
     -----
     Returns:
         A dictionary with the relevant paths
-    
+
     """
 
-    # prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']    
+    # prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']
     if not os.path.isdir(imagery_path):
         raise FileNotFoundError(f'{imagery_path} does not exist')
 
@@ -80,7 +80,7 @@ def get_path_imagery(project, deployment, imagery_path):
         raise FileNotFoundError(f'{imagery_deployment_path} does not exist')
 
     return {
-        "imagedir": os.path.join(imagery_deployment_path, 'images'), 
+        "imagedir": os.path.join(imagery_deployment_path, 'images'),
         "metadir":  os.path.join(imagery_deployment_path, 'metadata')
     }
 
@@ -93,7 +93,7 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
 
     -----
     Parameters
-    
+
     ds : xarray Dataset
         from science timeseries NetCDF
     imagery_dir : str
@@ -105,7 +105,7 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
     Returns:
         DataFrame: pd.DataFrame of imagery timeseries
     """
-    
+
     deployment = ds.attrs["deployment_name"]
     imagedir = paths['imagedir']
     _log.info(f'Creating imagery metadata file for {deployment}')
@@ -132,26 +132,26 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
 
     # Check that all filenames have the same number of characters
     if not len(set([len(i) for i in imagery_files])) == 1:
-        _log.warning('The imagery file names are not all the same length, ' + 
+        _log.warning('The imagery file names are not all the same length, ' +
             'and thus shuld be checked carefully')
 
     space_idx = str.index(imagery_files[0], ' ')
     if space_idx == -1:
-        _log.error('The imagery file name year index could not be found, ' + 
+        _log.error('The imagery file name year index could not be found, ' +
             'and thus the imagery metadata file cannot be generated')
         raise ValueError("Incompatible file name spaces")
-    yr_idx = space_idx + 1   
+    yr_idx = space_idx + 1
 
     try:
         imagery_files_dt = np.array(
             [solocam_filename_dt(i, yr_idx) for i in imagery_files])
 
     except:
-        _log.error('Datetimes could not be extracted from imagery filenames, ' + 
+        _log.error('Datetimes could not be extracted from imagery filenames, ' +
                     f'and thus the imagery metadata will not be created')
         raise ValueError('Datetimes could not be extracted from imagery filenames')
-    
-    df_data = {'img_file': imagery_files, 'img_dir' : imagery_dirs, 
+
+    df_data = {'img_file': imagery_files, 'img_dir' : imagery_dirs,
                 'time': imagery_files_dt}
     df = pd.DataFrame(data = df_data).sort_values(by='img_file', ignore_index=True)
     # df.to_csv("/home/sam_woodman_noaa_gov/test.csv", index_label="time")
@@ -165,21 +165,21 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
     img_times = df.time[df.time >= min(ds_prof.time.values)].values
     ds_sel = ds_prof.reindex(time=img_times, method = 'pad')
     df = df.join(ds_sel.to_pandas(), on='time', how='left')
-    
+
     # For each variable that exists, extract interpolated values
     ds_interp = ds.interp(time=df.time.values)
     vars_list = [
-        'latitude', 'longitude', 'depth', 'heading', 'pitch', 'roll', 
-        'conductivity', 'temperature', 'pressure', 'salinity', 'density', 
+        'latitude', 'longitude', 'depth', 'heading', 'pitch', 'roll',
+        'conductivity', 'temperature', 'pressure', 'salinity', 'density',
         'oxygen_concentration', 'chlorophyll', 'cdom'
-    ] 
+    ]
 
     for var in vars_list:
         if not var in list(ds_interp.keys()):
             _log.debug(f"{var} not present in ds - skipping interp")
             continue
         df[var] = ds_interp[var].values
-    
+
     #--------------------------------------------
     # Export metadata file
     metadir = paths['metadir']

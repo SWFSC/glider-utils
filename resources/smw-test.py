@@ -36,27 +36,27 @@ config_path      = f"{base_path}/glider-lab/deployment-configs"
 
 
 def scrape_sfmc():
-    slocum.scrape_sfmc(deployment=deployment, 
-        project=project, 
-        bucket=deployment_bucket, 
-        # sfmc_path='/var/sfmc', 
-        sfmc_path=f'{base_path}/sfmc', 
-        gcpproject_id='ggn-nmfs-usamlr-dev-7b99', 
+    slocum.scrape_sfmc(deployment=deployment,
+        project=project,
+        bucket=deployment_bucket,
+        # sfmc_path='/var/sfmc',
+        sfmc_path=f'{base_path}/sfmc',
+        gcpproject_id='ggn-nmfs-usamlr-dev-7b99',
         secret_id='sfmc-swoodman')
 
 
 
-def prof(paths):    
+def prof(paths):
     outname_tssci = os.path.join(paths['tsdir'], f"{deployment}-{mode}-sci.nc")
     return slocum.ngdac_profiles(
-        outname_tssci, paths['profdir'], paths['deploymentyaml'], 
+        outname_tssci, paths['profdir'], paths['deploymentyaml'],
         force=True)
 
 def yaml():
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
     return config.make_deployment_config(
-        deployment, project, mode, 
+        deployment, project, mode,
         "C:/Users/sam.woodman/Downloads", conn_string)
 
 
@@ -64,8 +64,8 @@ def yaml():
 
 if __name__ == "__main__":
     logging.basicConfig(
-        format='%(module)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]', 
-        level=logging.INFO, 
+        format='%(module)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]',
+        level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S')
     # logging.basicConfig(filename=logf,
     #                 filemode='w',
@@ -78,25 +78,25 @@ if __name__ == "__main__":
     gcp.gcs_mount_bucket(acoustics_bucket, acoustics_path, ro=False)
     paths = slocum.get_path_deployment(
         project, deployment, mode, deployments_path, config_path)
-    
+
     # scrape_sfmc()
     # yaml()
     outname_tseng, outname_tssci, outname_1m, outname_5m = slocum.binary_to_nc(
-        deployment, mode, paths, min_dt='2022-05-13 18:17:00', 
+        deployment, mode, paths, min_dt='2022-05-13 18:17:00',
         write_timeseries=True, write_gridded=True)
     # prof(paths)
 
     # dssci = xr.load_dataset(outname_tssci)
 
-    # # Imagery    
+    # # Imagery
     # imagery.imagery_timeseries(
-    #     dssci, 
+    #     dssci,
     #     imagery.get_path_imagery(project, deployment, imagery_path)
     # )
 
     # # Acoustics
     # acoustics.echoview_metadata(
-    #     dssci, 
+    #     dssci,
     #     acoustics.get_path_acoutics(project, deployment, acoustics_path)
     # )
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     # dssci_g = xr.load_dataset(outname_5m)
 
     # plots.all_loops(
-    #     dssci, dseng, dssci_g, paths['plotdir'], 
+    #     dssci, dseng, dssci_g, paths['plotdir'],
     #     os.path.join("/home/sam_woodman_noaa_gov", "ETOPO_2022_v1_15s_N45W135_erddap.nc")
     # )
 

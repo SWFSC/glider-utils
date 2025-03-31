@@ -10,16 +10,16 @@ _log = logging.getLogger(__name__)
 
 
 """
-ESD-specific utilities 
+ESD-specific utilities
 Mostly helpers for post-processing time series files created using pyglider
 """
 
 
-# For encoding time when writing to NetCDF 
+# For encoding time when writing to NetCDF
 encoding_dict = {
     'time': {
         'units': 'seconds since 1970-01-01T00:00:00Z',
-        '_FillValue': np.nan,                
+        '_FillValue': np.nan,
         'calendar': 'gregorian',
         'dtype': 'float64',
     }
@@ -31,7 +31,7 @@ def findProfiles(stamp: np.ndarray,depth: np.ndarray,**kwargs):
     https://github.com/OceanGNS/PGPT/blob/main/scripts/gliderfuncs.py#L196
 
 	Identify individual profiles and compute vertical direction from depth sequence.
-	
+
 	Args:
 		stamp (np.ndarray): A 1D array of timestamps.
 		depth (np.ndarray): A 1D array of depths.
@@ -42,7 +42,7 @@ def findProfiles(stamp: np.ndarray,depth: np.ndarray,**kwargs):
 			- interrupt (float): Maximum time separation between cast segments of a profile (default=0).
 			- stall (float): Maximum range of a stalled segment (default=0).
 			- shake (float): Maximum duration of a shake segment (default=0).
-	
+
 	Returns:
 		profile_index (np.ndarray): A 1D array of profile indices.
 		profile_direction (np.ndarray): A 1D array of vertical directions.
@@ -50,21 +50,21 @@ def findProfiles(stamp: np.ndarray,depth: np.ndarray,**kwargs):
 	if not (isinstance(stamp, np.ndarray) and isinstance(depth, np.ndarray)):
 		stamp = stamp.to_numpy()
 		depth = depth.to_numpy()
-	
+
 	# Flatten input arrays
 	depth, stamp = depth.flatten(), stamp.flatten()
-	
+
 	# Check if the stamp is a datetime object and convert to elapsed seconds if necessary
 	if np.issubdtype(stamp.dtype, np.datetime64):
 		stamp = (stamp - stamp[0]).astype('timedelta64[s]').astype(float)
-	
+
 	# Set default parameter values (did not set type np.timedelta64(0, 'ns') )
 	optionsList = { "length": 0, "period": 0, "inversion": 0, "interrupt": 0, "stall": 0, "shake": 0}
 	optionsList.update(kwargs)
-	
+
 	validIndex = np.argwhere(np.logical_not(np.isnan(depth)) & np.logical_not(np.isnan(stamp))).flatten()
 	validIndex = validIndex.astype(int)
-	
+
 	sdy = np.sign(np.diff(depth[validIndex], n=1, axis=0))
 	depthPeak = np.ones(np.size(validIndex), dtype=bool)
 	depthPeak[1:len(depthPeak) - 1,] = np.diff(sdy, n=1, axis=0) != 0
@@ -113,12 +113,12 @@ def findProfiles(stamp: np.ndarray,depth: np.ndarray,**kwargs):
 
 def get_fill_profiles(ds, time_vals, depth_vals):
     """
-    Calculate profile index and direction values, 
+    Calculate profile index and direction values,
     and fill values and attributes into ds
 
     ds : `xarray.Dataset`
     time_vals, depth_vals: passed directly to utils.findProfiles
-    
+
     returns Dataset
     """
 
@@ -141,7 +141,7 @@ def get_fill_profiles(ds, time_vals, depth_vals):
         ('sources', f'time depth'),
         ('method', 'esdglider.utils.findProfiles')])
     ds['profile_direction'] = (('time'), prof_dir, attrs)
-    
+
     # ds = utils.get_profiles_esd(ds, "depth")
     _log.debug(f"There are {np.max(ds.profile_index.values)} profiles")
 
@@ -150,17 +150,17 @@ def get_fill_profiles(ds, time_vals, depth_vals):
 
 def drop_bogus(ds, min_dt='2017-01-01'):
     """
-    Remove/drop bogus times and values 
+    Remove/drop bogus times and values
 
-    Times from before min_dt are dropped; default is beofre 2017, 
-    which is beofre the ESD/AERD glider program. 
+    Times from before min_dt are dropped; default is beofre 2017,
+    which is beofre the ESD/AERD glider program.
 
     ds: `xarray.Dataset`
         Dataset, with 'time' coordinate
     min_dt: string
         String to be passed to np.datetime64. Minimum datetime to keep.
         For instance, '1971-01-01', or '2020-03-06 12:00:00'
-    
+
     Returns: filtered Dataset
     """
 
@@ -176,28 +176,28 @@ def drop_bogus(ds, min_dt='2017-01-01'):
 
     num_orig = len(ds.time)
     ll_good = (
-        (ds.longitude >= -180) & (ds.longitude <= 180) 
+        (ds.longitude >= -180) & (ds.longitude <= 180)
         & (ds.latitude >= -90) & (ds.latitude <= 90))
     ds = ds.where(ll_good, drop=True)
     if (num_orig-len(ds.time)) > 0:
-        _log.info(f"Dropped {num_orig - len(ds.time)} nan " + 
+        _log.info(f"Dropped {num_orig - len(ds.time)} nan " +
                     "or out of range lat/lons")
-    
+
     # For science variables, change out of range values to nan
     # if ds_type == "sci":
     drop_values = {
-        'conductivity':[0, 60], 
-        'temperature':[-5, 100], 
-        'pressure':[-2, 1500], 
-        'chlorophyll':[0, 30], 
-        'cdom':[0, 30], 
-        'backscatter_700':[0, 5],  
+        'conductivity':[0, 60],
+        'temperature':[-5, 100],
+        'pressure':[-2, 1500],
+        'chlorophyll':[0, 30],
+        'cdom':[0, 30],
+        'backscatter_700':[0, 5],
         # 'oxygen_concentration':[-100, 500],
-        'salinity':[0, 50], 
-        'potential_density':[900, 1050], 
-        'density':[1000, 1050], 
+        'salinity':[0, 50],
+        'potential_density':[900, 1050],
+        'density':[1000, 1050],
         'potential_temperature':[-5, 100]
-    } 
+    }
 
     for var, value in drop_values.items():
         if not var in list(ds.keys()):
@@ -243,7 +243,7 @@ def data_var_reorder(ds, new_start):
     """
     Reorder the data variables of a dataset
 
-    new_start is a list of the data variable names from ds that 
+    new_start is a list of the data variable names from ds that
     will be moved to 'first' in the dataset
 
     Returns ds, with reordered data variables
@@ -254,12 +254,12 @@ def data_var_reorder(ds, new_start):
         _log.error(f"new_start: {new_start}")
         _log.error(f"ds.data_vars: {ds_vars_orig}")
         raise ValueError("All values of new_start must be in ds.data_vars")
-    
+
     new_order = new_start + [i for i in ds.data_vars if i not in new_start]
     ds = ds[new_order]
-    
+
     # Double check that all values are present in new ds
-    if not (all([j in ds_vars_orig for j in new_order] + 
+    if not (all([j in ds_vars_orig for j in new_order] +
                 [j in new_order for j in ds_vars_orig])):
         raise ValueError("Error reordering data variables")
 
@@ -270,8 +270,8 @@ def datetime_now_utc(format='%Y-%m-%dT%H:%M:%SZ'):
     format : str
         format string; passed to strftime function
         https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior
-    
-    Returns a string with the current date/time, in UTC, 
+
+    Returns a string with the current date/time, in UTC,
         controlled by 'format' input
     """
     return datetime.now(timezone.utc).strftime(format)
@@ -302,7 +302,7 @@ def find_extensions(dir_path): #,  excluded = ['', '.txt', '.lnk']):
     From https://stackoverflow.com/questions/45256250
     """
     extensions = set()
-    for _, _, files in Path(dir_path).walk():   
+    for _, _, files in Path(dir_path).walk():
         for f in files:
             extensions.add(Path(f).suffix)
             # ext = Path(f).suffix.lower()
@@ -322,33 +322,33 @@ def split_deployment(deployment):
     if len(deployment_date) != 8:
         _log.error('The deployment must be the glider name followed by the deployment date')
         raise ValueError(f'Invalid glider deployment date: {deployment_date}')
-    
+
     return deployment_split
 
 
 def year_path(project, deployment):
     """
-    From the glider project and deployment name (both strings), 
-    generate and return the year string to use in file paths 
+    From the glider project and deployment name (both strings),
+    generate and return the year string to use in file paths
     for ESD glider deployments
 
-    For the FREEBYRD project, this will be the year of the second 
+    For the FREEBYRD project, this will be the year of the second
     half of the Antarctic season. For instance, hypothetical
-    FREEBYRD deployments amlr01-20181231 and amlr01-20190101 are both 
-    during season '2018-19', and thus would return '2019'. 
-    
-    For all other projects, the value returned is simply the year. 
-    For example, ringo-20181231 would return 2018, 
+    FREEBYRD deployments amlr01-20181231 and amlr01-20190101 are both
+    during season '2018-19', and thus would return '2019'.
+
+    For all other projects, the value returned is simply the year.
+    For example, ringo-20181231 would return 2018,
     and ringo-20190101 would return 2019
     """
-    
+
     deployment_split = split_deployment(deployment)
     deployment_date = deployment_split[1]
     year = deployment_date[0:4]
 
     if project == 'FREEBYRD':
         month = deployment_date[4:6]
-        if int(month) <= 7: 
+        if int(month) <= 7:
             year = f'{int(year)}'
         else:
             year = f'{int(year)+1}'
@@ -358,7 +358,7 @@ def year_path(project, deployment):
 
 def mkdir_pass(outdir):
     """
-    Convenience wrapper to try to make a directory path, 
+    Convenience wrapper to try to make a directory path,
     and pass if it already exists
     """
     _log.debug(f"Trying to make directory {outdir}")
@@ -375,7 +375,7 @@ def line_prepender(filename, line):
     Title: prepend-line-to-beginning-of-a-file
     https://stackoverflow.com/questions/5914627
     """
-    
+
     with open(filename, 'r+') as f:
         content = f.read()
         f.seek(0, 0)
