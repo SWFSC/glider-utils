@@ -12,5 +12,3 @@ repos:
     rev: v3.1.0
     hooks:
     -   id: add-trailing-comma
-
-
