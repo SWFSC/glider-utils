@@ -22,7 +22,7 @@ encoding_dict = {
         '_FillValue': np.nan,
         'calendar': 'gregorian',
         'dtype': 'float64',
-    }
+    },
 }
 
 def findProfiles(stamp: np.ndarray,depth: np.ndarray,**kwargs):
@@ -99,7 +99,7 @@ def findProfiles(stamp: np.ndarray,depth: np.ndarray,**kwargs):
 	castTail[castTailIndex[castValid]] = 0.5
 
 	profileIndex = 0.5 + np.cumsum(castHead + castTail)
-	profileDirection = np.empty((len(depth,)))
+	profileDirection = np.empty((len(depth)))
 	profileDirection[:] = np.nan
 
 	for i in range(len(validIndex) - 1):
@@ -123,7 +123,8 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     """
 
     prof_idx, prof_dir = findProfiles(
-        time_vals, depth_vals, stall=20, shake=200)
+        time_vals, depth_vals, stall=20, shake=200,
+    )
 
     attrs = collections.OrderedDict([
         ('long_name', 'profile index'),
@@ -131,7 +132,8 @@ def get_fill_profiles(ds, time_vals, depth_vals):
         ('comment', 'N = inside profile N, N + 0.5 = between profiles N and N + 1'),        ('sources', f'time depth'),
         ('method', 'esdglider.utils.findProfiles'),
         ('stall', 20),
-        ('shake', 200)])
+        ('shake', 200),
+    ])
     ds['profile_index'] = (('time'), prof_idx, attrs)
 
     attrs = collections.OrderedDict([
@@ -139,7 +141,8 @@ def get_fill_profiles(ds, time_vals, depth_vals):
         ('units', '1'),
         ('comment', '-1 = ascending, 0 = inflecting or stalled, 1 = descending'),
         ('sources', f'time depth'),
-        ('method', 'esdglider.utils.findProfiles')])
+        ('method', 'esdglider.utils.findProfiles'),
+    ])
     ds['profile_direction'] = (('time'), prof_dir, attrs)
 
     # ds = utils.get_profiles_esd(ds, "depth")
@@ -171,17 +174,22 @@ def drop_bogus(ds, min_dt='2017-01-01'):
     num_orig = len(ds.time)
     ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
     if (num_orig-len(ds.time)) > 0:
-        _log.info(f"Dropped {num_orig - len(ds.time)} times " +
-                    f"that were either nan or before {min_dt}")
+        _log.info(
+            f"Dropped {num_orig - len(ds.time)} times " +
+            f"that were either nan or before {min_dt}",
+        )
 
     num_orig = len(ds.time)
     ll_good = (
         (ds.longitude >= -180) & (ds.longitude <= 180)
-        & (ds.latitude >= -90) & (ds.latitude <= 90))
+        & (ds.latitude >= -90) & (ds.latitude <= 90)
+    )
     ds = ds.where(ll_good, drop=True)
     if (num_orig-len(ds.time)) > 0:
-        _log.info(f"Dropped {num_orig - len(ds.time)} nan " +
-                    "or out of range lat/lons")
+        _log.info(
+            f"Dropped {num_orig - len(ds.time)} nan " +
+            "or out of range lat/lons",
+        )
 
     # For science variables, change out of range values to nan
     # if ds_type == "sci":
@@ -196,7 +204,7 @@ def drop_bogus(ds, min_dt='2017-01-01'):
         'salinity':[0, 50],
         'potential_density':[900, 1050],
         'density':[1000, 1050],
-        'potential_temperature':[-5, 100]
+        'potential_temperature':[-5, 100],
     }
 
     for var, value in drop_values.items():
@@ -207,8 +215,10 @@ def drop_bogus(ds, min_dt='2017-01-01'):
         good = (ds[var] >= value[0]) & (ds[var] <= value[1])
         ds[var] = ds[var].where(good, drop=False)
         if num_orig - len(ds[var]) > 0:
-            _log.info(f"Changed {num_orig - len(ds[var])} {var} values " +
-                    f"outside range [{value[0]}, {value[1]}] to nan")
+            _log.info(
+                f"Changed {num_orig - len(ds[var])} {var} values " +
+                f"outside range [{value[0]}, {value[1]}] to nan",
+            )
 
         # num_orig = len(ds[var])
         # ds = ds.where(ds[var] <= value[1], drop=False)
@@ -259,8 +269,10 @@ def data_var_reorder(ds, new_start):
     ds = ds[new_order]
 
     # Double check that all values are present in new ds
-    if not (all([j in ds_vars_orig for j in new_order] +
-                [j in new_order for j in ds_vars_orig])):
+    if not (
+        all([j in ds_vars_orig for j in new_order] +
+        [j in new_order for j in ds_vars_orig])
+    ):
         raise ValueError("Error reordering data variables")
 
     return ds
@@ -387,11 +399,15 @@ def ts_calculations(ds):
     Code adapted from Jacob Partida
     Calculate variables for temperature/salinity plots
     """
-    s_lims = (np.floor(np.min(ds.salinity)-0.5),
-    np.ceil(np.max(ds.salinity)+0.5))
+    s_lims = (
+        np.floor(np.min(ds.salinity)-0.5),
+        np.ceil(np.max(ds.salinity)+0.5),
+    )
 
-    t_lims = (np.floor(np.min(ds.potential_temperature)-0.5),
-            np.ceil(np.max(ds.potential_temperature)+0.5))
+    t_lims = (
+        np.floor(np.min(ds.potential_temperature)-0.5),
+        np.ceil(np.max(ds.potential_temperature)+0.5),
+    )
     # print(t_lims)
     S = np.arange(s_lims[0],s_lims[1]+0.1,0.1)
     T = np.arange(t_lims[0],t_lims[1]+0.1,0.1)

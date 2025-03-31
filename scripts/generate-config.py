@@ -18,7 +18,8 @@ if __name__ == "__main__":
     logging.basicConfig(
         format='%(module)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]',
         level=logging.INFO,
-        datefmt='%Y-%m-%d %H:%M:%S')
+        datefmt='%Y-%m-%d %H:%M:%S',
+    )
 
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
@@ -26,4 +27,5 @@ if __name__ == "__main__":
     config.make_deployment_config(
         # "calanus-20241019", "ECOSWIM",
         "amlr01-20181216", "FREEBYRD",
-        path_config, conn_string)
+        path_config, conn_string,
+    )

@@ -75,13 +75,14 @@ def get_path_imagery(project, deployment, imagery_path):
     year = utils.year_path(project, deployment)
 
     imagery_deployment_path = os.path.join(
-        imagery_path, project, year, deployment)
+        imagery_path, project, year, deployment,
+    )
     if not os.path.isdir(imagery_deployment_path):
         raise FileNotFoundError(f'{imagery_deployment_path} does not exist')
 
     return {
         "imagedir": os.path.join(imagery_deployment_path, 'images'),
-        "metadir":  os.path.join(imagery_deployment_path, 'metadata')
+        "metadir":  os.path.join(imagery_deployment_path, 'metadata'),
     }
 
 
@@ -120,8 +121,10 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
         filepaths = glob.glob(f'{imagedir}/**/*.{ext}', recursive=True)
         _log.debug(f"Found {len(filepaths)} files with the extension {ext}")
         if len(filepaths) == 0:
-            _log.error("Zero image files were found. Did you provide " +
-                        "the right path, and use the right file extension?")
+            _log.error(
+                "Zero image files were found. Did you provide " +
+                "the right path, and use the right file extension?",
+            )
             raise ValueError("No files for which to generate metadata")
         imagery_files = [os.path.basename(path) for path in filepaths]
         imagery_dirs = [os.path.basename(os.path.dirname(path)) for path in filepaths]
@@ -132,27 +135,36 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
 
     # Check that all filenames have the same number of characters
     if not len(set([len(i) for i in imagery_files])) == 1:
-        _log.warning('The imagery file names are not all the same length, ' +
-            'and thus shuld be checked carefully')
+        _log.warning(
+            'The imagery file names are not all the same length, ' +
+            'and thus shuld be checked carefully',
+        )
 
     space_idx = str.index(imagery_files[0], ' ')
     if space_idx == -1:
-        _log.error('The imagery file name year index could not be found, ' +
-            'and thus the imagery metadata file cannot be generated')
+        _log.error(
+            'The imagery file name year index could not be found, ' +
+            'and thus the imagery metadata file cannot be generated',
+        )
         raise ValueError("Incompatible file name spaces")
     yr_idx = space_idx + 1
 
     try:
         imagery_files_dt = np.array(
-            [solocam_filename_dt(i, yr_idx) for i in imagery_files])
+            [solocam_filename_dt(i, yr_idx) for i in imagery_files],
+        )
 
     except:
-        _log.error('Datetimes could not be extracted from imagery filenames, ' +
-                    f'and thus the imagery metadata will not be created')
+        _log.error(
+            'Datetimes could not be extracted from imagery filenames, ' +
+            f'and thus the imagery metadata will not be created',
+        )
         raise ValueError('Datetimes could not be extracted from imagery filenames')
 
-    df_data = {'img_file': imagery_files, 'img_dir' : imagery_dirs,
-                'time': imagery_files_dt}
+    df_data = {
+        'img_file': imagery_files, 'img_dir' : imagery_dirs,
+        'time': imagery_files_dt,
+    }
     df = pd.DataFrame(data = df_data).sort_values(by='img_file', ignore_index=True)
     # df.to_csv("/home/sam_woodman_noaa_gov/test.csv", index_label="time")
 
@@ -171,7 +183,7 @@ def imagery_timeseries(ds, paths, ext = 'jpg'):
     vars_list = [
         'latitude', 'longitude', 'depth', 'heading', 'pitch', 'roll',
         'conductivity', 'temperature', 'pressure', 'salinity', 'density',
-        'oxygen_concentration', 'chlorophyll', 'cdom'
+        'oxygen_concentration', 'chlorophyll', 'cdom',
     ]
 
     for var in vars_list:

@@ -19,7 +19,7 @@ db_components = {
     "shadowgraph" : ['Shadowgraph cameras (11cm)', 'Shadowgraph cameras (14cm)'],
     "glidercam"   : 'Internal Camera Modules',
     "azfp"        : 'AZFP',
-    "echosounder" : 'Signature 100 compact echosounder'
+    "echosounder" : 'Signature 100 compact echosounder',
 }
 # db_ctd         = 'CTD'
 # db_flbbcd      = 'flbbcd Fluorometer'
@@ -72,7 +72,7 @@ def instrument_attrs(instr_name, devices, x, y):
 
 
 def make_deployment_config(
-    deployment: str, project: str, out_path: str, db_url=None
+    deployment: str, project: str, out_path: str, db_url=None,
 ):
     """
     deployment : str
@@ -106,11 +106,14 @@ def make_deployment_config(
         try:
             engine = sqlalchemy.create_engine(db_url)
             Glider_Deployment = pd.read_sql_table(
-                'Glider_Deployment', con = engine, schema = 'dbo')
+                'Glider_Deployment', con = engine, schema = 'dbo',
+            )
             vDeployment_Device = pd.read_sql_table(
-                'vDeployment_Device', con = engine, schema = 'dbo')
+                'vDeployment_Device', con = engine, schema = 'dbo',
+            )
             vDeployment_Device_Calibration = pd.read_sql_table(
-                'vDeployment_Device_Calibration', con = engine, schema = 'dbo')
+                'vDeployment_Device_Calibration', con = engine, schema = 'dbo',
+            )
         except:
             raise ValueError('Unable to connect to database and read tablea')
 
@@ -122,7 +125,8 @@ def make_deployment_config(
             _log.error(
                 'Exactly one row from the Glider_Deployment table ' +
                 f'must match the deployment name {deployment}. ' +
-                f'Currently, {db_depl.shape[0]} rows matched')
+                f'Currently, {db_depl.shape[0]} rows matched',
+            )
             raise ValueError('Invalid Glider_Deployment match')
 
         # Extract the Glider and Glider_Deployment IDs,
@@ -150,14 +154,16 @@ def make_deployment_config(
         key = 'ctd'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)
+                key, devices, db_devices, db_cals,
+            )
         else:
             raise ValueError('Glider must have a CTD')
 
         key = 'flbbcd'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)
+                key, devices, db_devices, db_cals,
+            )
         else:
             netcdf_vars.pop('chlorophyll', None)
             netcdf_vars.pop('cdom', None)
@@ -166,7 +172,8 @@ def make_deployment_config(
         key = 'oxygen'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)
+                key, devices, db_devices, db_cals,
+            )
         else:
             netcdf_vars.pop('oxygen_concentration', None)
 
@@ -177,17 +184,20 @@ def make_deployment_config(
         key = 'glidercam'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)
+                key, devices, db_devices, db_cals,
+            )
 
         key = 'azfp'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)
+                key, devices, db_devices, db_cals,
+            )
 
         key = 'echosounder'
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals)
+                key, devices, db_devices, db_cals,
+            )
 
 
     else:
@@ -210,7 +220,7 @@ def make_deployment_config(
         "metadata" : dict(sorted(metadata.items(), key = lambda v: v[0].upper())),
         "glider_devices" : instruments,
         "netcdf_variables" : netcdf_vars,
-        "profile_variables" : prof_vars
+        "profile_variables" : prof_vars,
     }
 
     yaml_out = os.path.join(out_path, f"{deployment}.yml")

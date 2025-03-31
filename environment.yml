@@ -32,4 +32,3 @@ dependencies:
   # After creating and activating conda env,
   # run the following to install esdglider as editable:
   # `pip install -e ~/glider-utils`
-
