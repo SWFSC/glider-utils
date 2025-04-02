@@ -1,17 +1,16 @@
-import os
+import importlib
 import logging
+import os
+
+import netCDF4
 import numpy as np
+import pyglider.ncprocess as pgncprocess
+import pyglider.slocum as pgslocum
+import pyglider.utils as pgutils
 import xarray as xr
 import yaml
-import netCDF4
-import importlib
-
-import pyglider.slocum as pgslocum
-import pyglider.ncprocess as pgncprocess
-import pyglider.utils as pgutils
 
 import esdglider.utils as utils
-
 
 _log = logging.getLogger(__name__)
 

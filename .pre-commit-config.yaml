@@ -37,10 +37,11 @@ repos:
     hooks:
     -   id: pyproject-fmt
 
-# -   repo: https://github.com/pycqa/isort
-#     rev: 5.11.2
-#     hooks:
-#     -   id: isort
+-   repo: https://github.com/pycqa/isort
+    rev: 6.0.1
+    hooks:
+    -   id: isort
+        name: isort (python)
 
 # cd glider-utils
 # pre-commit run --all-files

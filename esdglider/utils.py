@@ -1,10 +1,11 @@
-import os
-import numpy as np
-import logging
 import collections
-import gsw
-from pathlib import Path
+import logging
+import os
 from datetime import datetime, timezone
+from pathlib import Path
+
+import gsw
+import numpy as np
 
 _log = logging.getLogger(__name__)
 
@@ -70,7 +71,9 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     }
     optionsList.update(kwargs)
 
-    validIndex = np.argwhere(np.logical_not(np.isnan(depth)) & np.logical_not(np.isnan(stamp))).flatten()
+    validIndex = np.argwhere(
+        np.logical_not(np.isnan(depth)) & np.logical_not(np.isnan(stamp)),
+    ).flatten()
     validIndex = validIndex.astype(int)
 
     sdy = np.sign(np.diff(depth[validIndex], n=1, axis=0))

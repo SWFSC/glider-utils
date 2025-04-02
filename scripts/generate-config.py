@@ -1,6 +1,6 @@
 import logging
-import esdglider.config as config
 
+import esdglider.config as config
 
 """
 Scrape info from database, and generate draft of

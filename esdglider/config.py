@@ -1,12 +1,12 @@
-import os
 import logging
+import os
+from importlib.resources import as_file, files
+
 import pandas as pd
 import sqlalchemy
 import yaml
 
 import esdglider.utils as utils
-
-from importlib.resources import files, as_file
 
 _log = logging.getLogger(__name__)
 

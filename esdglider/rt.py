@@ -1,8 +1,8 @@
 # functions for real-time processing in GCP
 
+import logging
 import os
 import re
-import logging
 import subprocess
 
 import esdglider.gcp as gcp

@@ -1,12 +1,11 @@
 # Sam's testing script for esdglider modules/functions
 
-import os
 import logging
+import os
 
-import esdglider.gcp as gcp
 import esdglider.config as config
+import esdglider.gcp as gcp
 import esdglider.slocum as slocum
-
 
 # deployment = 'calanus-20241019'
 # project = "ECOSWIM"

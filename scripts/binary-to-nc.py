@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import sys
-import logging
 import argparse
+import logging
+import sys
+
 import esdglider.slocum as slocum
 
 

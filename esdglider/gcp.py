@@ -2,9 +2,10 @@
 Functions for interacting with GCP
 """
 
+import logging
 import os
 import subprocess
-import logging
+
 import google_crc32c
 from google.cloud import secretmanager
 

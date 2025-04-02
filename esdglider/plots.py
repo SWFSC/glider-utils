@@ -1,13 +1,14 @@
-import os
 import logging
-import numpy as np
+import os
+
 import cmocean.cm as cmo
-import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
 from matplotlib import colormaps
 from matplotlib.gridspec import GridSpec
 from mpl_toolkits.basemap import Basemap
-import xarray as xr
 
 import esdglider.utils as utils
 
