@@ -43,7 +43,7 @@ netcdf_variables:
     standard_name: m_depth
     observation_type: measured
     units:        m
-    
+
   heading:
     source:  m_heading
     long_name:    glider heading angle
@@ -306,7 +306,7 @@ netcdf_variables:
   #   serial_number: 9714
   #   type: instrument
   #   user_calibrated: ""
-    
+
   # instrument_optode:
   #   calibration_date: "2021-02-14"
   #   calibration_report: ""
@@ -322,11 +322,11 @@ netcdf_variables:
   #   user_calibrated: ""
 
   # instrument_ad2cp:
-  #   calibration_date: 
+  #   calibration_date:
   #   calibration_report: ""
   #   comment: ""
   #   deployment: ' '
-  #   factory_calibrated: 
+  #   factory_calibrated:
   #   long_name: 'NORTEK Inc Signature 100 Compact Echsounder'
   #   make_model: 'NORTEK Inc Signature 100 Compact Echsounder'
   #   owner: 'NOAA NMFS SWFSC Antarctic Ecosystem Research Division'
@@ -336,11 +336,11 @@ netcdf_variables:
   #   user_calibrated: ""
 
   # instrument_solocam:
-  #   calibration_date: 
+  #   calibration_date:
   #   calibration_report: ""
   #   comment: ""
   #   deployment: ' '
-  #   factory_calibrated: 
+  #   factory_calibrated:
   #   long_name: 'Williamson and Associates Shadowgraph Camera (11cm)'
   #   make_model: 'Williamson and Associates Shadowgraph Camera (11cm)'
   #   owner: 'NOAA NMFS SWFSC Antarctic Ecosystem Research Division'

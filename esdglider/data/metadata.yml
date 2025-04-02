@@ -3,7 +3,7 @@
 # Created by pyglider: history, id, processing_level, title
 
 acknowledgment: 'This work was supported by funding from NOAA.'
-comment: ' '  
+comment: ' '
 contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Cossio, Caleb Flaim, Jacob Partida, Eric Bjorkstedt, Jason C. Clarke, Samuel Woodman'
 contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Research Fish Biologist, Glider Pilot, Data Manager'
 creator_email: christian.reiss@noaa.gov
@@ -15,16 +15,16 @@ glider_serial: ''
 glider_model: 'Teledyne Webb Research Slocum G3 glider'
 glider_instrument_name: slocum
 institution: 'NOAA SWFSC Ecosystem Science Division'
-keywords: 'AUVS > Autonomous Underwater Vehicles, 
-            Earth Science > Oceans > Ocean Pressure > Water Pressure, 
-            Earth Science > Oceans > Ocean Temperature > Water Temperature, 
-            Earth Science > Oceans > Salinity/Density > Conductivity, 
-            Earth Science > Oceans > Salinity/Density > Density, 
-            Earth Science > Oceans > Salinity/Density > Salinity, 
+keywords: 'AUVS > Autonomous Underwater Vehicles,
+            Earth Science > Oceans > Ocean Pressure > Water Pressure,
+            Earth Science > Oceans > Ocean Temperature > Water Temperature,
+            Earth Science > Oceans > Salinity/Density > Conductivity,
+            Earth Science > Oceans > Salinity/Density > Density,
+            Earth Science > Oceans > Salinity/Density > Salinity,
             In Situ Ocean-based platforms > Seaglider,
             glider, Slocum, trajectory, underwater glider, water, wmo'
 keywords_vocabulary: GCMD Science Keywords
-license: 'This data may be redistributed and used without restriction. 
+license: 'This data may be redistributed and used without restriction.
           Data provided as is with no expressed or implied assurance of quality assurance or quality control.'
 Metadata_Conventions: Unidata Dataset Discovery v1.0, COARDS, CF-1.8
 metadata_link: 'https://swfsc.github.io/glider-lab-manual/'

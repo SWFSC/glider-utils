@@ -2,16 +2,17 @@
 Functions for interacting with GCP
 """
 
+import logging
 import os
 import subprocess
-import logging
+
 import google_crc32c
 from google.cloud import secretmanager
 
 _log = logging.getLogger(__name__)
 
 
-def access_secret_version(project_id, secret_id, version_id = 'latest'):
+def access_secret_version(project_id, secret_id, version_id="latest"):
     """
     Access the payload for the given secret version if one exists. The version
     can be a version number as a string (e.g. "5") or an alias (e.g. "latest").
@@ -20,7 +21,7 @@ def access_secret_version(project_id, secret_id, version_id = 'latest'):
 
     TODO: update this to follow current sample code from Google:
     https://github.com/googleapis/google-cloud-python/blob/main/packages/google-cloud-secret-manager/samples/generated_samples/secretmanager_v1_generated_secret_manager_service_access_secret_version_sync.py
-    
+
     """
 
     # Create the Secret Manager client.
@@ -49,7 +50,7 @@ def access_secret_version(project_id, secret_id, version_id = 'latest'):
     return response.payload.data.decode("UTF-8")
 
 
-#---------------------------------------
+# ---------------------------------------
 # GCS bucket mount management
 # NOTE: these functions are from
 #  https://github.com/us-amlr/shaip/blob/main/shaip/utils.py
@@ -59,16 +60,17 @@ def gcs_unmount_bucket(mountpoint):
     mountpoint must be a string
     https://cloud.google.com/storage/docs/gcs-fuse
     """
-    subprocess.run(["fusermount", "-u",  mountpoint])
+    subprocess.run(["fusermount", "-u", mountpoint])
 
     return 0
 
-def gcs_mount_bucket(bucket, mountpoint, ro = False):
+
+def gcs_mount_bucket(bucket, mountpoint, ro=False):
     """
     Run the command to mount a bucket 'bucket' at 'mountpoint' using gcsfuse
     Command is run with '--implicit-dirs' argument.
     https://cloud.google.com/storage/docs/gcs-fuse
-    
+
     Parameters
     ----------
     bucket : str
@@ -93,5 +95,5 @@ def gcs_mount_bucket(bucket, mountpoint, ro = False):
     if ro:
         cmd[2:2] = ["-o", "ro"]
     subprocess.run(cmd)
-    
+
     return 0
