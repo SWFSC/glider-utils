@@ -172,14 +172,14 @@ def sci_gridded_loop(
 
     # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
     _log.info(
-        "Looping through sci_vars, and making plots using the gridded science dataset"
+        "Looping through sci_vars, and making plots using the gridded science dataset",
     )
 
     for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
             _log.info(
-                f"Variable {var} not present in gridded science ds. Skipping plots"
+                f"Variable {var} not present in gridded science ds. Skipping plots",
             )
             continue
 
@@ -260,7 +260,7 @@ def sci_timeseries_loop(
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
             _log.info(
-                f"Variable {var} not present in timeseries science ds. Skipping plots"
+                f"Variable {var} not present in timeseries science ds. Skipping plots",
             )
             continue
 
@@ -304,7 +304,7 @@ def eng_timeseries_loop(
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
             _log.info(
-                f"Variable {var} not present in timeseries eng ds. Skipping plots"
+                f"Variable {var} not present in timeseries eng ds. Skipping plots",
             )
             continue
 
@@ -346,7 +346,7 @@ def sci_ts_loop(
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
             _log.info(
-                f"Variable {var} not present in timeseries sci ds. Skipping plots"
+                f"Variable {var} not present in timeseries sci ds. Skipping plots",
             )
             continue
 
@@ -389,7 +389,7 @@ def sci_surface_map_loop(
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
             _log.info(
-                f"Variable {var} not present in timeseries sci ds. Skipping plots"
+                f"Variable {var} not present in timeseries sci ds. Skipping plots",
             )
             continue
 
@@ -546,7 +546,10 @@ def sci_spatialsection_plot(
 
     ### Lon
     p1 = axs[0].pcolormesh(
-        ds.longitude, ds.depth, add_log(var, ds), cmap=sci_colors[var]
+        ds.longitude,
+        ds.depth,
+        add_log(var, ds),
+        cmap=sci_colors[var],
     )
     # p1 = axs[0].pcolormesh(sci_ds_g.longitude, sci_ds_g.depth, sci_ds_g[var], cmap=sci_colors[var])
 
@@ -569,7 +572,10 @@ def sci_spatialsection_plot(
 
     ### Lat
     p2 = axs[1].pcolormesh(
-        ds.latitude, ds.depth, add_log(var, ds), cmap=sci_colors[var]
+        ds.latitude,
+        ds.depth,
+        add_log(var, ds),
+        cmap=sci_colors[var],
     )
     # p2 = axs[1].pcolormesh(sci_ds_g.latitude, sci_ds_g.depth, sci_ds_g[var], cmap=sci_colors[var])
     fig.colorbar(p2).set_label(label=log_label(var), size=label_size)
@@ -644,7 +650,14 @@ def sci_spatialgrid_plot(
 
     _log.info(f"Making spatialgrid plot for variable {var}")
     gs = GridSpec(
-        5, 5, left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.05, hspace=0.05
+        5,
+        5,
+        left=0.1,
+        right=0.9,
+        bottom=0.1,
+        top=0.9,
+        wspace=0.05,
+        hspace=0.05,
     )
     deployment = ds.deployment_name
     project = ds.project
@@ -688,7 +701,8 @@ def sci_spatialgrid_plot(
     ax2.set_yticklabels([])
 
     fig.colorbar(p, location="top", ax=[ax2, ax0]).set_label(
-        label=log_label(var), size=label_size
+        label=log_label(var),
+        size=label_size,
     )
     fig.suptitle(f"Deployemnt {deployment} for project {project}", size=title_size)
 
@@ -1018,7 +1032,10 @@ def ts_plot(
         s=5,
     )
     cbar0 = fig.colorbar(
-        p0, orientation="vertical", location="right", shrink=1
+        p0,
+        orientation="vertical",
+        location="right",
+        shrink=1,
     ).set_label(label=log_label(var), size=label_size)
 
     ax.set_title(f"{deployment} from {start} to {end}", size=title_size)
@@ -1108,14 +1125,18 @@ def sci_surface_map(
     m.drawlsmask(ocean_color="#7bcbe3", resolution="f")
     m.drawparallels(
         np.linspace(
-            glider_lat_min - map_lat_border, glider_lat_max + map_lat_border, 5
+            glider_lat_min - map_lat_border,
+            glider_lat_max + map_lat_border,
+            5,
         ),
         labels=[1, 0, 0, 1],
         fmt="%0.2f",
     )
     m.drawmeridians(
         np.linspace(
-            glider_lon_min - map_lon_border, glider_lon_max + map_lon_border, 5
+            glider_lon_min - map_lon_border,
+            glider_lon_max + map_lon_border,
+            5,
         ),
         labels=[1, 0, 0, 1],
         fmt="%0.3f",
@@ -1146,10 +1167,12 @@ def sci_surface_map(
     # m.contourf(lon, lat, bar.z, cmap="Pastel1")
 
     fig.colorbar(p, ax=ax, shrink=0.6, location="right").set_label(
-        label=log_label(var), size=label_size
+        label=log_label(var),
+        size=label_size,
     )
     ax.set_title(
-        f"{deployment}: 0 - 10m average {var}\nfrom {start} to {end}", size=title_size
+        f"{deployment}: 0 - 10m average {var}\nfrom {start} to {end}",
+        size=title_size,
     )
 
     # plt.savefig(f"{sci_save_path}/maps/{deployment}_{var}_map_0-10.png")

@@ -88,7 +88,7 @@ def echoview_metadata(ds, paths):
             "Pitch_date": mdy_str,
             "Pitch_time": hms_str,
             "Pitch_angle": [math.degrees(x) for x in ds["pitch"].values],
-        }
+        },
     )
     pitch_df.to_csv(f"{file_echoview_pre}-pitch.csv", index=False)
 
@@ -99,7 +99,7 @@ def echoview_metadata(ds, paths):
             "Roll_date": mdy_str,
             "Roll_time": hms_str,
             "Roll_angle": [math.degrees(x) for x in ds["roll"].values],
-        }
+        },
     )
     roll_df.to_csv(f"{file_echoview_pre}-roll.csv", index=False)
 
@@ -111,7 +111,7 @@ def echoview_metadata(ds, paths):
             "GPS_time": hms_str,
             "Latitude": ds["latitude"].values,
             "Longitude": ds["longitude"].values,
-        }
+        },
     )
     gps_df.to_csv(f"{file_echoview_pre}-gps.csv", index=False)
 
@@ -123,7 +123,7 @@ def echoview_metadata(ds, paths):
             "Depth_time": [f"{i.strftime('%H%M%S')}0000" for i in ds_dt],
             "Depth": ds["depth"].values,
             "repthree": 3,
-        }
+        },
     )
     depth_file = f"{file_echoview_pre}-depth.evl"
     depth_df.to_csv(depth_file, index=False, header=False, sep="\t")

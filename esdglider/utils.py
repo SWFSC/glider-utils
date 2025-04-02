@@ -70,9 +70,7 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     }
     optionsList.update(kwargs)
 
-    validIndex = np.argwhere(
-        np.logical_not(np.isnan(depth)) & np.logical_not(np.isnan(stamp))
-    ).flatten()
+    validIndex = np.argwhere(np.logical_not(np.isnan(depth)) & np.logical_not(np.isnan(stamp))).flatten()
     validIndex = validIndex.astype(int)
 
     sdy = np.sign(np.diff(depth[validIndex], n=1, axis=0))
@@ -89,8 +87,9 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
 
     castSgmtValid = np.logical_not(
         np.logical_or(
-            np.abs(sgmtVinc) <= optionsList["stall"], sgmtSinc <= optionsList["shake"]
-        )
+            np.abs(sgmtVinc) <= optionsList["stall"],
+            sgmtSinc <= optionsList["shake"],
+        ),
     )
     castSgmtIndex = np.argwhere(castSgmtValid).flatten()
     castSgmtLapse = (
@@ -102,13 +101,13 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
         * (
             sgmtStrt[castSgmtIndex[1:]]
             - sgmtFnsh[castSgmtIndex[0 : len(castSgmtIndex) - 1]]
-        )
+        ),
     )
     castSgmtDirch = np.diff(sgmtVdir[castSgmtIndex], n=1, axis=0)
     castSgmtBound = np.logical_not(
         (castSgmtDirch[:,] == 0)
         & (castSgmtLapse[:,] <= optionsList["interrupt"])
-        & (castSgmtSpace <= optionsList["inversion"])
+        & (castSgmtSpace <= optionsList["inversion"]),
     )
     castSgmtHeadValid = np.ones(np.size(castSgmtIndex), dtype=bool)
     castSgmtTailValid = np.ones(np.size(castSgmtIndex), dtype=bool)
@@ -121,8 +120,9 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     castPeriod = stamp[castTailIndex] - stamp[castHeadIndex]
     castValid = np.logical_not(
         np.logical_or(
-            castLength <= optionsList["length"], castPeriod <= optionsList["period"]
-        )
+            castLength <= optionsList["length"],
+            castPeriod <= optionsList["period"],
+        ),
     )
     castHead = np.zeros(np.size(depth))
     castTail = np.zeros(np.size(depth))
@@ -168,7 +168,7 @@ def get_fill_profiles(ds, time_vals, depth_vals):
             ("method", "esdglider.utils.findProfiles"),
             ("stall", 20),
             ("shake", 200),
-        ]
+        ],
     )
     ds["profile_index"] = (("time"), prof_idx, attrs)
 
@@ -179,7 +179,7 @@ def get_fill_profiles(ds, time_vals, depth_vals):
             ("comment", "-1 = ascending, 0 = inflecting or stalled, 1 = descending"),
             ("sources", "time depth"),
             ("method", "esdglider.utils.findProfiles"),
-        ]
+        ],
     )
     ds["profile_direction"] = (("time"), prof_dir, attrs)
 
@@ -311,7 +311,7 @@ def data_var_reorder(ds, new_start):
     if not (
         all(
             [j in ds_vars_orig for j in new_order]
-            + [j in new_order for j in ds_vars_orig]
+            + [j in new_order for j in ds_vars_orig],
         )
     ):
         raise ValueError("Error reordering data variables")
@@ -375,7 +375,7 @@ def split_deployment(deployment):
     deployment_date = deployment_split[1]
     if len(deployment_date) != 8:
         _log.error(
-            "The deployment must be the glider name followed by the deployment date"
+            "The deployment must be the glider name followed by the deployment date",
         )
         raise ValueError(f"Invalid glider deployment date: {deployment_date}")
 

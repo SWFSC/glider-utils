@@ -56,7 +56,8 @@ def instrument_attrs(instr_name, devices, x, y):
     instrument = devices[instr_name]
 
     instrument["serial_number"] = x.loc[
-        x["Component"] == component_name, "Serial_Num"
+        x["Component"] == component_name,
+        "Serial_Num",
     ].values[0]
 
     y_curr = y[y["Component"] == component_name]
