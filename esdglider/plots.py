@@ -546,7 +546,7 @@ def sci_spatialsection_plot(
     # These data are spatially bound by {sci_ds_g.longitude.min():0.3f}°W, {sci_ds_g.longitude.max():0.3f}°W, {sci_ds_g.latitude.min():0.3f}°N, and {sci_ds_g.latitude.max():0.3f}°N."
 
     ### Lon
-    p1 = axs[0].pcolormesh(
+    axs[0].pcolormesh(
         ds.longitude,
         ds.depth,
         add_log(var, ds),
@@ -905,7 +905,7 @@ def eng_timeseries_plot(
     #     f"{ds.deployment_start[0:10]} and {ds.deployment_end[0:10]}",
     #     size=title_size)
 
-    p = ax.scatter(ds.time, ds[var], s=3)
+    ax.scatter(ds.time, ds[var], s=3)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%m/%d %H:%M"))
     # fig.colorbar(p, location="right").set_label(log_label(var), size=label_size)
     fig.autofmt_xdate()
@@ -1024,7 +1024,7 @@ def ts_plot(
     fig, ax = plt.subplots(figsize=(9.5, 8.5))
 
     C0 = ax.contour(Sg, Tg, sigma, colors="grey", zorder=1)
-    C0l = plt.clabel(C0, colors="k", fontsize=9)
+    plt.clabel(C0, colors="k", fontsize=9)
     p0 = ax.scatter(
         ds.salinity,
         ds.potential_temperature,
@@ -1032,7 +1032,7 @@ def ts_plot(
         cmap=sci_colors[var],
         s=5,
     )
-    cbar0 = fig.colorbar(
+    fig.colorbar(
         p0,
         orientation="vertical",
         location="right",
@@ -1164,7 +1164,7 @@ def sci_surface_map(
     lon, lat = np.meshgrid(bar.z.lon, bar.z.lat)
     lon, lat = m(lon, lat)
     C0 = m.contour(lon, lat, bar.z, levels=4, colors="grey")
-    C0l = plt.clabel(C0, colors="grey", fontsize=9)
+    plt.clabel(C0, colors="grey", fontsize=9)
     # m.contourf(lon, lat, bar.z, cmap="Pastel1")
 
     fig.colorbar(p, ax=ax, shrink=0.6, location="right").set_label(

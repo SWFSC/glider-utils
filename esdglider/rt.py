@@ -91,7 +91,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     #  ".ccc", ".scd", ".tcd", ".cam"
     file_ext_weird = sfmc_file_ext.difference(file_ext_expected)
     if len(file_ext_weird) > 0:
-        x = os.listdir(sfmc_local_path)
+        # os.listdir(sfmc_local_path)
         logging.warning(
             f"File with the following extensions ({file_ext_weird}) "
             + "were downloaded from the SFMC, "

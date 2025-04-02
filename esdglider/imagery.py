@@ -152,17 +152,9 @@ def imagery_timeseries(ds, paths, ext="jpg"):
         raise ValueError("Incompatible file name spaces")
     yr_idx = space_idx + 1
 
-    try:
-        imagery_files_dt = np.array(
-            [solocam_filename_dt(i, yr_idx) for i in imagery_files],
-        )
-
-    except:
-        _log.error(
-            "Datetimes could not be extracted from imagery filenames, "
-            + "and thus the imagery metadata will not be created",
-        )
-        raise ValueError("Datetimes could not be extracted from imagery filenames")
+    imagery_files_dt = np.array(
+        [solocam_filename_dt(i, yr_idx) for i in imagery_files],
+    )
 
     df_data = {
         "img_file": imagery_files,

@@ -110,25 +110,23 @@ def make_deployment_config(
 
     if db_url is not None:
         _log.debug("connecting to database, with provided URL")
-        try:
-            engine = sqlalchemy.create_engine(db_url)
-            Glider_Deployment = pd.read_sql_table(
-                "Glider_Deployment",
-                con=engine,
-                schema="dbo",
-            )
-            vDeployment_Device = pd.read_sql_table(
-                "vDeployment_Device",
-                con=engine,
-                schema="dbo",
-            )
-            vDeployment_Device_Calibration = pd.read_sql_table(
-                "vDeployment_Device_Calibration",
-                con=engine,
-                schema="dbo",
-            )
-        except:
-            raise ValueError("Unable to connect to database and read tablea")
+
+        engine = sqlalchemy.create_engine(db_url)
+        Glider_Deployment = pd.read_sql_table(
+            "Glider_Deployment",
+            con=engine,
+            schema="dbo",
+        )
+        vDeployment_Device = pd.read_sql_table(
+            "vDeployment_Device",
+            con=engine,
+            schema="dbo",
+        )
+        vDeployment_Device_Calibration = pd.read_sql_table(
+            "vDeployment_Device_Calibration",
+            con=engine,
+            schema="dbo",
+        )
 
         # Filter for the glider deployment, using the deployment name
         db_depl = Glider_Deployment[Glider_Deployment["Deployment_Name"] == deployment]
@@ -143,7 +141,7 @@ def make_deployment_config(
             raise ValueError("Invalid Glider_Deployment match")
 
         # Extract the Glider and Glider_Deployment IDs,
-        glider_id = db_depl["Glider_ID"].values[0]
+        # glider_id = db_depl["Glider_ID"].values[0]
         glider_deployment_id = db_depl["Glider_Deployment_ID"].values[0]
 
         # Get metadata info
