@@ -4,7 +4,7 @@ import argparse
 import logging
 import sys
 
-import esdglider.slocum as slocum
+import esdglider.glider as glider
 
 
 def main(args):
@@ -16,7 +16,7 @@ def main(args):
         level=getattr(logging, args.loglevel.upper()),
     )
 
-    paths = slocum.get_path_deployment(
+    paths = glider.get_path_deployment(
         args.project,
         args.deployment,
         args.mode,
@@ -24,7 +24,7 @@ def main(args):
         args.config_path,
     )
 
-    slocum.binary_to_nc(
+    glider.binary_to_nc(
         deployment=args.deployment,
         mode=args.mode,
         paths=paths,

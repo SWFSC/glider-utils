@@ -115,7 +115,7 @@ def binary_to_nc(
     deployment, mode, paths, min_dt, write_timeseries=True, write_gridded=True
 ):
     """
-    Process binary ESD glider data to timeseries and/or gridded netCDF files
+    Process binary ESD slocum glider data to timeseries and/or gridded netCDF files
 
     The contents of this function used to just be in scripts/binary_to_nc.py.
     They were moved to this structure for easier development and debugging
@@ -155,9 +155,9 @@ def binary_to_nc(
 
     # Choices (delayed, rt) specified in arg input
     if mode == "delayed":
-        binary_search = "*.[D|E|d|e]bd"
+        binary_search = "*.[D|E|d|e][Bb][Dd]"
     else:
-        binary_search = "*.[S|T|s|t]bd"
+        binary_search = "*.[S|T|s|t][Bb][Dd]"
 
     # --------------------------------------------
     # Check file and directory paths

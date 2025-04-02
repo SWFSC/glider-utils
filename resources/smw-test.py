@@ -5,7 +5,7 @@ import os
 
 import esdglider.config as config
 import esdglider.gcp as gcp
-import esdglider.slocum as slocum
+import esdglider.glider as glider
 
 # deployment = 'calanus-20241019'
 # project = "ECOSWIM"
@@ -31,7 +31,7 @@ config_path = f"{base_path}/glider-lab/deployment-configs"
 
 
 def scrape_sfmc():
-    slocum.scrape_sfmc(
+    glider.scrape_sfmc(
         deployment=deployment,
         project=project,
         bucket=deployment_bucket,
@@ -44,7 +44,7 @@ def scrape_sfmc():
 
 def prof(paths):
     outname_tssci = os.path.join(paths["tsdir"], f"{deployment}-{mode}-sci.nc")
-    return slocum.ngdac_profiles(
+    return glider.ngdac_profiles(
         outname_tssci,
         paths["profdir"],
         paths["deploymentyaml"],
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     gcp.gcs_mount_bucket(deployment_bucket, deployments_path, ro=False)
     gcp.gcs_mount_bucket(imagery_bucket, imagery_path, ro=False)
     gcp.gcs_mount_bucket(acoustics_bucket, acoustics_path, ro=False)
-    paths = slocum.get_path_deployment(
+    paths = glider.get_path_deployment(
         project,
         deployment,
         mode,
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     # scrape_sfmc()
     # yaml()
-    outname_tseng, outname_tssci, outname_1m, outname_5m = slocum.binary_to_nc(
+    outname_tseng, outname_tssci, outname_1m, outname_5m = glider.binary_to_nc(
         deployment,
         mode,
         paths,

@@ -410,7 +410,7 @@ def year_path(project, deployment):
         if int(month) <= 7:
             year = f"{int(year)}"
         else:
-            year = f"{int(year)+1}"
+            year = f"{int(year) + 1}"
 
     return year
 

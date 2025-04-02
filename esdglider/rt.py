@@ -24,7 +24,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     deployment_split = deployment.split("-")
     if len(deployment_split[1]) != 8:
         _log.error(
-            "The deployment must be the glider name followed by the deployment date"
+            "The deployment must be the glider name followed by the deployment date",
         )
         raise ValueError("Unsuccessful deployment_split")
     else:
@@ -51,7 +51,9 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
     # rsync with SFMC
     _log.info(f"Starting rsync with SFMC dockerver for {glider}")
     sfmc_glider = os.path.join(
-        "/var/opt/sfmc-dockserver/stations/noaa/gliders", glider, "from-glider/"
+        "/var/opt/sfmc-dockserver/stations/noaa/gliders",
+        glider,
+        "from-glider/",
     )
     sfmc_server_path = f"swoodman@sfmc.webbresearch.com:{sfmc_glider}"
 
@@ -95,7 +97,7 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
         logging.warning(
             f"File with the following extensions ({file_ext_weird}) "
             + "were downloaded from the SFMC, "
-            + "but will not be organized copied to the GCP bucket"
+            + "but will not be organized copied to the GCP bucket",
         )
         # logging.warning(f'File list: TODO')
 
@@ -154,7 +156,12 @@ def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id
 
 
 def rt_file_mgmt(
-    sfmc_ext_all, ext_regex, subdir_name, local_path, bucket_path, rsync_delete=True
+    sfmc_ext_all,
+    ext_regex,
+    subdir_name,
+    local_path,
+    bucket_path,
+    rsync_delete=True,
 ):
     """
     Move real-time files from the local sfmc folder (local_path)
@@ -180,7 +187,7 @@ def rt_file_mgmt(
 
         # Move files so as to do rsync later
         _log.info(f"Moving {subdir_name} files to their local subdirectory")
-        mv_cmd = f'mv {os.path.join(local_path, f'*{ext_regex}')} {subdir_path}'
+        mv_cmd = f"mv {os.path.join(local_path, f'*{ext_regex}')} {subdir_path}"
         _log.debug(mv_cmd)
         retcode_tmp = subprocess.call(mv_cmd, shell=True)
         _log.debug(retcode_tmp)
