@@ -11,7 +11,7 @@ from google.cloud import secretmanager
 _log = logging.getLogger(__name__)
 
 
-def access_secret_version(project_id, secret_id, version_id = 'latest'):
+def access_secret_version(project_id, secret_id, version_id="latest"):
     """
     Access the payload for the given secret version if one exists. The version
     can be a version number as a string (e.g. "5") or an alias (e.g. "latest").
@@ -49,7 +49,7 @@ def access_secret_version(project_id, secret_id, version_id = 'latest'):
     return response.payload.data.decode("UTF-8")
 
 
-#---------------------------------------
+# ---------------------------------------
 # GCS bucket mount management
 # NOTE: these functions are from
 #  https://github.com/us-amlr/shaip/blob/main/shaip/utils.py
@@ -59,11 +59,12 @@ def gcs_unmount_bucket(mountpoint):
     mountpoint must be a string
     https://cloud.google.com/storage/docs/gcs-fuse
     """
-    subprocess.run(["fusermount", "-u",  mountpoint])
+    subprocess.run(["fusermount", "-u", mountpoint])
 
     return 0
 
-def gcs_mount_bucket(bucket, mountpoint, ro = False):
+
+def gcs_mount_bucket(bucket, mountpoint, ro=False):
     """
     Run the command to mount a bucket 'bucket' at 'mountpoint' using gcsfuse
     Command is run with '--implicit-dirs' argument.

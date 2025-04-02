@@ -11,7 +11,7 @@ def main(args):
     Process binary ESD glider data...
     """
     logging.basicConfig(
-        format='%(module)s:%(levelname)s:%(message)s [line %(lineno)d]',
+        format="%(module)s:%(levelname)s:%(message)s [line %(lineno)d]",
         level=getattr(logging, args.loglevel.upper()),
     )
 
@@ -33,7 +33,7 @@ def main(args):
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
         description=main.__doc__,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -41,68 +41,69 @@ if __name__ == '__main__':
     )
 
     arg_parser.add_argument(
-        'project',
+        "project",
         type=str,
-        help='Project name for deployment',
-        choices=['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'],
+        help="Project name for deployment",
+        choices=["FREEBYRD", "REFOCUS", "SANDIEGO", "ECOSWIM"],
     )
 
     arg_parser.add_argument(
-        'deployment',
+        "deployment",
         type=str,
-        help='Deployment name, eg amlr03-20220425',
+        help="Deployment name, eg amlr03-20220425",
     )
 
     arg_parser.add_argument(
-        'mode',
+        "mode",
         type=str,
-        help="Specify which binary files will be converted to dbas. " +
-            "'delayed' means [de]bd files will be converted, " +
-            "and 'rt' means [st]bd files will be converted",
-        choices=['delayed', 'rt'],
+        help="Specify which binary files will be converted to dbas. "
+        + "'delayed' means [de]bd files will be converted, "
+        + "and 'rt' means [st]bd files will be converted",
+        choices=["delayed", "rt"],
     )
 
     arg_parser.add_argument(
-        'deployments_path',
+        "deployments_path",
         type=str,
-        help='Path to glider deployments directory. ' +
-            'In GCP, this will be the mounted bucket path',
+        help="Path to glider deployments directory. "
+        + "In GCP, this will be the mounted bucket path",
     )
 
     arg_parser.add_argument(
-        'config_path',
+        "config_path",
         type=str,
-        help='Path to folder with the config (deployment yaml) file. ' +
-            'Usually in a clone of https://github.com/SWFSC/glider-lab',
+        help="Path to folder with the config (deployment yaml) file. "
+        + "Usually in a clone of https://github.com/SWFSC/glider-lab",
     )
 
     arg_parser.add_argument(
-        '--min_dt',
+        "--min_dt",
         type=str,
         default="2017-01-01",
-        help="The minimum datetime kept during deployment processing. All " +
-            "rows with timestamps less than this value will be dropped. " +
-            "String must be readable by numpy.datetime64()",
+        help="The minimum datetime kept during deployment processing. All "
+        + "rows with timestamps less than this value will be dropped. "
+        + "String must be readable by numpy.datetime64()",
     )
 
     arg_parser.add_argument(
-        '--write_timeseries',
-        help='flag; indicates if timeseries nc files should be written',
-        action='store_true',
+        "--write_timeseries",
+        help="flag; indicates if timeseries nc files should be written",
+        action="store_true",
     )
 
     arg_parser.add_argument(
-        '--write_gridded',
-        help='flag; indicates if gridded nc files should be written',
-        action='store_true',
+        "--write_gridded",
+        help="flag; indicates if gridded nc files should be written",
+        action="store_true",
     )
 
     arg_parser.add_argument(
-        '-l', '--loglevel',
+        "-l",
+        "--loglevel",
         type=str,
-        help='Verbosity level',
-        choices=['debug', 'info', 'warning', 'error', 'critical'],
-        default='info',
+        help="Verbosity level",
+        choices=["debug", "info", "warning", "error", "critical"],
+        default="info",
     )
 
     # arg_parser.add_argument('--logfile',

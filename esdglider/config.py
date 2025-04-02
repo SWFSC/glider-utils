@@ -13,13 +13,13 @@ _log = logging.getLogger(__name__)
 
 # Names of Components in the ESD Glider Database
 db_components = {
-    "ctd"         : 'CTD',
-    "flbbcd"      : 'flbbcd Fluorometer',
-    "oxygen"      : 'Oxygen Optode',
-    "shadowgraph" : ['Shadowgraph cameras (11cm)', 'Shadowgraph cameras (14cm)'],
-    "glidercam"   : 'Internal Camera Modules',
-    "azfp"        : 'AZFP',
-    "echosounder" : 'Signature 100 compact echosounder',
+    "ctd": "CTD",
+    "flbbcd": "flbbcd Fluorometer",
+    "oxygen": "Oxygen Optode",
+    "shadowgraph": ["Shadowgraph cameras (11cm)", "Shadowgraph cameras (14cm)"],
+    "glidercam": "Internal Camera Modules",
+    "azfp": "AZFP",
+    "echosounder": "Signature 100 compact echosounder",
 }
 # db_ctd         = 'CTD'
 # db_flbbcd      = 'flbbcd Fluorometer'
@@ -29,7 +29,7 @@ db_components = {
 # db_azfp        = 'AZFP'
 # db_echosounder = 'Signature 100 Compact echsounder'
 
-db_factory_cal = ['Factory - Initial', 'Factory - Recal']
+db_factory_cal = ["Factory - Initial", "Factory - Recal"]
 # Factory - Iniital
 # Factory - Initial
 # Factory - Intial
@@ -55,11 +55,13 @@ def instrument_attrs(instr_name, devices, x, y):
     component_name = db_components[instr_name]
     instrument = devices[instr_name]
 
-    instrument["serial_number"] = x.loc[x['Component'] == component_name, "Serial_Num"].values[0]
+    instrument["serial_number"] = x.loc[
+        x["Component"] == component_name, "Serial_Num"
+    ].values[0]
 
-    y_curr = y[y['Component'] == component_name]
+    y_curr = y[y["Component"] == component_name]
     if y_curr.shape[0] > 1:
-        raise ValueError(f'Multiple calibrations for {instr_name}')
+        raise ValueError(f"Multiple calibrations for {instr_name}")
     elif y_curr.shape[0] == 1:
         instrument["calibration_date"] = str(y_curr["Calibration_Date"].values[0])[:10]
         # if instr_name in ["ctd", "flbbcd", "oxygen"]:
@@ -72,7 +74,10 @@ def instrument_attrs(instr_name, devices, x, y):
 
 
 def make_deployment_config(
-    deployment: str, project: str, out_path: str, db_url=None,
+    deployment: str,
+    project: str,
+    out_path: str,
+    db_url=None,
 ):
     """
     deployment : str
@@ -91,55 +96,67 @@ def make_deployment_config(
     """
 
     _log.debug("Reading template yaml files")
-    def esdglider_yaml_read(yaml_name):
-        with as_file(files('esdglider.data') / yaml_name) as path:
-            with open(str(path), 'r') as fin:
-                return yaml.safe_load(fin)
-    metadata = esdglider_yaml_read('metadata.yml')
-    netcdf_vars = esdglider_yaml_read('netcdf-variables-sci.yml')
-    prof_vars = esdglider_yaml_read('profile-variables.yml')
-    devices = esdglider_yaml_read('glider-devices.yml')
 
+    def esdglider_yaml_read(yaml_name):
+        with as_file(files("esdglider.data") / yaml_name) as path:
+            with open(str(path), "r") as fin:
+                return yaml.safe_load(fin)
+
+    metadata = esdglider_yaml_read("metadata.yml")
+    netcdf_vars = esdglider_yaml_read("netcdf-variables-sci.yml")
+    prof_vars = esdglider_yaml_read("profile-variables.yml")
+    devices = esdglider_yaml_read("glider-devices.yml")
 
     if db_url is not None:
         _log.debug("connecting to database, with provided URL")
         try:
             engine = sqlalchemy.create_engine(db_url)
             Glider_Deployment = pd.read_sql_table(
-                'Glider_Deployment', con = engine, schema = 'dbo',
+                "Glider_Deployment",
+                con=engine,
+                schema="dbo",
             )
             vDeployment_Device = pd.read_sql_table(
-                'vDeployment_Device', con = engine, schema = 'dbo',
+                "vDeployment_Device",
+                con=engine,
+                schema="dbo",
             )
             vDeployment_Device_Calibration = pd.read_sql_table(
-                'vDeployment_Device_Calibration', con = engine, schema = 'dbo',
+                "vDeployment_Device_Calibration",
+                con=engine,
+                schema="dbo",
             )
         except:
-            raise ValueError('Unable to connect to database and read tablea')
+            raise ValueError("Unable to connect to database and read tablea")
 
         # Filter for the glider deployment, using the deployment name
-        db_depl = Glider_Deployment[Glider_Deployment['Deployment_Name'] == deployment]
+        db_depl = Glider_Deployment[Glider_Deployment["Deployment_Name"] == deployment]
         _log.debug("database connection successful")
         # Confirm that exactly one deployment in the db matched deployment name
         if db_depl.shape[0] != 1:
             _log.error(
-                'Exactly one row from the Glider_Deployment table ' +
-                f'must match the deployment name {deployment}. ' +
-                f'Currently, {db_depl.shape[0]} rows matched',
+                "Exactly one row from the Glider_Deployment table "
+                + f"must match the deployment name {deployment}. "
+                + f"Currently, {db_depl.shape[0]} rows matched",
             )
-            raise ValueError('Invalid Glider_Deployment match')
+            raise ValueError("Invalid Glider_Deployment match")
 
         # Extract the Glider and Glider_Deployment IDs,
-        glider_id = db_depl['Glider_ID'].values[0]
-        glider_deployment_id = db_depl['Glider_Deployment_ID'].values[0]
+        glider_id = db_depl["Glider_ID"].values[0]
+        glider_deployment_id = db_depl["Glider_Deployment_ID"].values[0]
 
         # Get metadata info
         metadata["deployment_id"] = str(glider_deployment_id)
 
         # Filter the Devices table for this deployment
-        db_devices = vDeployment_Device[vDeployment_Device['Glider_Deployment_ID'] == glider_deployment_id]
-        db_cals = vDeployment_Device_Calibration [vDeployment_Device_Calibration ['Glider_Deployment_ID'] == glider_deployment_id]
-        components = db_devices['Component'].values
+        db_devices = vDeployment_Device[
+            vDeployment_Device["Glider_Deployment_ID"] == glider_deployment_id
+        ]
+        db_cals = vDeployment_Device_Calibration[
+            vDeployment_Device_Calibration["Glider_Deployment_ID"]
+            == glider_deployment_id
+        ]
+        components = db_devices["Component"].values
 
         # Based on the instruments on the glider:
         # 1) Remove netcdf vars from yamls, if necessary
@@ -151,54 +168,71 @@ def make_deployment_config(
         #         prof_vars[f"instrument_{key}"] = fill_instrument(key, devices, db_devices, db_cals)
         instruments = {}
 
-        key = 'ctd'
+        key = "ctd"
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals,
+                key,
+                devices,
+                db_devices,
+                db_cals,
             )
         else:
-            raise ValueError('Glider must have a CTD')
+            raise ValueError("Glider must have a CTD")
 
-        key = 'flbbcd'
+        key = "flbbcd"
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals,
+                key,
+                devices,
+                db_devices,
+                db_cals,
             )
         else:
-            netcdf_vars.pop('chlorophyll', None)
-            netcdf_vars.pop('cdom', None)
-            netcdf_vars.pop('backscatter_700', None)
+            netcdf_vars.pop("chlorophyll", None)
+            netcdf_vars.pop("cdom", None)
+            netcdf_vars.pop("backscatter_700", None)
 
-        key = 'oxygen'
+        key = "oxygen"
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals,
+                key,
+                devices,
+                db_devices,
+                db_cals,
             )
         else:
-            netcdf_vars.pop('oxygen_concentration', None)
+            netcdf_vars.pop("oxygen_concentration", None)
 
         # TODO: how to handle multiple shadowgraph models?
         # if not set(db_components['shadowgraph']).isdisjoint(components):
         #     pass
 
-        key = 'glidercam'
+        key = "glidercam"
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals,
+                key,
+                devices,
+                db_devices,
+                db_cals,
             )
 
-        key = 'azfp'
+        key = "azfp"
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals,
+                key,
+                devices,
+                db_devices,
+                db_cals,
             )
 
-        key = 'echosounder'
+        key = "echosounder"
         if db_components[key] in components:
             instruments[f"instrument_{key}"] = instrument_attrs(
-                key, devices, db_devices, db_cals,
+                key,
+                devices,
+                db_devices,
+                db_cals,
             )
-
 
     else:
         _log.info("no database URL provided, and thus no connection attempted")
@@ -217,15 +251,15 @@ def make_deployment_config(
         metadata["sea_name"] = "<sea name>"
 
     deployment_yaml = {
-        "metadata" : dict(sorted(metadata.items(), key = lambda v: v[0].upper())),
-        "glider_devices" : instruments,
-        "netcdf_variables" : netcdf_vars,
-        "profile_variables" : prof_vars,
+        "metadata": dict(sorted(metadata.items(), key=lambda v: v[0].upper())),
+        "glider_devices": instruments,
+        "netcdf_variables": netcdf_vars,
+        "profile_variables": prof_vars,
     }
 
     yaml_out = os.path.join(out_path, f"{deployment}.yml")
     _log.info(f"writing {yaml_out}")
-    with open(yaml_out, 'w') as file:
+    with open(yaml_out, "w") as file:
         yaml.dump(deployment_yaml, file, sort_keys=False)
 
     return yaml_out
