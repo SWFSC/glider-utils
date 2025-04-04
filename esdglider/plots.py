@@ -188,8 +188,6 @@ def sci_gridded_loop(
 
     # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
     _log.info("LOOP: making gridded science plots")
-    utils.rmtree(base_path)
-
     for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -233,8 +231,6 @@ def eng_tvt_loop(
     """
 
     _log.info("LOOP: making engineering tvt plots")
-    utils.rmtree(base_path)
-
     eng_dict = eng_plots_to_make(ds)
     for key in eng_dict.keys():
         s1 = eng_tvt_plot(ds, eng_dict, key, base_path=base_path)
@@ -273,8 +269,6 @@ def sci_timeseries_loop(
     # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
 
     _log.info("LOOP: making science timeseries plots")
-    utils.rmtree(base_path)
-    
     for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -318,8 +312,6 @@ def eng_timeseries_loop(
 
     # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
     _log.info("LOOP: making engineering timeseries plots")
-    utils.rmtree(base_path)
-
     for var in eng_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -362,8 +354,6 @@ def sci_ts_loop(
     """
 
     _log.info("LOOP: making ts plots")
-    utils.rmtree(base_path)
-
     for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -407,8 +397,6 @@ def sci_surface_map_loop(
     """
 
     _log.info("LOOP: making surface maps")
-    utils.rmtree(base_path)
-
     for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -468,6 +456,8 @@ def sci_timesection_plot(
     Returns
         matplotlib plt object
     """
+
+
 
     if var not in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
