@@ -183,6 +183,7 @@ def echoview_metadata(ds: xr.Dataset, paths: dict) -> str:
 
     # Prep - making paths, variables, etc used throughout
     path_echoview = os.path.join(paths["metadir"], "echoview")
+    utils.rmtree(path_echoview)
     utils.mkdir_pass(paths["metadir"])
     utils.mkdir_pass(path_echoview)
     file_echoview_pre = os.path.join(path_echoview, depl)

@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+import shutil
 
 import gsw
 import numpy as np
@@ -418,18 +419,26 @@ def year_path(project, deployment):
     return year
 
 
-def mkdir_pass(outdir):
+def mkdir_pass(dir):
     """
     Convenience wrapper to try to make a directory path,
     and pass if it already exists
     """
-    _log.debug(f"Trying to make directory {outdir}")
+    _log.debug(f"Trying to make directory {dir}")
     try:
-        os.mkdir(outdir)
+        os.mkdir(dir)
     except FileExistsError:
         pass
 
-    return outdir
+
+def rmtree(dir, ignore_errors=False):
+    """
+    Light wrapper around shutil.rmtree
+    Checks if directory exists before deleting
+    """
+    if os.path.isdir(dir):
+        _log.info(f"Removing the following directory and all files in it: {dir}")
+        shutil.rmtree(dir, ignore_errors=ignore_errors) 
 
 
 def line_prepender(filename, line):

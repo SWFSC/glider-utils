@@ -112,8 +112,14 @@ def imagery_timeseries(ds, paths, ext="jpg"):
 
     deployment = ds.attrs["deployment_name"]
     imagedir = paths["imagedir"]
+    metadir = paths["metadir"]
     _log.info(f"Creating imagery metadata file for {deployment}")
     _log.info(f"Using images directory {imagedir}")
+    
+    csv_file = os.path.join(metadir, f"{deployment}-imagery-metadata.csv")
+    if os.path.isfile(csv_file):
+        _log.info(f"Deleting old imagery metadata file: {csv_file}")
+        os.remove(csv_file)
 
     # --------------------------------------------
     # Checks
@@ -201,10 +207,7 @@ def imagery_timeseries(ds, paths, ext="jpg"):
 
     # --------------------------------------------
     # Export metadata file
-    metadir = paths["metadir"]
     utils.mkdir_pass(metadir)
-
-    csv_file = os.path.join(metadir, f"{deployment}-imagery-metadata.csv")
     _log.info(f"Writing imagery metadata to: {csv_file}")
     df.to_csv(csv_file, index=False)
 

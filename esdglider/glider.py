@@ -172,6 +172,7 @@ def binary_to_nc(
 
     # Check file and directory paths
     tsdir = paths["tsdir"]
+    griddir = paths["griddir"]
     deploymentyaml = paths["deploymentyaml"]
 
     # Get deployment and thus file name from yaml file
@@ -191,6 +192,11 @@ def binary_to_nc(
     # --------------------------------------------
     # Timeseries
     if write_timeseries:
+        # Delete previous files before starting run
+        # Since gridded depend on ts, also delete gridded
+        utils.rmtree(tsdir)
+        utils.rmtree(griddir)
+
         if not os.path.exists(tsdir):
             _log.info(f"Creating directory at: {tsdir}")
             os.makedirs(tsdir)
@@ -255,13 +261,14 @@ def binary_to_nc(
     # Gridded data, 1m and 5m
     # TODO: filter to match SOCIB?
     if write_gridded:
+        utils.rmtree(griddir)
         if not os.path.isfile(outname_tssci):
             raise FileNotFoundError(f"Could not find {outname_tssci}")
 
         _log.info("Generating 1m gridded data")
         outname_1m = pgncprocess.make_gridfiles(
             outname_tssci,
-            paths["griddir"],
+            griddir,
             deploymentyaml,
             dz=1,
             fnamesuffix=f"-{mode}-1m",
@@ -270,7 +277,7 @@ def binary_to_nc(
         _log.info("Generating 5m gridded data")
         outname_5m = pgncprocess.make_gridfiles(
             outname_tssci,
-            paths["griddir"],
+            griddir,
             deploymentyaml,
             dz=5,
             fnamesuffix=f"-{mode}-5m",
