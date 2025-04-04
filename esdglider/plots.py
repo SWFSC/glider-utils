@@ -127,6 +127,10 @@ eng_vars = [
 
 
 def all_loops(dssci, dseng, dssci_g, base_path, bar_path):
+    """
+    Wrapper to run all of the plotting loop functions. 
+    Only tries to make surface map plots if bar_path is not None
+    """
     # base_path = paths['plotdir']
     _log.info("Doing all of the loops")
     sci_gridded_loop(dssci_g, base_path)
@@ -136,10 +140,13 @@ def all_loops(dssci, dseng, dssci_g, base_path, bar_path):
     sci_ts_loop(dssci, base_path)
 
     # bar_path = os.path.join("/home/sam_woodman_noaa_gov", "ETOPO_2022_v1_15s_N45W135_erddap.nc")
-    bar_path = os.path.join(bar_path)
-    bar = xr.load_dataset(bar_path).rename({"latitude": "lat", "longitude": "lon"})
-    bar = bar.where(bar.z <= 0, drop=True)
-    sci_surface_map_loop(dssci_g, bar, base_path)
+    if bar_path is not None:
+        bar_path = os.path.join(bar_path)
+        bar = xr.load_dataset(bar_path).rename({"latitude": "lat", "longitude": "lon"})
+        bar = bar.where(bar.z <= 0, drop=True)
+        sci_surface_map_loop(dssci_g, bar, base_path)
+    else:
+        _log.info("No bar path, so skipping surface maps")
 
 
 def sci_gridded_loop(
@@ -188,9 +195,9 @@ def sci_gridded_loop(
         s2 = sci_spatialsection_plot(ds, var, base_path=base_path)
         s3 = sci_spatialgrid_plot(ds, var, base_path=base_path)
 
-        show_close(s1)
-        show_close(s2)
-        show_close(s3)
+        show_close(s1, show)
+        show_close(s2, show)
+        show_close(s3, show)
 
 
 def eng_tvt_loop(
@@ -222,7 +229,7 @@ def eng_tvt_loop(
     eng_dict = eng_plots_to_make(ds)
     for key in eng_dict.keys():
         s1 = eng_tvt_plot(ds, eng_dict, key, base_path=base_path)
-        show_close(s1)
+        show_close(s1, show)
 
 
 def sci_timeseries_loop(
@@ -266,7 +273,7 @@ def sci_timeseries_loop(
             continue
 
         s1 = sci_timeseries_plot(ds, var, base_path=base_path)
-        show_close(s1)
+        show_close(s1, show)
 
 
 def eng_timeseries_loop(
@@ -310,7 +317,7 @@ def eng_timeseries_loop(
             continue
 
         s1 = eng_timeseries_plot(ds, var, base_path=base_path)
-        show_close(s1)
+        show_close(s1, show)
 
 
 def sci_ts_loop(
@@ -352,7 +359,7 @@ def sci_ts_loop(
             continue
 
         s1 = ts_plot(ds, var, base_path=base_path)
-        show_close(s1)
+        show_close(s1, show)
 
 
 def sci_surface_map_loop(
@@ -395,7 +402,7 @@ def sci_surface_map_loop(
             continue
 
         s1 = sci_surface_map(ds, var, bar, base_path)
-        show_close(s1)
+        show_close(s1, show)
 
 
 def save_plot(
