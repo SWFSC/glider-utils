@@ -15,10 +15,15 @@ import esdglider.utils as utils
 _log = logging.getLogger(__name__)
 
 
-def get_path_engyaml():
+def get_path_engyaml() -> str:
     """
-    Get and return the path to the yaml with engineering NetCDF variables
-    Returns the path, so as to be able to pass to binary_to_timeseries
+    Get the path to the yaml with engineering NetCDF variables:
+    deployment-eng-vars.yml
+
+    Returns
+    -------
+    str
+        the path of deployment-eng-vars.yml
     """
 
     ref = importlib.resources.files("esdglider.data") / "deployment-eng-vars.yml"
@@ -26,36 +31,37 @@ def get_path_engyaml():
         return str(path)
 
 
-def get_path_deployment(project, deployment, mode, deployments_path, config_path):
+def get_path_deployment(
+    project: str, 
+    deployment: str, 
+    mode: str, 
+    deployments_path: str, 
+    config_path: str, 
+) -> dict:
     """
     Return a dictionary of paths for use by other esdglider functions.
     These paths follow the directory structure outlined here:
     https://swfsc.github.io/glider-lab-manual/content/data-management.html
 
-    -----
     Parameters
-
+    ----------
     project : str
         The project name of the deployment.
         Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
-
     deployment : str
         The name of the glider deployment. Eg, amlr01-20210101
-
     mode : str
         Mode of the glider dat being processed.
         Must be either 'rt', for real-time, or 'delayed
-
     deployments_path : str
         The path to the top-level folder of the glider data.
         This is inteded to be the path to the mounted glider deployments bucket
-
     config_path : str
         The path to the directory that contains the yaml with the
         deployment config
 
-    -----
-    Returns:
+    Returns
+    -------
         A dictionary with the relevant paths
     """
 
@@ -112,7 +118,13 @@ def get_path_deployment(project, deployment, mode, deployments_path, config_path
 
 
 def binary_to_nc(
-    deployment, mode, paths, min_dt, write_timeseries=True, write_gridded=True
+    deployment: str, 
+    mode: str, 
+    paths: str, 
+    min_dt: str, 
+    write_timeseries: bool = True, 
+    write_gridded: bool = True, 
+    file_info: str | None = None
 ):
     """
     Process binary ESD slocum glider data to timeseries and/or gridded netCDF files
@@ -120,54 +132,52 @@ def binary_to_nc(
     The contents of this function used to just be in scripts/binary_to_nc.py.
     They were moved to this structure for easier development and debugging
 
-    -----
     Parameters
-
-        deployment : str
+    ----------
+    deployment : str
         The name of the glider deployment. Eg, amlr01-20210101
-
     mode : str
         Mode of the glider dat being processed.
         Must be either 'rt', for real-time, or 'delayed
-
     paths : dict
         A dictionary of file/directory paths for various processing steps.
         Intended to be the output of esdglider.slocum.paths_esd_gcp()
         See this function for the expected key/value pairs
-
-    min_dt : datetime64, or object that can be converted to datetime64
-        See utils.drop_bogus; default is '2017-01-01'.
+    min_dt : str
+        string that can be converted to datetime64; see utils.drop_bogus
         All timestamps from before this value will be dropped
-
-    write_timeseries, write_gridded : bool
+    write_timeseries, write_gridded : bool, default True
         Should the timeseries and gridded, respectively,
         xarray DataSets be both created and written to files?
-        Note: if True then already-existing files will be clobbered
+        Note: if True then any existing files will be clobbered
+    file_path: str | None, default None
+        The path of the paretn processing script. 
+        If provided, will be included in the history attribute
 
-    -----
     Returns
-
+    -------
     A tuple of the filenames of the various netCDF files, as strings.
     In order: the engineering and science timeseries,
     and the 1m and 5m gridded files
-
     """
 
+    # --------------------------------------------
     # Choices (delayed, rt) specified in arg input
     if mode == "delayed":
         binary_search = "*.[D|E|d|e][Bb][Dd]"
-    else:
+    elif mode == "rt":
         binary_search = "*.[S|T|s|t][Bb][Dd]"
+    else:
+        raise ValueError("mode must be either 'rt' or 'delayed'")
 
-    # --------------------------------------------
     # Check file and directory paths
     tsdir = paths["tsdir"]
     deploymentyaml = paths["deploymentyaml"]
 
     # Get deployment and thus file name from yaml file
     with open(deploymentyaml) as fin:
-        deployment_ = yaml.safe_load(fin)
-        deployment_name = deployment_["metadata"]["deployment_name"]
+        deployment_info = yaml.safe_load(fin)
+        deployment_name = deployment_info["metadata"]["deployment_name"]
     if deployment_name != deployment:
         raise ValueError(
             f"Provided deployment ({deployment}) is not the same as "
@@ -187,6 +197,13 @@ def binary_to_nc(
 
         if not os.path.isfile(deploymentyaml):
             raise FileNotFoundError(f"Could not find {deploymentyaml}")
+        
+        # Dictionary with info needed by post-processing functions
+        postproc_dict = {
+            "mode": mode, 
+            "min_dt": min_dt, 
+            "file_info": file_info, 
+        }
 
         # Engineering - uses m_depth as time base
         _log.info("Generating engineering timeseries")
@@ -201,11 +218,8 @@ def binary_to_nc(
             profile_filt_time=None,
         )
 
-        _log.info("Post-processing engineering timeseries")
-        tseng = xr.load_dataset(outname_tseng)
-        tseng = postproc_eng_timeseries(tseng, mode, min_dt=min_dt)
-        tseng.to_netcdf(outname_tseng, encoding=utils.encoding_dict)
-        _log.info(f"Finished eng timeseries postproc: {outname_tseng}")
+        _log.info(f"Post-processing engineering timeseries: {outname_tseng}")
+        tseng = postproc_eng_timeseries(outname_tseng, postproc_dict)
 
         # Science - uses sci_water_temp as time_base sensor
         _log.info("Generating science timeseries")
@@ -220,11 +234,8 @@ def binary_to_nc(
             profile_filt_time=None,
         )
 
-        _log.info("Post-processing science timeseries")
-        tssci = xr.load_dataset(outname_tssci)
-        tssci = postproc_sci_timeseries(tssci, mode, min_dt=min_dt)
-        tssci.to_netcdf(outname_tssci, encoding=utils.encoding_dict)
-        _log.info(f"Finished sci timeseries postproc: {outname_tssci}")
+        _log.info(f"Post-processing science timeseries: {outname_tssci}")
+        tssci = postproc_sci_timeseries(outname_tssci, postproc_dict)
 
         num_profiles_eng = len(np.unique(tseng.profile_index.values))
         num_profiles_sci = len(np.unique(tssci.profile_index.values))
@@ -271,23 +282,10 @@ def binary_to_nc(
         outname_5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
 
     # --------------------------------------------
-    # Write imagery metadata file
-    # if write_imagery:
-    #     _log.info("write_imagery is True, and thus writing imagery metadata file")
-    #     if mode == 'rt':
-    #         _log.warning('You are creating imagery file metadata ' +
-    #             'using real-time data. ' +
-    #             'This may result in inaccurate imagery file metadata')
-    #     amlr_imagery_metadata(
-    #         gdm, deployment, glider_path,
-    #         os.path.join(imagery_path, 'gliders', args.ugh_imagery_year, deployment)
-    #     )
-
-    # --------------------------------------------
     return outname_tseng, outname_tssci, outname_1m, outname_5m
 
 
-def postproc_attrs(ds, mode):
+def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
     """
     Update attrbites of xarray DataSet ds
     Used for both engineering and science timeseries
@@ -295,68 +293,69 @@ def postproc_attrs(ds, mode):
     Returns the ds Dataset with updated attributes
     """
 
+    # Rerun pyglider metadata functions, now that drop_bogus has been run 
+    # 'hack' to be able to use pyglider function
+    ds = pgutils.fill_metadata(ds, {"deployment_name": ds.deployment_name}, {})
+
+    # glider_serial is not relevant for ESD, 
+    # but is req'd by pyglider so can't delete until now
     try:
         del ds.attrs["glider_serial"]
     except KeyError:
         _log.warning("Unable to delete glider_serial attribute")
         pass
 
-    # Update attrs set by pyglider functions, now that drop_bogus has been run
-    good = ~np.isnan(ds.latitude.values + ds.longitude.values)
-    if np.any(good):
-        ds.attrs["geospatial_lat_max"] = np.max(ds.latitude.values[good])
-        ds.attrs["geospatial_lat_min"] = np.min(ds.latitude.values[good])
-        ds.attrs["geospatial_lon_max"] = np.max(ds.longitude.values[good])
-        ds.attrs["geospatial_lon_min"] = np.min(ds.longitude.values[good])
-    else:
-        ds.attrs["geospatial_lat_max"] = np.nan
-        ds.attrs["geospatial_lat_min"] = np.nan
-        ds.attrs["geospatial_lon_max"] = np.nan
-        ds.attrs["geospatial_lon_min"] = np.nan
-
-    ds = pgutils.get_distance_over_ground(ds)
-
-    ds.attrs["id"] = utils.get_file_id_esd(ds)
-    ds.attrs["title"] = ds.attrs["id"]
-    ds.attrs["deployment_start"] = str(ds.time.values[0])[:19]
-    ds.attrs["deployment_end"] = str(ds.time.values[-1])[:19]
-    dt = ds.time.values
-    ds.attrs["time_coverage_start"] = "%s" % dt[0]
-    ds.attrs["time_coverage_end"] = "%s" % dt[-1]
-
     # ESD updates, or fixes of pyglider attributes
-    ds.attrs["standard_name_vocabulary"] = "CF Standard Name Table v72"
-    ds.attrs["history"] = (
-        f"{np.datetime64('now')}Z: netCDF files created using: "
-        + f"pyglider v{importlib.metadata.version("pyglider")}; "
-        + f"esdglider v{importlib.metadata.version("esdglider")}"
-    )
     ds.attrs["processing_level"] = (
         "Minimal data screening. "
         + "Data provided as is, with no expressed or implied assurance "
         + "of quality assurance or quality control."
     )
+    ds.attrs["standard_name_vocabulary"] = "CF Standard Name Table v72"
+    
+    file_info = pp["file_info"]
+    if file_info is None:
+        file_info = "netCDF files created using"
+    ds.attrs["history"] = (
+            f"{utils.datetime_now_utc()}: {file_info}: " + 
+            # f"https://github.com/SWFSC/glider-lab: " + 
+            # f"{os.path.basename(__file__)}: " +
+            "; ".join([
+                f"deployment={ds.deployment_name}", 
+                f"mode={pp["mode"]}", 
+                f"min_dt={pp["min_dt"]}", 
+                f"pyglider v{importlib.metadata.version("pyglider")}", 
+                f"esdglider v{importlib.metadata.version("esdglider")}"])
+        )    
 
-    if mode == "delayed":
+    if pp["mode"] == "delayed":
         ds.attrs["title"] = ds.attrs["title"] + "-delayed"
 
     return ds
 
 
-def postproc_eng_timeseries(ds, mode, min_dt):
+def postproc_eng_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
     """
-    Post-process engineering timeseries, including:
+    Engineering timeseries-specific post-processing, including:
         - Removing CTD vars
         - Calculating profiles using depth (m_depth)
         - Updating attributes
 
-    ds : `xarray.Dataset`
-        engineering Dataset, usually passed from binary_to_nc.py
-    min_dt: passed to drop_bogus_times
+    Parameters
+    ----------
+    ds_file : str
+        Path to engineering timeseries Dataset to load
+    pp: dict
+        Dictionary with info needed for post-processing. 
+        For instance: mode and min_dt
 
-    returns post-processed Dataset
+    Returns
+    -------
+    xarray.Dataset
+        post-processed Dataset, after writing netCDF to ds_file
     """
 
+    ds = xr.load_dataset(ds_file)
     _log.debug(f"begin eng postproc: ds has {len(ds.time)} values")
 
     # Drop CTD variables required or created by binary_to_timeseries
@@ -377,19 +376,17 @@ def postproc_eng_timeseries(ds, mode, min_dt):
     ds = ds.rename({"depth_measured": "depth"})
 
     # Remove times < min_dt
-    ds = utils.drop_bogus(ds, min_dt)
+    ds = utils.drop_bogus(ds, pp["min_dt"])
 
     # Calculate profiles using measured depth
-    if np.any(np.isnan(ds.depth.values)):
-        num_nan = sum(np.isnan(ds.depth.values))
-        _log.warning(f"There are {num_nan} nan depth values")
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
 
     # Reorder data variables
     new_start = ["latitude", "longitude", "depth", "profile_index"]
     ds = utils.data_var_reorder(ds, new_start)
 
-    # Update comment
+    # Update attributes
+    ds = postproc_attrs(ds, pp)
     if "comment" not in ds.attrs:
         ds.attrs["comment"] = "engineering-only time series"
     elif not ds.attrs["comment"].strip():
@@ -398,30 +395,36 @@ def postproc_eng_timeseries(ds, mode, min_dt):
         ds.attrs["comment"] = ds.attrs["comment"] + "; engineering-only time series"
 
     _log.debug(f"end eng postproc: ds has {len(ds.time)} values")
-    ds = postproc_attrs(ds, mode)
+    ds.to_netcdf(ds_file, encoding=utils.encoding_dict)
 
     return ds
 
 
-def postproc_sci_timeseries(ds, mode, min_dt):
+def postproc_sci_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
     """
-    Post-process science timeseries, including:
+    Science timeseries-specific post-processing, including:
         - remove bogus times. Eg, 1970, or before deployment start date
         - Calculating profiles using depth (derived from ctd's pressure)
 
-    ds : `xarray.Dataset`
-        science Dataset, usually passed from binary_to_nc.py
-    min_dt: passed to drop_bogus_times
+    Parameters
+    ----------
+    ds_file : str
+        Path to science timeseries Dataset to load
+    pp: dict
+        Dictionary with info needed for post-processing. 
+        For instance: mode and min_dt
 
-    returns post-processed Dataset
+    Returns
+    -------
+    xarray.Dataset
+        post-processed Dataset, after writing netCDF to ds_file    
     """
 
+    ds = xr.load_dataset(ds_file)
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
     # Remove times < min_dt
-    ds = utils.drop_bogus(ds, min_dt)
-
-    # TODO: redo pyglider metadata things that are changed by min_dt
+    ds = utils.drop_bogus(ds, pp["min_dt"])
 
     # Calculate profiles, using the CTD-derived depth values
     # TODO: update this to play nice with eng timeseries for rt data?
@@ -443,8 +446,11 @@ def postproc_sci_timeseries(ds, mode, min_dt):
     ]
     ds = utils.data_var_reorder(ds, new_start)
 
+    # Update attributes
+    ds = postproc_attrs(ds, pp)
+
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
-    ds = postproc_attrs(ds, mode)
+    ds.to_netcdf(ds_file, encoding=utils.encoding_dict)
 
     return ds
 
@@ -456,9 +462,8 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
 
     Extract and save each profile from a timeseries netCDF.
 
-    ------
     Parameters
-
+    ----------
     inname : str or Path
         netcdf file to break into profiles
     outdir : str or Path
@@ -469,9 +474,9 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
     force : bool, default False
         Force an overwite even if profile netcdf already exists
 
-    ------
     Returns
-        Nothing
+    -------
+    Nothing
     """
     try:
         os.makedirs(outdir)

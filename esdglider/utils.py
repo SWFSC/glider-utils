@@ -6,6 +6,7 @@ from pathlib import Path
 
 import gsw
 import numpy as np
+import xarray as xr
 
 _log = logging.getLogger(__name__)
 
@@ -153,7 +154,10 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     time_vals, depth_vals: passed directly to utils.findProfiles
 
     returns Dataset
-    """
+    """    
+    if np.any(np.isnan(ds.depth.values)):
+        num_nan = sum(np.isnan(ds.depth.values))
+        _log.warning(f"There are {num_nan} nan depth values")
 
     prof_idx, prof_dir = findProfiles(
         time_vals,
@@ -192,18 +196,18 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     return ds
 
 
-def drop_bogus(ds, min_dt="2017-01-01"):
+def drop_bogus(ds: xr.Dataset, min_dt: str = '1970-01-01') -> xr.Dataset:
     """
-    Remove/drop bogus times and values
-
-    Times from before min_dt are dropped; default is beofre 2017,
-    which is beofre the ESD/AERD glider program.
+    Remove and/or drop bogus times and values. 
+    Rows with bogus time or lat/lons are dropped. 
+    For other bogus values, out of range values are changed to np.nan 
 
     ds: `xarray.Dataset`
-        Dataset, with 'time' coordinate
-    min_dt: string
-        String to be passed to np.datetime64. Minimum datetime to keep.
-        For instance, '1971-01-01', or '2020-03-06 12:00:00'
+        processed glider data
+    min_dt: str; default="1970-01-01"
+        String represting the minimum datetime to keep.
+        Passed to np.datetime64 to be used to filter. 
+        For instance, '2017-01-01', or '2020-03-06 12:00:00'. 
 
     Returns: filtered Dataset
     """
@@ -234,7 +238,6 @@ def drop_bogus(ds, min_dt="2017-01-01"):
         )
 
     # For science variables, change out of range values to nan
-    # if ds_type == "sci":
     drop_values = {
         "conductivity": [0, 60],
         "temperature": [-5, 100],
@@ -242,7 +245,7 @@ def drop_bogus(ds, min_dt="2017-01-01"):
         "chlorophyll": [0, 30],
         "cdom": [0, 30],
         "backscatter_700": [0, 5],
-        # 'oxygen_concentration':[-100, 500],
+        'oxygen_concentration':[-100, 500],
         "salinity": [0, 50],
         "potential_density": [900, 1050],
         "density": [1000, 1050],
