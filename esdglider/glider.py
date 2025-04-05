@@ -32,11 +32,11 @@ def get_path_engyaml() -> str:
 
 
 def get_path_deployment(
-    project: str, 
-    deployment: str, 
-    mode: str, 
-    deployments_path: str, 
-    config_path: str, 
+    project: str,
+    deployment: str,
+    mode: str,
+    deployments_path: str,
+    config_path: str,
 ) -> dict:
     """
     Return a dictionary of paths for use by other esdglider functions.
@@ -75,7 +75,7 @@ def get_path_deployment(
             _log.warning(
                 f"The expected folders ({', '.join(dir_expected)}) "
                 + f"were not found in the provided directory ({deployments_path}). "
-                + "Did you provide the right path via deployments_path?"
+                + "Did you provide the right path via deployments_path?",
             )
 
     year = utils.year_path(project, deployment)
@@ -118,13 +118,13 @@ def get_path_deployment(
 
 
 def binary_to_nc(
-    deployment: str, 
-    mode: str, 
-    paths: str, 
-    min_dt: str, 
-    write_timeseries: bool = True, 
-    write_gridded: bool = True, 
-    file_info: str | None = None
+    deployment: str,
+    mode: str,
+    paths: str,
+    min_dt: str,
+    write_timeseries: bool = True,
+    write_gridded: bool = True,
+    file_info: str | None = None,
 ):
     """
     Process binary ESD slocum glider data to timeseries and/or gridded netCDF files
@@ -151,7 +151,7 @@ def binary_to_nc(
         xarray DataSets be both created and written to files?
         Note: if True then any existing files will be clobbered
     file_path: str | None, default None
-        The path of the paretn processing script. 
+        The path of the parent processing script.
         If provided, will be included in the history attribute
 
     Returns
@@ -182,7 +182,7 @@ def binary_to_nc(
     if deployment_name != deployment:
         raise ValueError(
             f"Provided deployment ({deployment}) is not the same as "
-            + f"the deploymentyaml deployment_name ({deployment_name})"
+            + f"the deploymentyaml deployment_name ({deployment_name})",
         )
 
     # --------------------------------------------
@@ -203,12 +203,12 @@ def binary_to_nc(
 
         if not os.path.isfile(deploymentyaml):
             raise FileNotFoundError(f"Could not find {deploymentyaml}")
-        
+
         # Dictionary with info needed by post-processing functions
         postproc_dict = {
-            "mode": mode, 
-            "min_dt": min_dt, 
-            "file_info": file_info, 
+            "mode": mode,
+            "min_dt": min_dt,
+            "file_info": file_info,
         }
 
         # Engineering - uses m_depth as time base
@@ -247,7 +247,7 @@ def binary_to_nc(
         num_profiles_sci = len(np.unique(tssci.profile_index.values))
         if num_profiles_eng != num_profiles_sci:
             _log.warning(
-                "The eng and sci timeseries have different total numbers of profiles"
+                "The eng and sci timeseries have different total numbers of profiles",
             )
             _log.debug(f"Number of eng profiles: {num_profiles_eng}")
             _log.debug(f"Number of sci profiles: {num_profiles_sci}")
@@ -300,11 +300,11 @@ def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
     Returns the ds Dataset with updated attributes
     """
 
-    # Rerun pyglider metadata functions, now that drop_bogus has been run 
+    # Rerun pyglider metadata functions, now that drop_bogus has been run
     # 'hack' to be able to use pyglider function
     ds = pgutils.fill_metadata(ds, {"deployment_name": ds.deployment_name}, {})
 
-    # glider_serial is not relevant for ESD, 
+    # glider_serial is not relevant for ESD,
     # but is req'd by pyglider so can't delete until now
     try:
         del ds.attrs["glider_serial"]
@@ -319,21 +319,19 @@ def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
         + "of quality assurance or quality control."
     )
     ds.attrs["standard_name_vocabulary"] = "CF Standard Name Table v72"
-    
+
     file_info = pp["file_info"]
     if file_info is None:
         file_info = "netCDF files created using"
-    ds.attrs["history"] = (
-            f"{utils.datetime_now_utc()}: {file_info}: " + 
-            # f"https://github.com/SWFSC/glider-lab: " + 
-            # f"{os.path.basename(__file__)}: " +
-            "; ".join([
-                f"deployment={ds.deployment_name}", 
-                f"mode={pp["mode"]}", 
-                f"min_dt={pp["min_dt"]}", 
-                f"pyglider v{importlib.metadata.version("pyglider")}", 
-                f"esdglider v{importlib.metadata.version("esdglider")}"])
-        )    
+    ds.attrs["history"] = f"{utils.datetime_now_utc()}: {file_info}: " + "; ".join(
+        [
+            f"deployment={ds.deployment_name}",
+            f"mode={pp['mode']}",
+            f"min_dt={pp['min_dt']}",
+            f"pyglider v{importlib.metadata.version('pyglider')}",
+            f"esdglider v{importlib.metadata.version('esdglider')}",
+        ],
+    )
 
     if pp["mode"] == "delayed":
         ds.attrs["title"] = ds.attrs["title"] + "-delayed"
@@ -353,7 +351,7 @@ def postproc_eng_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
     ds_file : str
         Path to engineering timeseries Dataset to load
     pp: dict
-        Dictionary with info needed for post-processing. 
+        Dictionary with info needed for post-processing.
         For instance: mode and min_dt
 
     Returns
@@ -376,7 +374,7 @@ def postproc_eng_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
             "potential_density",
             "density",
             "potential_temperature",
-        ]
+        ],
     )
 
     # With depth (CTD) gone, rename depth_measured
@@ -418,13 +416,13 @@ def postproc_sci_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
     ds_file : str
         Path to science timeseries Dataset to load
     pp: dict
-        Dictionary with info needed for post-processing. 
+        Dictionary with info needed for post-processing.
         For instance: mode and min_dt
 
     Returns
     -------
     xarray.Dataset
-        post-processed Dataset, after writing netCDF to ds_file    
+        post-processed Dataset, after writing netCDF to ds_file
     """
 
     ds = xr.load_dataset(ds_file)
@@ -546,10 +544,10 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
                 if "_FillValue" not in dss["profile_id"].attrs:
                     dss["profile_id"].attrs["_FillValue"] = -1
                 dss["profile_id"].attrs["valid_min"] = np.int32(
-                    dss["profile_id"].attrs["valid_min"]
+                    dss["profile_id"].attrs["valid_min"],
                 )
                 dss["profile_id"].attrs["valid_max"] = np.int32(
-                    dss["profile_id"].attrs["valid_max"]
+                    dss["profile_id"].attrs["valid_max"],
                 )
 
                 dss["profile_time"] = dss.time.mean()

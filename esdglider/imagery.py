@@ -115,7 +115,7 @@ def imagery_timeseries(ds, paths, ext="jpg"):
     metadir = paths["metadir"]
     _log.info(f"Creating imagery metadata file for {deployment}")
     _log.info(f"Using images directory {imagedir}")
-    
+
     csv_file = os.path.join(metadir, f"{deployment}-imagery-metadata.csv")
     if os.path.isfile(csv_file):
         _log.info(f"Deleting old imagery metadata file: {csv_file}")

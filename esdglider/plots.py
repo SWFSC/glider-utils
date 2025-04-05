@@ -127,15 +127,15 @@ eng_vars = [
 
 
 def all_loops(
-        dssci: xr.Dataset,
-        dseng: xr.Dataset,
-        dssci_g: xr.Dataset,
-        base_path: str, 
-        bar_path: str | None
-        ):
+    dssci: xr.Dataset,
+    dseng: xr.Dataset,
+    dssci_g: xr.Dataset,
+    base_path: str,
+    bar_file: str | None,
+):
     """
-    Wrapper to run all of the plotting loop functions. 
-    Only tries to make surface map plots if bar_path is not None
+    Wrapper to run all of the plotting loop functions.
+    Only tries to make surface map plots if bar_file is not None
     """
     # base_path = paths['plotdir']
     _log.info("Doing all of the loops")
@@ -147,14 +147,12 @@ def all_loops(
     eng_tvt_loop(dseng, base_path)
     sci_ts_loop(dssci, base_path)
 
-    # bar_path = os.path.join("/home/sam_woodman_noaa_gov", "ETOPO_2022_v1_15s_N45W135_erddap.nc")
-    if bar_path is not None:
-        bar_path = os.path.join(bar_path)
-        bar = xr.load_dataset(bar_path).rename({"latitude": "lat", "longitude": "lon"})
+    if bar_file is not None:
+        bar = xr.load_dataset(bar_file).rename({"latitude": "lat", "longitude": "lon"})
         bar = bar.where(bar.z <= 0, drop=True)
         sci_surface_map_loop(dssci_g, bar, base_path)
     else:
-        _log.info("No bar path, so skipping surface maps")
+        _log.info("No bar file path, so skipping surface maps")
 
 
 def sci_gridded_loop(
@@ -456,8 +454,6 @@ def sci_timesection_plot(
     Returns
         matplotlib plt object
     """
-
-
 
     if var not in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")

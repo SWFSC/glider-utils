@@ -1,9 +1,9 @@
 import collections
 import logging
 import os
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
-import shutil
 
 import gsw
 import numpy as np
@@ -155,7 +155,7 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     time_vals, depth_vals: passed directly to utils.findProfiles
 
     returns Dataset
-    """    
+    """
     if np.any(np.isnan(ds.depth.values)):
         num_nan = sum(np.isnan(ds.depth.values))
         _log.warning(f"There are {num_nan} nan depth values")
@@ -197,18 +197,18 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     return ds
 
 
-def drop_bogus(ds: xr.Dataset, min_dt: str = '1970-01-01') -> xr.Dataset:
+def drop_bogus(ds: xr.Dataset, min_dt: str = "1970-01-01") -> xr.Dataset:
     """
-    Remove and/or drop bogus times and values. 
-    Rows with bogus time or lat/lons are dropped. 
-    For other bogus values, out of range values are changed to np.nan 
+    Remove and/or drop bogus times and values.
+    Rows with bogus time or lat/lons are dropped.
+    For other bogus values, out of range values are changed to np.nan
 
     ds: `xarray.Dataset`
         processed glider data
     min_dt: str; default="1970-01-01"
         String represting the minimum datetime to keep.
-        Passed to np.datetime64 to be used to filter. 
-        For instance, '2017-01-01', or '2020-03-06 12:00:00'. 
+        Passed to np.datetime64 to be used to filter.
+        For instance, '2017-01-01', or '2020-03-06 12:00:00'.
 
     Returns: filtered Dataset
     """
@@ -246,7 +246,7 @@ def drop_bogus(ds: xr.Dataset, min_dt: str = '1970-01-01') -> xr.Dataset:
         "chlorophyll": [0, 30],
         "cdom": [0, 30],
         "backscatter_700": [0, 5],
-        'oxygen_concentration':[-100, 500],
+        "oxygen_concentration": [-100, 500],
         "salinity": [0, 50],
         "potential_density": [900, 1050],
         "density": [1000, 1050],
@@ -438,7 +438,7 @@ def rmtree(dir, ignore_errors=False):
     """
     if os.path.isdir(dir):
         _log.info(f"Removing the following directory and all files in it: {dir}")
-        shutil.rmtree(dir, ignore_errors=ignore_errors) 
+        shutil.rmtree(dir, ignore_errors=ignore_errors)
 
 
 def line_prepender(filename, line):
