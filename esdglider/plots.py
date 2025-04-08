@@ -137,7 +137,7 @@ def all_loops(
     Wrapper to run all of the plotting loop functions.
     Only tries to make surface map plots if bar_file is not None
     """
-    # base_path = paths['plotdir']
+
     _log.info("Doing all of the loops")
     utils.rmtree(base_path)
 
@@ -483,7 +483,7 @@ def sci_timesection_plot(
     ax.invert_yaxis()
 
     ax.set_title(
-        f"Deployemnt {deployment} for project {project}\n std={std:0.2f} mean={mean:0.2f}",
+        f"Deployment {deployment} for project {project}\n std={std:0.2f} mean={mean:0.2f}",
         size=14,
     )  # use set_title so that title is centered over the plot
     ax.set_xlabel("Time", size=label_size)
@@ -606,7 +606,7 @@ def sci_spatialsection_plot(
     # axs[1].set_ylabel(f"Depth [m]", size=14)
 
     fig.suptitle(
-        f"Deployemnt {deployment} for project {project}\n std={std:0.2f} mean={mean:0.2f}",
+        f"Deployment {deployment} for project {project}\n std={std:0.2f} mean={mean:0.2f}",
         size=title_size,
     )
 
@@ -714,7 +714,7 @@ def sci_spatialgrid_plot(
         label=log_label(var),
         size=label_size,
     )
-    fig.suptitle(f"Deployemnt {deployment} for project {project}", size=title_size)
+    fig.suptitle(f"Deployment {deployment} for project {project}", size=title_size)
 
     if base_path is not None:
         save_plot(

@@ -303,6 +303,8 @@ def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
     # Rerun pyglider metadata functions, now that drop_bogus has been run
     # 'hack' to be able to use pyglider function
     ds = pgutils.fill_metadata(ds, {"deployment_name": ds.deployment_name}, {})
+    ds.attrs['deployment_start'] = str(ds.time.values[0])[:19]
+    ds.attrs['deployment_end'] = str(ds.time.values[-1])[:19]
 
     # glider_serial is not relevant for ESD,
     # but is req'd by pyglider so can't delete until now
@@ -385,6 +387,7 @@ def postproc_eng_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
 
     # Calculate profiles using measured depth
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+    ds = pgutils.get_distance_over_ground(ds)
 
     # Reorder data variables
     new_start = ["latitude", "longitude", "depth", "profile_index"]
@@ -434,6 +437,7 @@ def postproc_sci_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
     # Calculate profiles, using the CTD-derived depth values
     # TODO: update this to play nice with eng timeseries for rt data?
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+    ds = pgutils.get_distance_over_ground(ds)
 
     # Reorder data variables
     new_start = [
