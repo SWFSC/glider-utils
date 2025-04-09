@@ -1,6 +1,8 @@
 import logging
 import os
 
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 import cmocean.cm as cmo
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -8,7 +10,6 @@ import numpy as np
 import xarray as xr
 from matplotlib import colormaps
 from matplotlib.gridspec import GridSpec
-from mpl_toolkits.basemap import Basemap
 
 import esdglider.utils as utils
 
@@ -130,12 +131,12 @@ def all_loops(
     dssci: xr.Dataset,
     dseng: xr.Dataset,
     dssci_g: xr.Dataset,
-    base_path: str,
-    bar_file: str | None,
+    crs,
+    base_path: str = None,
+    bar_file: str | None = None,
 ):
     """
     Wrapper to run all of the plotting loop functions.
-    Only tries to make surface map plots if bar_file is not None
     """
 
     _log.info("Doing all of the loops")
@@ -153,8 +154,8 @@ def all_loops(
     else:
         _log.info("No bar file path, so skipping surface maps")
         bar = None
-        
-    sci_surface_map_loop(dssci_g, base_path=base_path, bar=bar)
+
+    sci_surface_map_loop(dssci_g, crs=crs, base_path=base_path, bar=bar)
 
 
 def sci_gridded_loop(
@@ -368,6 +369,7 @@ def sci_ts_loop(
 
 def sci_surface_map_loop(
     ds: xr.Dataset,
+    crs,
     base_path: str | None = None,
     show: bool = False,
     bar: xr.Dataset | None = None,
@@ -384,12 +386,16 @@ def sci_surface_map_loop(
     Parameters
 
     ds : xarray Dataset
-        Timeseries science dataset
+        Gridded science dataset
+    crs:
+        cartopy.crs projection to be used for the map
     base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
     show : bool
         Boolean indicating if the plots should be shown, via plt.show()
+    bar : xarray Dataset
+        ETOPO dataset with which to make contour lines
 
     ------
     Returns
@@ -405,7 +411,7 @@ def sci_surface_map_loop(
             )
             continue
 
-        s1 = sci_surface_map(ds, var, base_path=base_path, bar=bar)
+        s1 = sci_surface_map(ds, var=var, crs=crs, base_path=base_path, bar=bar)
         show_close(s1, show)
 
 
@@ -1068,6 +1074,7 @@ def ts_plot(
 def sci_surface_map(
     ds: xr.Dataset,
     var: str,
+    crs,
     base_path: str | None = None,
     bar: xr.Dataset | None = None,
 ):
@@ -1075,22 +1082,20 @@ def sci_surface_map(
     Create surface maps of science variables
     Saves the plot to path: base_path/science/maps
 
-    ------
     Parameters
-
+    ----------
     ds : xarray dataset
-        Timeseries glider science dataset.
-        This is intended to be produced by slocum.binary_to_nc
-
+        Gridded science dataset
     var : str
         The name of the variable to plot
-
+    crs : a class from cartopy.crs; default cartopy.crs.Mercator()
+        An instantiated cartopy projection, such as cartopy.crs.PlateCarree()
+        or cartopy.crs.Mercator()
     bar : xarray dataset
         dataset of ETOPO 15 arc-second global relief model.
         Likely downloaded from ERDDAP - must span glider lat/lon
-        TODO: make a function for pulling this file from ERDDAP, if necessary
+        A future task is to make a function for pulling this file from ERDDAP, if necessary
         Eg: https://coastwatch.pfeg.noaa.gov/erddap/griddap/ETOPO_2022_v1_15s.nc?z%5B(30):1:(45)%5D%5B(-135):1:(-120)%5D
-
     base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
@@ -1116,70 +1121,59 @@ def sci_surface_map(
     glider_lat_min = ds.latitude.min()
     glider_lat_max = ds.latitude.max()
 
-    fig, ax = plt.subplots(figsize=(8.5, 11))
+    # Using Cartopy
+    fig, ax = plt.subplots(
+        figsize=(8.5, 11),
+        subplot_kw={"projection": crs},
+    )
     ax.set_xlabel("\n\n\nLongitude [Deg]", size=14)
     ax.set_ylabel("Latitude [Deg]\n\n\n", size=14)
-    m = Basemap(
-        llcrnrlon=glider_lon_min - map_lon_border,
-        llcrnrlat=glider_lat_min - map_lat_border,
-        urcrnrlon=glider_lon_max + 3 * map_lon_border,
-        urcrnrlat=glider_lat_max + map_lat_border,
-        projection="merc",
-        resolution="f",
-        ax=ax,
-    )  # create map object
-    # with open(f"/opt/slocumRtDataVisTool/mapPickles/{self.glider}_{glider_lon_mean:0.0f}_{glider_lat_mean:0.0f}", "wb") as fd:
-    #     pickle.dump(m, fd, protocol=-1)
 
-    m.drawcoastlines()
-    m.drawcountries()
-    m.fillcontinents("#e0b479")
-    m.drawlsmask(ocean_color="#7bcbe3", resolution="f")
-    m.drawparallels(
-        np.linspace(
+    # Set extent of the map based on the glider data
+    ax.set_extent(
+        [
+            glider_lon_min - map_lon_border,
+            glider_lon_max + 3 * map_lon_border,
             glider_lat_min - map_lat_border,
             glider_lat_max + map_lat_border,
-            5,
-        ),
-        labels=[1, 0, 0, 1],
-        fmt="%0.2f",
-    )
-    m.drawmeridians(
-        np.linspace(
-            glider_lon_min - map_lon_border,
-            glider_lon_max + map_lon_border,
-            5,
-        ),
-        labels=[1, 0, 0, 1],
-        fmt="%0.3f",
-        rotation=20,
-    )
-    m.drawmapscale(
-        glider_lon_max + map_lon_border * 1.5,
-        glider_lat_min - map_lat_border / 1.5,
-        glider_lon_max - map_lon_border,
-        glider_lat_min + map_lat_border,
-        length=25,
-        barstyle="fancy",
+        ],
+        crs=ccrs.PlateCarree(),
     )
 
-    x, y = m(ds.longitude.values, ds.latitude.values)
-    p = m.scatter(
-        x,
-        y,
+    # Add coastlines, countries, and continents
+    # ax.coastlines(resolution="110m", linestyle="-", color="black")
+    ax.add_feature(cfeature.LAND, edgecolor="black", facecolor="#e0b479")
+    ax.add_feature(cfeature.OCEAN, edgecolor="none", facecolor="#7bcbe3")
+
+    # Add parallels and meridians; no scale bar since no built-in function
+    gl = ax.gridlines(draw_labels=["bottom", "left"])
+    gl.xlabel_style = {"rotation": 15}
+
+    # Scatter plot data given data, colored by values in the top 10m
+    p = ax.scatter(
+        ds.longitude,
+        ds.latitude,
         c=ds[var].where(ds.depth <= 10, drop=True).mean(dim="depth"),
         cmap=sci_colors[var],
         s=10,
         zorder=2.5,
+        transform=ccrs.PlateCarree(),
     )
 
     if bar is not None:
         lon, lat = np.meshgrid(bar.z.lon, bar.z.lat)
-        lon, lat = m(lon, lat)
-        C0 = m.contour(lon, lat, bar.z, levels=4, colors="grey")
-        plt.clabel(C0, colors="grey", fontsize=9)
+        C0 = ax.contour(
+            lon,
+            lat,
+            bar.z,
+            levels=4,
+            colors="grey",
+            transform=ccrs.PlateCarree(),
+        )
+        ax.clabel(C0, colors="grey", fontsize=9, inline=True)
         # m.contourf(lon, lat, bar.z, cmap="Pastel1")
 
+    # Add colorbar
     fig.colorbar(p, ax=ax, shrink=0.6, location="right").set_label(
         label=log_label(var),
         size=label_size,

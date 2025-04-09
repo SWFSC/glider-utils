@@ -99,10 +99,10 @@ def get_path_deployment(
     engyaml = get_path_engyaml()
 
     ncdir = os.path.join(glider_path, "data", "nc")
-
     tsdir = os.path.join(ncdir, "timeseries")
-    profdir = os.path.join(ncdir, "ngdac", mode)
     griddir = os.path.join(ncdir, "gridded")
+    profdir = os.path.join(ncdir, "ngdac", mode)
+
     plotdir = os.path.join(glider_path, "plots")
 
     return {
@@ -303,8 +303,8 @@ def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
     # Rerun pyglider metadata functions, now that drop_bogus has been run
     # 'hack' to be able to use pyglider function
     ds = pgutils.fill_metadata(ds, {"deployment_name": ds.deployment_name}, {})
-    ds.attrs['deployment_start'] = str(ds.time.values[0])[:19]
-    ds.attrs['deployment_end'] = str(ds.time.values[-1])[:19]
+    ds.attrs["deployment_start"] = str(ds.time.values[0])[:19]
+    ds.attrs["deployment_end"] = str(ds.time.values[-1])[:19]
 
     # glider_serial is not relevant for ESD,
     # but is req'd by pyglider so can't delete until now

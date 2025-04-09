@@ -3,17 +3,17 @@
 import logging
 import os
 
-import esdglider.config as config
-import esdglider.gcp as gcp
-import esdglider.glider as glider
+import xarray as xr
 
-# deployment = 'calanus-20241019'
-# project = "ECOSWIM"
-# mode = 'delayed'
+from esdglider import config, gcp, glider, plots
 
-deployment = "amlr08-20220513"
-project = "SANDIEGO"
+deployment = "calanus-20241019"
+project = "ECOSWIM"
 mode = "delayed"
+
+# deployment = "amlr08-20220513"
+# project = "SANDIEGO"
+# mode = "delayed"
 
 # deployment = 'amlr01-20181216'
 # project = "FREEBYRD"
@@ -93,13 +93,16 @@ if __name__ == "__main__":
         deployment,
         mode,
         paths,
-        min_dt="2022-05-13 18:17:00",
-        write_timeseries=True,
-        write_gridded=True,
+        min_dt=None,
+        # min_dt="2022-05-13 18:17:00",
+        write_timeseries=False,
+        write_gridded=False,
     )
     # prof(paths)
 
     # dssci = xr.load_dataset(outname_tssci)
+    # dseng = xr.load_dataset(outname_tseng)
+    dssci_g = xr.load_dataset(outname_5m)
 
     # # Imagery
     # imagery.imagery_timeseries(
@@ -113,9 +116,7 @@ if __name__ == "__main__":
     #     acoustics.get_path_acoutics(project, deployment, acoustics_path)
     # )
 
-    # # Plots
-    # dseng = xr.load_dataset(outname_tseng)
-    # dssci_g = xr.load_dataset(outname_5m)
+    # Plots
 
     # plots.all_loops(
     #     dssci, dseng, dssci_g, paths['plotdir'],
@@ -133,3 +134,5 @@ if __name__ == "__main__":
     # bar = xr.load_dataset(bar_path).rename({'latitude': 'lat', 'longitude': 'lon'})
     # bar = bar.where(bar.z <= 0, drop=True)
     # plots.sci_surface_map_loop(dssci_g, bar, base_path)
+
+    plots.sci_surface_map(dssci_g, "temperature").show()
