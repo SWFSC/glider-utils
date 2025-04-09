@@ -150,9 +150,11 @@ def all_loops(
     if bar_file is not None:
         bar = xr.load_dataset(bar_file).rename({"latitude": "lat", "longitude": "lon"})
         bar = bar.where(bar.z <= 0, drop=True)
-        sci_surface_map_loop(dssci_g, bar, base_path)
     else:
         _log.info("No bar file path, so skipping surface maps")
+        bar = None
+        
+    sci_surface_map_loop(dssci_g, base_path=base_path, bar=bar)
 
 
 def sci_gridded_loop(
@@ -366,9 +368,9 @@ def sci_ts_loop(
 
 def sci_surface_map_loop(
     ds: xr.Dataset,
-    bar: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
+    bar: xr.Dataset | None = None,
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
@@ -403,7 +405,7 @@ def sci_surface_map_loop(
             )
             continue
 
-        s1 = sci_surface_map(ds, var, bar, base_path)
+        s1 = sci_surface_map(ds, var, base_path=base_path, bar=bar)
         show_close(s1, show)
 
 
@@ -1066,8 +1068,8 @@ def ts_plot(
 def sci_surface_map(
     ds: xr.Dataset,
     var: str,
-    bar: xr.Dataset,
     base_path: str | None = None,
+    bar: xr.Dataset | None = None,
 ):
     """
     Create surface maps of science variables
@@ -1170,11 +1172,13 @@ def sci_surface_map(
         s=10,
         zorder=2.5,
     )
-    lon, lat = np.meshgrid(bar.z.lon, bar.z.lat)
-    lon, lat = m(lon, lat)
-    C0 = m.contour(lon, lat, bar.z, levels=4, colors="grey")
-    plt.clabel(C0, colors="grey", fontsize=9)
-    # m.contourf(lon, lat, bar.z, cmap="Pastel1")
+
+    if bar is not None:
+        lon, lat = np.meshgrid(bar.z.lon, bar.z.lat)
+        lon, lat = m(lon, lat)
+        C0 = m.contour(lon, lat, bar.z, levels=4, colors="grey")
+        plt.clabel(C0, colors="grey", fontsize=9)
+        # m.contourf(lon, lat, bar.z, cmap="Pastel1")
 
     fig.colorbar(p, ax=ax, shrink=0.6, location="right").set_label(
         label=log_label(var),

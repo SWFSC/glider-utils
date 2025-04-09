@@ -21,6 +21,9 @@ dependencies:
   - GliderTools
   - cmocean
 
+  - cartopy
+  - folium
+
   - pip:
     - dbdreader
     - git+https://github.com/c-proof/pyglider.git@main
