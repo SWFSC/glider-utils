@@ -511,16 +511,6 @@ def sci_timesection_plot(
     std = np.nanstd(ds[var])
     mean = np.nanmean(ds[var])
 
-    #     caption = f"Figure {fig_cnt}: Colorized {var} [{units[var]}] plotted with time on the x-axis and depth on the y-axis. \
-    # {var[0].upper()}{var[1:]} was obsrved to have a minimum of {sci_ds_g[var].min():0.2f} {units[var]}, \
-    # maximum of {sci_ds_g[var].max():0.2f} {units[var]}, mean of {mean:0.2f} {units[var]}, and standard \
-    # deviation of {std:0.2f}. These data were collected by a Teledyne Slocum g3 glider named {glider} off of {location} \
-    # from {pd.to_datetime(sci_ds_g.time.values.min()).strftime("%Y-%m-%d")} to {pd.to_datetime(sci_ds_g.time.values.max()).strftime("%Y-%m-%d")}. \
-    # These data are spatially bound by {sci_ds_g.longitude.min():0.3f}°W, {sci_ds_g.longitude.max():0.3f}°W, {sci_ds_g.latitude.min():0.3f}°N, and {sci_ds_g.latitude.max():0.3f}°N."
-
-    # if "700" in var:
-    #     ax.pcolormesh(sci_ds_g.time, sci_ds_g.density, sci_ds_g[var]*1e10, cmap=sci_colors[var])
-
     p1 = ax.pcolormesh(ds.time, ds.depth, add_log(var, ds), cmap=sci_colors[var])
     fig.colorbar(p1).set_label(label=log_label(var), size=label_size)
     ax.invert_yaxis()
@@ -590,14 +580,6 @@ def sci_spatialsection_plot(
     std = np.nanstd(ds[var])
     mean = np.nanmean(ds[var])
 
-    #     caption = f"Figure {fig_cnt}: A.) Colorized {var} [{units[var]}] plotted with longitude on the x-axis and depth on the y-axis. \
-    # B.) Colorized {var} [{units[var]}] plotted with latitude on the x-axis and depth on the y-axis. \
-    # {var[0].upper()}{var[1:]} was obsrved to have a minimum of {sci_ds_g[var].min():0.2f} {units[var]}, \
-    # maximum of {sci_ds_g[var].max():0.2f} {units[var]}, mean of {mean:0.2f} {units[var]}, and standard \
-    # deviation of {std:0.2f}. These data were collected by a Teledyne Slocum g3 glider named {glider} off of {location} \
-    # from {pd.to_datetime(sci_ds_g.time.values.min()).strftime("%Y-%m-%d")} to {pd.to_datetime(sci_ds_g.time.values.max()).strftime("%Y-%m-%d")}. \
-    # These data are spatially bound by {sci_ds_g.longitude.min():0.3f}°W, {sci_ds_g.longitude.max():0.3f}°W, {sci_ds_g.latitude.min():0.3f}°N, and {sci_ds_g.latitude.max():0.3f}°N."
-
     ### Lon
     axs[0].pcolormesh(
         ds.longitude,
@@ -605,11 +587,7 @@ def sci_spatialsection_plot(
         add_log(var, ds),
         cmap=sci_colors[var],
     )
-    # p1 = axs[0].pcolormesh(sci_ds_g.longitude, sci_ds_g.depth, sci_ds_g[var], cmap=sci_colors[var])
-
-    # cbar = fig.colorbar(p1).set_label(label=f"{var} [{units[var]}]", size=14)
     axs[0].invert_yaxis()
-
     axs[0].set_xlabel("Longitude [Deg]", size=label_size)
     axs[0].set_ylabel("Depth [m]", size=label_size)
     axs[0].text(
@@ -959,10 +937,6 @@ def eng_timeseries_plot(
     ax.set_ylabel(f"{var}", size=label_size)
     # ax.invert_yaxis()
     ax.set_title(f"Deployment {deployment} for project {project}", size=title_size)
-    # ax.set_title(
-    #     f"Deployment {deployment} for project {project}, between " +
-    #     f"{ds.deployment_start[0:10]} and {ds.deployment_end[0:10]}",
-    #     size=title_size)
 
     ax.scatter(ds.time, ds[var], s=3)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%m/%d %H:%M"))
