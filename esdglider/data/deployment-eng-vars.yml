@@ -172,10 +172,6 @@ netcdf_variables:
     source: m_altitude
     units: m
 
-  total_inflections:
-    source: m_tot_num_inflections
-    units: 1
-
 
 # m_leakdetect_voltage
 # m_leakdetect_voltage_forward
