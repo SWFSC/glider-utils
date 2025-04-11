@@ -10,10 +10,12 @@ from esdglider import config, gcp, glider, plots
 deployment = "calanus-20241019"
 project = "ECOSWIM"
 mode = "delayed"
+min_dt = "2024-10-19 17:37:00"
 
 # deployment = "amlr08-20220513"
 # project = "SANDIEGO"
 # mode = "delayed"
+# min_dt="2022-05-13 18:17:00"
 
 # deployment = 'amlr01-20181216'
 # project = "FREEBYRD"
@@ -67,7 +69,7 @@ def yaml():
 if __name__ == "__main__":
     logging.basicConfig(
         format="%(module)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]",
-        level=logging.INFO,
+        level=logging.DEBUG,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     # logging.basicConfig(filename=logf,
@@ -77,8 +79,8 @@ if __name__ == "__main__":
     #                 datefmt='%Y-%m-%d %H:%M:%S')
 
     gcp.gcs_mount_bucket(deployment_bucket, deployments_path, ro=False)
-    gcp.gcs_mount_bucket(imagery_bucket, imagery_path, ro=False)
-    gcp.gcs_mount_bucket(acoustics_bucket, acoustics_path, ro=False)
+    # gcp.gcs_mount_bucket(imagery_bucket, imagery_path, ro=False)
+    # gcp.gcs_mount_bucket(acoustics_bucket, acoustics_path, ro=False)
     paths = glider.get_path_deployment(
         project,
         deployment,
@@ -87,37 +89,54 @@ if __name__ == "__main__":
         config_path,
     )
 
+    ### Testing binary_to_raw
+    x = glider.binary_to_raw(
+        paths["binarydir"],
+        paths["cacdir"],
+        paths["tsdir"],
+        [paths["deploymentyaml"], paths["engyaml"]],
+        search="*.[D|E|d|e][Bb][Dd]",
+        fnamesuffix=f"-{mode}-raw",
+        pp={
+            "mode": mode,
+            "min_dt": "2017-01-01",
+            "file_info": None,
+            "metadata_dict": {},
+            "device_dict": {},
+        },
+    )
+
     # scrape_sfmc()
     # yaml()
-    outname_tseng, outname_tssci, outname_1m, outname_5m = glider.binary_to_nc(
-        deployment,
-        mode,
-        paths,
-        min_dt=None,
-        # min_dt="2022-05-13 18:17:00",
-        write_timeseries=False,
-        write_gridded=False,
-    )
+
+    # ### Testing binary_to_nc
+    # outname_tseng, outname_tssci, outname_1m, outname_5m = glider.binary_to_nc(
+    #     deployment,
+    #     mode,
+    #     paths,
+    #     min_dt=min_dt,
+    #     write_timeseries=False,
+    #     write_gridded=False,
+    # )
     # prof(paths)
 
     # dssci = xr.load_dataset(outname_tssci)
     # dseng = xr.load_dataset(outname_tseng)
-    dssci_g = xr.load_dataset(outname_5m)
+    # dssci_g = xr.load_dataset(outname_5m)
 
-    # # Imagery
+    # ### Testing imagery
     # imagery.imagery_timeseries(
     #     dssci,
     #     imagery.get_path_imagery(project, deployment, imagery_path)
     # )
 
-    # # Acoustics
+    # ### Testing acoustics
     # acoustics.echoview_metadata(
     #     dssci,
     #     acoustics.get_path_acoutics(project, deployment, acoustics_path)
     # )
 
-    # Plots
-
+    # ### Testing plots
     # plots.all_loops(
     #     dssci, dseng, dssci_g, paths['plotdir'],
     #     os.path.join("/home/sam_woodman_noaa_gov", "ETOPO_2022_v1_15s_N45W135_erddap.nc")
@@ -135,4 +154,4 @@ if __name__ == "__main__":
     # bar = bar.where(bar.z <= 0, drop=True)
     # plots.sci_surface_map_loop(dssci_g, bar, base_path)
 
-    plots.sci_surface_map(dssci_g, "temperature").show()
+    # plots.sci_surface_map(dssci_g, "temperature").show()

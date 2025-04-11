@@ -37,6 +37,8 @@ netcdf_variables:
     valid_min:    -180.0
     coordinate_reference_frame:  urn:ogc:crs:EPSG::4326
 
+  # Can't be 'depth', because pyglider creates depth var using pressure
+  # Renamed in esdglider post-processing code
   depth_measured:
     source:  m_depth
     long_name:    glider measured depth
@@ -66,6 +68,55 @@ netcdf_variables:
     source: m_tot_num_inflections
     long_name:    glider total number inflections
     units:        nodim
+
+  altitude:
+    source: m_altitude
+    units: m
+
+  battery_voltage:
+    source: m_battery
+    units: V
+
+  battpos:
+    source: m_battpos
+    units: inches
+
+  amphr:
+    source: m_coulomb_amphr
+    units: Ahr
+
+  total_amphr:
+    source: m_coulomb_amphr_total
+    units: Ahr
+
+  measured_oil_volume:
+    source: m_de_oil_vol
+    units: mL
+
+  leak_detect:
+    source: m_leakdetect_voltage
+    units: V
+
+  leak_detect_forward:
+    source: m_leakdetect_voltage_forward
+    units: V
+
+  leak_detect_science:
+    source: m_leakdetect_voltage_science
+    units: V
+
+  vacuum:
+    source: m_vacuum
+    units: inHg
+
+  commanded_oil_volume:
+    source: c_de_oil_vol
+    units: mL
+
+  target_depth:
+    source: c_dive_target_depth
+    units: m
+
 
   # profile info:
   waypoint_latitude:
@@ -124,226 +175,6 @@ netcdf_variables:
     resolution:       0.02
     comment:          "ctd pressure sensor"
 
-  commanded_oil_volume:
-    source: c_de_oil_vol
-    units: mL
-
-  measured_oil_volume:
-    source: m_de_oil_vol
-    units: mL
-
-  total_amphr:
-    source: m_coulomb_amphr_total
-    units: Ahr
-
-  amphr:
-    source: m_coulomb_amphr
-    units: Ahr
-
-  battery_voltage:
-    source: m_battery
-    units: V
-
-  vacuum:
-    source: m_vacuum
-    units: inHg
-
-  leak_detect:
-    source: m_leakdetect_voltage
-    units: V
-
-  leak_detect_forward:
-    source: m_leakdetect_voltage_forward
-    units: V
-
-  leak_detect_science:
-    source: m_leakdetect_voltage_science
-    units: V
-
-  battpos:
-    source: m_battpos
-    units: inches
-
-  target_depth:
-    source: c_dive_target_depth
-    units: m
-
-  altitude:
-    source: m_altitude
-    units: m
-
-
-# m_leakdetect_voltage
-# m_leakdetect_voltage_forward
-# m_leakdetect_voltage_science
-
-# derived water speed:
-  # water_velocity_eastward:
-  #   source:    m_final_water_vx
-  #   long_name:      mean eastward water velocity in segment
-  #   standard_name:  barotropic_eastward_sea_water_velocity
-  #   units:          m s-1
-  #   coordinates:   time depth latitude longitude
-  #
-  # water_velocity_northward:
-  #   source:    m_final_water_vy
-  #   long_name:      mean northward water velocity in segment
-  #   standard_name:  barotropic_northward_sea_water_velocity
-  #   units:          m s-1
-  #   coordinates:   time depth latitude longitude
-
-# profile_variables:
-#   # variables for extract_L1timeseries_profiles processing step...
-#   profile_id:
-#     comment: Sequential profile number within the trajectory.  This value is unique in each file that is part of a single trajectory/deployment.
-#     long_name: 'Profile ID'
-#     valid_max: '2147483647'
-#     valid_min: '1'
-
-#   profile_time:
-#     comment:           Timestamp corresponding to the mid-point of the profile
-#     long_name:         Profile Center Time
-#     observation_type:  calculated
-#     platform:          platform
-#     standard_name:     time
-
-#   profile_time_start:
-#     comment:           Timestamp corresponding to the start of the profile
-#     long_name:         Profile Start Time
-#     observation_type:  calculated
-#     platform:          platform
-#     standard_name:     time
-
-#   profile_time_end:
-#     comment:           Timestamp corresponding to the end of the profile
-#     long_name:         Profile End Time
-#     observation_type:  calculated
-#     platform:          platform
-#     standard_name:     time
-
-#   profile_lat:
-#     comment:           Value is interpolated to provide an estimate of the latitude at the mid-point of the profile
-#     long_name:         Profile Center Latitude
-#     observation_type:  calculated
-#     platform:          platform
-#     standard_name:     latitude
-#     units:             degrees_north
-#     valid_max:         "90.0"
-#     valid_min:         "-90.0"
-
-#   profile_lon:
-#     comment:           Value is interpolated to provide an estimate of the latitude at the mid-point of the profile
-#     long_name:         Profile Center Longitude
-#     observation_type:  calculated
-#     platform:          platform
-#     standard_name:     longitude
-#     units:             degrees_east
-#     valid_max:         "180.0"
-#     valid_min:         "-180.0"
-
-#   u:
-#     comment:  The depth-averaged current is an estimate of the net current measured while the glider is underwater.  The value is calculated over the entire underwater segment, which may consist of 1 or more dives.
-#     long_name:         Depth-Averaged Eastward Sea Water Velocity
-#     observation_type:  calculated
-#     platform:          platform
-#     standard_name:     eastward_sea_water_velocity
-#     units:             m s-1
-#     valid_max:         "10.0"
-#     valid_min:         "-10.0"
-
-#   v:
-#     comment:  The depth-averaged current is an estimate of the net current measured while the glider is underwater.  The value is calculated over the entire underwater segment, which may consist of 1 or more dives.
-#     long_name:         Depth-Averaged Northward Sea Water Velocity
-#     observation_type:  calculated
-#     platform:          platform
-#     standard_name:     northward_sea_water_velocity
-#     units:             m s-1
-#     valid_max:         "10.0"
-#     valid_min:         "-10.0"
-
-#   lon_uv:
-#     comment:           Not computed
-#     long_name:         Longitude
-#     observation_type:  calculated
-#     platform:          platform
-#     standard_name:     longitude
-#     units:             degrees_east
-#     valid_max:         "180.0"
-#     valid_min:         "-180.0"
-
-#   lat_uv:
-#     comment:           Not computed
-#     long_name:         Latitude
-#     observation_type:  calculated
-#     platform:          platform
-#     standard_name:     latitude
-#     units:             degrees_north
-#     valid_max:         "90.0"
-#     valid_min:         "-90.0"
-
-#   time_uv:
-#     comment:       Not computed
-#     long_name:     Time
-#     standard_name: time
-#     calendar:      gregorian
-#     units:         seconds since 1970-01-01T00:00:00Z
-#     observation_type: calculated
-
-  # instrument_ctd:
-  #   calibration_date: "2021-07-30"
-  #   calibration_report: ""
-  #   comment: "Pumped"
-  #   deployment: ' '
-  #   factory_calibrated: "2021-07-30"
-  #   long_name: 'Conductivity, Temperature, Depth (CTD) Sensor'
-  #   make_model: 'Sea-Bird GPCTD'
-  #   owner: 'NOAA NMFS SWFSC Antarctic Ecosystem Research Division'
-  #   platform: platform
-  #   serial_number: 9714
-  #   type: instrument
-  #   user_calibrated: ""
-
-  # instrument_optode:
-  #   calibration_date: "2021-02-14"
-  #   calibration_report: ""
-  #   comment: ""
-  #   deployment: ' '
-  #   factory_calibrated: "2021-02-14"
-  #   long_name: 'Oxygen Optode'
-  #   make_model: 'Aanderaa Oxygen Optode 4831'
-  #   owner: 'NOAA NMFS SWFSC Antarctic Ecosystem Research Division'
-  #   platform: platform
-  #   serial_number: 953
-  #   type: instrument
-  #   user_calibrated: ""
-
-  # instrument_ad2cp:
-  #   calibration_date:
-  #   calibration_report: ""
-  #   comment: ""
-  #   deployment: ' '
-  #   factory_calibrated:
-  #   long_name: 'NORTEK Inc Signature 100 Compact Echsounder'
-  #   make_model: 'NORTEK Inc Signature 100 Compact Echsounder'
-  #   owner: 'NOAA NMFS SWFSC Antarctic Ecosystem Research Division'
-  #   platform: platform
-  #   serial_number: 1778
-  #   type: instrument
-  #   user_calibrated: ""
-
-  # instrument_solocam:
-  #   calibration_date:
-  #   calibration_report: ""
-  #   comment: ""
-  #   deployment: ' '
-  #   factory_calibrated:
-  #   long_name: 'Williamson and Associates Shadowgraph Camera (11cm)'
-  #   make_model: 'Williamson and Associates Shadowgraph Camera (11cm)'
-  #   owner: 'NOAA NMFS SWFSC Antarctic Ecosystem Research Division'
-  #   platform: platform
-  #   serial_number: 001
-  #   type: instrument
-  #   user_calibrated: ""
 
 # c_alt_time
 # c_climb_target_depth

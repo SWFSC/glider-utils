@@ -27,9 +27,9 @@ dependencies:
   - pip:
     - dbdreader
     - git+https://github.com/c-proof/pyglider.git@main
-    - basemap
-    - basemap-data
-    - basemap-data-hires
+    # - basemap
+    # - basemap-data
+    # - basemap-data-hires
 
   # conda deactivate && conda env update -f glider-utils/environment.yml --prune
   # After creating and activating conda env,

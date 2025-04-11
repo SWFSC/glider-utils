@@ -191,7 +191,6 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     )
     ds["profile_direction"] = (("time"), prof_dir, attrs)
 
-    # ds = utils.get_profiles_esd(ds, "depth")
     _log.debug(f"There are {np.max(ds.profile_index.values)} profiles")
 
     return ds

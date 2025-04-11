@@ -10,6 +10,13 @@ import pyglider.utils as pgutils
 import xarray as xr
 import yaml
 
+try:
+    import dbdreader
+
+    have_dbdreader = True
+except ImportError:
+    have_dbdreader = True
+
 import esdglider.utils as utils
 
 _log = logging.getLogger(__name__)
@@ -209,6 +216,8 @@ def binary_to_nc(
             "mode": mode,
             "min_dt": min_dt,
             "file_info": file_info,
+            "metadata_dict": {"deployment_name": deployment_name},
+            "device_dict": {},
         }
 
         # Engineering - uses m_depth as time base
@@ -295,6 +304,7 @@ def binary_to_nc(
 def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
     """
     Update attrbites of xarray DataSet ds
+    pp is dictionary that provides values needed by postproc_attrs
     Used for both engineering and science timeseries
 
     Returns the ds Dataset with updated attributes
@@ -302,7 +312,7 @@ def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
 
     # Rerun pyglider metadata functions, now that drop_bogus has been run
     # 'hack' to be able to use pyglider function
-    ds = pgutils.fill_metadata(ds, {"deployment_name": ds.deployment_name}, {})
+    ds = pgutils.fill_metadata(ds, pp["metadata_dict"], pp["device_dict"])
     ds.attrs["deployment_start"] = str(ds.time.values[0])[:19]
     ds.attrs["deployment_end"] = str(ds.time.values[-1])[:19]
 
@@ -649,3 +659,185 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
                 # add traj_strlen using bare ntcdf to make IOOS happy
                 with netCDF4.Dataset(outname, "r+") as nc:
                     nc.renameDimension("string%d" % trajlen, "traj_strlen")
+
+
+def binary_to_raw(
+    indir,
+    cachedir,
+    outdir,
+    deploymentyaml,
+    *,
+    search="*.[D|E]BD",
+    fnamesuffix="",
+    pp={},
+):
+    """
+    Extract raw, unprocessed glider data using dbdreader.
+    Adaptation of pyglider.slocum.binary_to_timeseries
+    dbdreader only deals with flight and science computers
+    the dbdreader MultiDBD.get() method is used,
+    rather than get_sync, to read the parameters specified in
+    deploymentyaml. The argument return_nans (of MultiDBD.get()) is set to
+    True, so that there are two 'time bases' for the extracted data: one
+    for engineering variables (from m_present_time), and one for science
+    variables (from sci_m_present_time). These times are rounded to the
+    nearest second, and then merged. These values are the time index of
+    the output file. In this case, only the engineering variables (e.g.,
+    lat/lon, pitch, roll, m_depth) are interpolated.
+
+
+    """
+
+    if not have_dbdreader:
+        raise ImportError("Cannot import dbdreader")
+
+    # Read and parts deployment yaml(s)
+    deployment = pgutils._get_deployment(deploymentyaml)
+
+    # Specific to this function: loop through deploymentyaml files,
+    # and keep the 'first' instance of all different ncvar values
+    # ncvar = deployment['netcdf_variables']
+    ncvar = {}
+    if isinstance(deploymentyaml, str):
+        deploymentyaml = [deploymentyaml]
+    for nn, d in enumerate(deploymentyaml):
+        with open(d) as fin:
+            deployment_ = yaml.safe_load(fin)
+            for key, value in deployment_["netcdf_variables"].items():
+                if key not in ncvar:
+                    ncvar[key] = value
+
+    thenames = list(ncvar.keys())
+    thenames.remove("time")
+
+    # get the dbd object
+    _log.info(f"{indir}/{search}")
+    dbd = dbdreader.MultiDBD(pattern=f"{indir}/{search}", cacheDir=cachedir)
+    sci_params = dbd.parameterNames["sci"]
+    eng_params = dbd.parameterNames["eng"]
+
+    # build a new data set based on info in `deployment.`
+    ds = xr.Dataset()
+    attr = {}
+    name = "time"
+    for atts in ncvar[name].keys():
+        if (atts != "coordinates") & (atts != "units") & (atts != "calendar"):
+            attr[atts] = ncvar[name][atts]
+
+    sensors = []
+    for nn, name in enumerate(thenames):
+        sensorname = ncvar[name]["source"]
+        sensors.append(sensorname)
+    _log.debug(f"sensors: {[i for i in sensors]}")
+
+    # Check for uniqueness, because a duplicate causes an error when unioning
+    if len(sensors) != len(set(sensors)):
+        _log.error(f"sensors: {sensors}")
+        raise ValueError("The sensor list has duplicate sensors")
+
+    # get the data, across all eng/sci timestamps
+    # return_nans=True so data arrays are of exactly two lengths (eng/sci)
+    data_list = [(t, v) for (t, v) in dbd.get(*sensors, return_nans=True)]
+    data_time, data = zip(*data_list)
+
+    # Sanity check: only two sets of times
+    # Note: the for loop checks that all sensors sci or eng
+    data_time_len = [len(i) for i in data_time]
+    _log.debug(f"data time lengths: {data_time_len}")
+    _log.debug(f"data array lengths: {[len(i) for i in data]}")
+    if len(set(data_time_len)) > 2:
+        _log.error(f"data time lengths: {data_time_len}")
+        raise ValueError("There are more than 2 time bases, which will break this")
+    # if not all([i in (eng_params+sci_params) for i in sensors]):
+    #     _log.error(f'sensors: {sensors}')
+    #     raise ValueError("Not all sensors are recognized by dbdreader as sci or eng")
+
+    # get and union the times
+    # assumes exactly 2 unique sets of times: eng and sci
+    first_eng = np.where([i in eng_params for i in sensors])[0][0]
+    first_sci = np.where([i in sci_params for i in sensors])[0][0]
+    # eng_time = np.int64(pgutils._time_to_datetime64(data_time[eng1])) #second
+    eng_time = data_time[first_eng]
+    sci_time = data_time[first_sci]
+    time = np.union1d(eng_time, sci_time)
+    _log.debug(
+        f"eng/sci/total time counts: {len(eng_time)}/{len(sci_time)}/{len(time)})"
+    )
+
+    # get the indices of the sci and eng timestamps in the unioned times
+    sci_indices = np.searchsorted(time, sci_time)
+    eng_indices = np.searchsorted(time, eng_time)
+
+    _log.debug(f"time array length: {len(time)}")
+    ds["time"] = (("time"), time, attr)
+    ds["latitude"] = (("time"), np.zeros(len(time)))
+    ds["longitude"] = (("time"), np.zeros(len(time)))
+
+    for nn, name in enumerate(thenames):
+        _log.info("working on %s", name)
+        if "method" in ncvar[name].keys():
+            continue
+        # variables that are in the data set or can be interpolated from it
+        if "conversion" in ncvar[name].keys():
+            convert = getattr(pgutils, ncvar[name]["conversion"])
+        else:
+            convert = pgutils._passthrough
+
+        sensorname = ncvar[name]["source"]
+        _log.info("names: %s %s", name, sensorname)
+        val = np.full(len(time), np.nan)
+        if sensorname in sci_params:
+            _log.debug("Sci sensorname %s", sensorname)
+            val[sci_indices] = data[nn]
+            # val = pgutils._zero_screen(val)
+            val = convert(val)
+        elif sensorname in eng_params:
+            _log.debug("Eng sensorname %s", sensorname)
+            val[eng_indices] = data[nn]
+            val = convert(val)
+        else:
+            ValueError(f"{sensorname} not in sci or eng parameter names")
+
+        # make the attributes:
+        ncvar[name]["coordinates"] = "time"
+        attrs = ncvar[name]
+        attrs = pgutils.fill_required_attrs(attrs)
+        ds[name] = (("time"), val, attrs)
+
+    # screen out-of-range times; these won't convert:
+    ds["time"] = ds.time.where((ds.time > 0) & (ds.time < 6.4e9), np.nan)
+    ds["time"] = (ds.time * 1e9).astype("datetime64[ns]")
+    ds = ds.where(ds.time >= np.datetime64(pp["min_dt"]), drop=True)
+    ds["time"].attrs = attr
+
+    # Drop rows with nan values across all data variables
+    ds = ds.dropna("time", how="all")
+
+    # Rename depth_measured, because no pyglider depth calculations
+    ds = ds.rename({"depth_measured": "depth"})
+
+    # Add metadata - using postproc_attrs for consistency
+    pp["metadata_dict"] = deployment["metadata"]
+    pp["device_dict"] = deployment["glider_devices"]
+    postproc_attrs(ds, pp)
+    ds.attrs["processing_level"] = (
+        "No data screening - raw data read using dbdreader's MultiDBD.get(). "
+        + "Data provided as is, with no expressed or implied assurance "
+        + "of quality assurance or quality control."
+    )
+
+    outname = outdir + "/" + ds.attrs["deployment_name"] + fnamesuffix + ".nc"
+    _log.info("writing %s", outname)
+    # convert time back to float64 seconds for ERDDAP etc happiness, as they won't take ns
+    # as a unit:
+    ds.to_netcdf(
+        outname,
+        "w",
+        encoding={
+            "time": {
+                "units": "seconds since 1970-01-01T00:00:00Z",
+                "_FillValue": np.nan,
+                "dtype": "float64",
+            },
+        },
+    )
