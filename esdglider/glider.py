@@ -460,7 +460,7 @@ def postproc_eng_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
         ds.attrs["comment"] = ds.attrs["comment"] + "; engineering-only time series"
 
     _log.debug(f"end eng postproc: ds has {len(ds.time)} values")
-    ds.to_netcdf(ds_file, encoding=utils.encoding_dict)
+    utils.to_netcdf_esd(ds, ds_file)
 
     return ds
 
@@ -516,7 +516,7 @@ def postproc_sci_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
     ds = postproc_attrs(ds, pp)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
-    ds.to_netcdf(ds_file, encoding=utils.encoding_dict)
+    utils.to_netcdf_esd(ds, ds_file)
 
     return ds
 
@@ -863,7 +863,7 @@ def binary_to_raw(
     # Rename depth_measured, because no pyglider depth calculations
     ds = ds.rename({"depth_measured": "depth"})
     ds = utils.data_var_reorder(ds, ["latitude", "longitude", "depth"])
-    
+
     # Add metadata - using postproc_attrs for consistency
     pp["metadata_dict"] = deployment["metadata"]
     pp["device_dict"] = deployment["glider_devices"]
@@ -876,16 +876,6 @@ def binary_to_raw(
 
     outname = outdir + "/" + ds.attrs["deployment_name"] + fnamesuffix + ".nc"
     _log.info("writing %s", outname)
-    # convert time back to float64 seconds for ERDDAP etc happiness, as they won't take ns
-    # as a unit:
-    ds.to_netcdf(
-        outname,
-        "w",
-        encoding={
-            "time": {
-                "units": "seconds since 1970-01-01T00:00:00Z",
-                "_FillValue": np.nan,
-                "dtype": "float64",
-            },
-        },
-    )
+    utils.to_netcdf_esd(ds, outname)
+    
+    return outname

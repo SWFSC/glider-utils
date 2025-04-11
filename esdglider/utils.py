@@ -18,15 +18,20 @@ Mostly helpers for post-processing time series files created using pyglider
 """
 
 
-# For encoding time when writing to NetCDF
-encoding_dict = {
-    "time": {
-        "units": "seconds since 1970-01-01T00:00:00Z",
-        "_FillValue": np.nan,
-        "calendar": "gregorian",
-        "dtype": "float64",
-    },
-}
+# For IOOS-compliant encoding when writing to NetCDF
+def to_netcdf_esd(ds: xr.Dataset, outname: str):
+    ds.to_netcdf(
+        outname,
+        "w",
+        encoding={
+            "time": {
+                "units": "seconds since 1970-01-01T00:00:00Z",
+                "_FillValue": np.nan,
+                "calendar": "gregorian",
+                "dtype": "float64",
+            },
+        },
+    )
 
 
 def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
