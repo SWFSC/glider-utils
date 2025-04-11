@@ -25,80 +25,99 @@ title_size = 13
 
 Parameters
 ----------
-var: str
-    Variable name as a string
 ds: xarray Dataset
     Requisite dataset
+var: str
+    Variable name as a string
 """
 
 
-def return_var(x):
-    """Simply return a variable"""
-    return x
+# def return_var(x):
+#     """Simply return a variable"""
+#     return x
 
 
-def add_log(var, ds):
+def adj_var(ds, var):
     """Get the adjusted var values for the plot. Eg, take the log"""
-    return adjustments[var](ds[var])
+    if var not in adjustments.keys():
+        return ds[var]
+    elif adjustments[var] == np.log10:
+        return adjustments[var](ds[var])
 
 
-def log_label(var):
+def adj_var_label(ds, var):
     """Get the formatted log label for the plot"""
-    if var in adjustments_labels.keys():
-        return f"{adjustments_labels[var]}({var} [{units[var]}])"
+    u = ds[var].attrs["units"]
+    # if var not in list(units.keys()):
+    #     u2 = "missing"
+    # else:
+    #     u2 = units[var]
+    # print(f"var: {var}; ds: {u}; dict: {u2}")
+
+    # if var in adjustments_labels.keys():
+    #     return f"{adjustments_labels[var]}({var} [{u}])"
+    # else:
+    #     return f"{var} [{u}]"
+    
+    if var not in adjustments.keys():
+        return f"{var} [{u}]"
+    elif adjustments[var] == np.log10:
+        return "$log_{10}$"+f"({var} [{u}])"
+    # elif adjustments[var] == return_var:
+    #     return f"{var} [{u}]"
     else:
-        return f"{var} [{units[var]}]"
+        raise ValueError(f"var {var}: not an expected adjustments value")
 
 
 """Dictionary of adjustments to make to variables to plot
 """
 adjustments = {
-    "temperature": return_var,
+    # "temperature": return_var,
     "chlorophyll": np.log10,
     "cdom": np.log10,
     "backscatter_700": np.log10,
-    "oxygen_concentration": return_var,
-    "salinity": return_var,
-    "density": return_var,
+    # "oxygen_concentration": return_var,
+    # "salinity": return_var,
+    # "density": return_var,
 }
 
-""" Dictionary of label adjustments; correspnds to adjustments dict
-"""
-adjustments_labels = {
-    "chlorophyll": "$log_{10}$",
-    "cdom": "$log_{10}$",
-    "backscatter_700": "$log_{10}$",
-}
+# """ Dictionary of label adjustments; correspnds to adjustments dict
+# """
+# adjustments_labels = {
+#     "chlorophyll": "$log_{10}$",
+#     "cdom": "$log_{10}$",
+#     "backscatter_700": "$log_{10}$",
+# }
 
-""" Dictionary of variable units
-
-SMW note: This should likely be changed to use units from variable attributes
-"""
-units = {
-    "latitude": "deg",
-    "longitude": "deg",
-    "depth": "m",
-    "heading": "deg",
-    "pitch": "rad",
-    "roll": "rad",
-    "waypoint_latitude": "deg",
-    "waypoint_longitude": "deg",
-    "conductivity": "S$\\bullet m^{-1}$",
-    "temperature": "°C",
-    "pressure": "dbar",
-    "chlorophyll": "µg•$L^{-l}$",
-    "cdom": "ppb",
-    "backscatter_700": "$m^{-1}$",
-    "oxygen_concentration": "µmol•$L^{-1}$",
-    "depth_ctd": "m",
-    "distance_over_ground": "km",
-    "salinity": "PSU",
-    "potential_density": "kg $\\bullet m^{-3}$",
-    "density": "kg $\\bullet m^{-3}$",
-    "potential_temperature": "°C",
-    "profile_index": "1",
-    "profile_direction": "1",
-}
+# """ Dictionary of variable units
+# SMW note: This should likely be changed to use units from variable attributes
+# """
+# units = {
+#     "latitude": "deg",
+#     "longitude": "deg",
+#     "depth": "m",
+#     "heading": "deg",
+#     "pitch": "rad",
+#     "roll": "rad",
+#     "waypoint_latitude": "deg",
+#     "waypoint_longitude": "deg",
+#     "conductivity": "S$\\bullet m^{-1}$",
+#     "temperature": "°C",
+#     "pressure": "dbar",
+#     "chlorophyll": "µg•$L^{-l}$",
+#     "cdom": "ppb",
+#     "backscatter_700": "$m^{-1}$",
+#     "oxygen_concentration": "µmol•$L^{-1}$",
+#     "depth_ctd": "m",
+#     "distance_over_ground": "km",
+#     "salinity": "PSU",
+#     "potential_density": "kg $\\bullet m^{-3}$",
+#     "density": "kg $\\bullet m^{-3}$",
+#     "potential_temperature": "°C",
+#     "profile_index": "1",
+#     "profile_direction": "1",
+#     "total_num_inflections": "1",
+# }
 
 """Dictionary of the colors to use for different variables
 """
@@ -157,7 +176,7 @@ def all_loops(
     dssci: xr.Dataset,
     dseng: xr.Dataset,
     dssci_g: xr.Dataset,
-    crs,
+    crs = None,
     base_path: str = None,
     bar_file: str | None = None,
 ):
@@ -172,9 +191,10 @@ def all_loops(
         Timeseries engineering dataset
     dssci_g : xarray Dataset
         Gridded science dataset
-    crs : a class from cartopy.crs; default cartopy.crs.Mercator()
+    crs : a class from cartopy.crs or None; default None
         An instantiated cartopy projection, such as cartopy.crs.PlateCarree()
-        or cartopy.crs.Mercator()
+        or cartopy.crs.Mercator(). 
+        If None, surface maps are not created
     base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
@@ -202,7 +222,10 @@ def all_loops(
         _log.info("No bar file path, so skipping surface maps")
         bar = None
 
-    sci_surface_map_loop(dssci_g, crs=crs, base_path=base_path, bar=bar)
+    if crs is not None:
+        sci_surface_map_loop(dssci_g, crs=crs, base_path=base_path, bar=bar)
+    else: 
+        _log.info("No crs provided, and thus skipping surface maps")
 
 
 def sci_gridded_loop(
@@ -410,6 +433,8 @@ def sci_surface_map_loop(
     base_path: str | None = None,
     show: bool = False,
     bar: xr.Dataset | None = None,
+    figsize_x = 8.5, 
+    figsize_y = 11, 
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
@@ -447,7 +472,10 @@ def sci_surface_map_loop(
             )
             continue
 
-        sci_surface_map(ds, var=var, crs=crs, base_path=base_path, show=show, bar=bar)
+        sci_surface_map(
+            ds, var=var, crs=crs, base_path=base_path, show=show, bar=bar, 
+            figsize_x=figsize_x, figsize_y=figsize_y, 
+        )
 
 
 def save_plot(
@@ -511,8 +539,8 @@ def sci_timesection_plot(
     std = np.nanstd(ds[var])
     mean = np.nanmean(ds[var])
 
-    p1 = ax.pcolormesh(ds.time, ds.depth, add_log(var, ds), cmap=sci_colors[var])
-    fig.colorbar(p1).set_label(label=log_label(var), size=label_size)
+    p1 = ax.pcolormesh(ds.time, ds.depth, adj_var(ds, var), cmap=sci_colors[var])
+    fig.colorbar(p1).set_label(label=adj_var_label(ds, var), size=label_size)
     ax.invert_yaxis()
 
     ax.set_title(
@@ -584,7 +612,7 @@ def sci_spatialsection_plot(
     axs[0].pcolormesh(
         ds.longitude,
         ds.depth,
-        add_log(var, ds),
+        adj_var(ds, var),
         cmap=sci_colors[var],
     )
     axs[0].invert_yaxis()
@@ -606,11 +634,11 @@ def sci_spatialsection_plot(
     p2 = axs[1].pcolormesh(
         ds.latitude,
         ds.depth,
-        add_log(var, ds),
+        adj_var(ds, var),
         cmap=sci_colors[var],
     )
     # p2 = axs[1].pcolormesh(sci_ds_g.latitude, sci_ds_g.depth, sci_ds_g[var], cmap=sci_colors[var])
-    fig.colorbar(p2).set_label(label=log_label(var), size=label_size)
+    fig.colorbar(p2).set_label(label=adj_var_label(ds, var), size=label_size)
     # axs[1].invert_yaxis()
 
     axs[1].set_xlabel("Latitude [Deg]", size=label_size)
@@ -719,7 +747,7 @@ def sci_spatialgrid_plot(
     ax0.set_xticklabels([])
 
     # ax0.scatter(sci_ds.longitude, sci_ds.latitude, c=sci_ds[var], cmap=sci_colors[var])
-    ax1.pcolormesh(ds.longitude, ds.depth, add_log(var, ds), cmap=sci_colors[var])
+    ax1.pcolormesh(ds.longitude, ds.depth, adj_var(ds, var), cmap=sci_colors[var])
     ax1.set_ylabel("Depth [m]", size=label_size)
     ax1.set_xlabel("Longitude [Deg]", size=label_size)
     ax1.invert_yaxis()
@@ -727,7 +755,7 @@ def sci_spatialgrid_plot(
     ax2.pcolormesh(
         ds.depth,
         ds.latitude,
-        np.transpose(add_log(var, ds).values),
+        np.transpose(adj_var(ds, var).values),
         cmap=sci_colors[var],
     )
     ax2.set_xlabel("Depth [m]", size=label_size)
@@ -735,7 +763,7 @@ def sci_spatialgrid_plot(
     ax2.set_yticklabels([])
 
     fig.colorbar(p, location="top", ax=[ax2, ax0]).set_label(
-        label=log_label(var),
+        label=adj_var_label(ds, var),
         size=label_size,
     )
     fig.suptitle(f"Deployment {deployment} for project {project}", size=title_size)
@@ -934,13 +962,13 @@ def eng_timeseries_plot(
     fig, ax = plt.subplots(figsize=(11, 8.5))
 
     ax.set_xlabel("Time", size=label_size)
-    ax.set_ylabel(f"{var}", size=label_size)
+    ax.set_ylabel(adj_var_label(ds, var), size=label_size)
     # ax.invert_yaxis()
     ax.set_title(f"Deployment {deployment} for project {project}", size=title_size)
 
     ax.scatter(ds.time, ds[var], s=3)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%m/%d %H:%M"))
-    # fig.colorbar(p, location="right").set_label(log_label(var), size=label_size)
+    # fig.colorbar(p, location="right").set_label(adj_var_label(ds, var), size=label_size)
     fig.autofmt_xdate()
 
     if base_path is not None:
@@ -1000,9 +1028,9 @@ def sci_timeseries_plot(
     ax.invert_yaxis()
     ax.set_title(f"Deployment {deployment} for project {project}", size=title_size)
 
-    p = ax.scatter(ds.time, ds.depth, c=add_log(var, ds), cmap=sci_colors[var], s=3)
+    p = ax.scatter(ds.time, ds.depth, c=adj_var(ds, var), cmap=sci_colors[var], s=3)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%m/%d %H:%M"))
-    fig.colorbar(p, location="right").set_label(log_label(var), size=label_size)
+    fig.colorbar(p, location="right").set_label(adj_var_label(ds, var), size=label_size)
     fig.autofmt_xdate()
 
     if base_path is not None:
@@ -1065,7 +1093,7 @@ def ts_plot(
     p0 = ax.scatter(
         ds.salinity,
         ds.potential_temperature,
-        c=add_log(var, ds),
+        c=adj_var(ds, var),
         cmap=sci_colors[var],
         s=5,
     )
@@ -1074,7 +1102,7 @@ def ts_plot(
         orientation="vertical",
         location="right",
         shrink=1,
-    ).set_label(label=log_label(var), size=label_size)
+    ).set_label(label=adj_var_label(ds, var), size=label_size)
 
     ax.set_title(f"{deployment} from {start} to {end}", size=title_size)
     ax.set_xlabel("Salinity [PSU]", size=label_size)
@@ -1102,6 +1130,8 @@ def sci_surface_map(
     base_path: str | None = None,
     show: bool = False,
     bar: xr.Dataset | None = None,
+    figsize_x = 8.5, 
+    figsize_y = 11, 
 ):
     """
     Create surface maps of science variables
@@ -1150,7 +1180,7 @@ def sci_surface_map(
 
     # Using Cartopy
     fig, ax = plt.subplots(
-        figsize=(8.5, 11),
+        figsize=(figsize_x, figsize_y),
         subplot_kw={"projection": crs},
     )
     ax.set_xlabel("\n\n\nLongitude [Deg]", size=14)
@@ -1202,7 +1232,7 @@ def sci_surface_map(
 
     # Add colorbar
     fig.colorbar(p, ax=ax, shrink=0.6, location="right").set_label(
-        label=log_label(var),
+        label=adj_var_label(ds, var),
         size=label_size,
     )
     ax.set_title(

@@ -107,6 +107,7 @@ def get_path_deployment(
     binarydir = os.path.join(glider_path, "data", "binary", mode)
     deploymentyaml = os.path.join(config_path, f"{deployment}.yml")
     engyaml = get_path_engyaml()
+    logdir = os.path.join(glider_path, "logs")
 
     # ncdir = os.path.join(glider_path, "data", "nc")
     procl1dir = os.path.join(glider_path, "data", "processed-L1")
@@ -125,6 +126,7 @@ def get_path_deployment(
         "binarydir": binarydir,
         "deploymentyaml": deploymentyaml,
         "engyaml": engyaml,
+        "logdir": logdir,
         "rawdir": rawdir,
         "tsdir": tsdir,
         "griddir": griddir,
