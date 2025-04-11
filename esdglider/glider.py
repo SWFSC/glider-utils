@@ -39,9 +39,10 @@ def get_path_engyaml() -> str:
 
 
 def get_path_deployment(
-    project: str,
-    deployment: str,
-    mode: str,
+    deployment_info: dict,
+    # project: str,
+    # deployment: str,
+    # mode: str,
     deployments_path: str,
     config_path: str,
 ) -> dict:
@@ -72,6 +73,10 @@ def get_path_deployment(
         A dictionary with the relevant paths
     """
 
+    deployment = deployment_info["deployment"]
+    mode = deployment_info["mode"]
+    project = deployment_info["project"]
+
     prj_list = ["FREEBYRD", "REFOCUS", "SANDIEGO", "ECOSWIM"]
     if not os.path.isdir(deployments_path):
         _log.error(f"deployments_path ({deployments_path}) does not exist")
@@ -101,14 +106,17 @@ def get_path_deployment(
     cacdir = os.path.join(deployments_path, "cache")
     binarydir = os.path.join(glider_path, "data", "binary", mode)
     deploymentyaml = os.path.join(config_path, f"{deployment}.yml")
-    # deploymentyaml = os.path.join(glider_path, 'config',
-    #     f"{deployment_mode}.yml")
     engyaml = get_path_engyaml()
 
-    ncdir = os.path.join(glider_path, "data", "nc")
-    tsdir = os.path.join(ncdir, "timeseries")
-    griddir = os.path.join(ncdir, "gridded")
-    profdir = os.path.join(ncdir, "ngdac", mode)
+    # ncdir = os.path.join(glider_path, "data", "nc")
+    procl1dir = os.path.join(glider_path, "data", "processed-L1")
+    procl2dir = os.path.join(glider_path, "data", "processed-L2")
+
+    # Separate, in case in the future they end up in their own directories
+    rawdir = procl1dir
+    tsdir = procl1dir
+    griddir = procl1dir
+    profdir = os.path.join(procl1dir, f"ngdac-{mode}")
 
     plotdir = os.path.join(glider_path, "plots")
 
@@ -117,45 +125,61 @@ def get_path_deployment(
         "binarydir": binarydir,
         "deploymentyaml": deploymentyaml,
         "engyaml": engyaml,
+        "rawdir": rawdir,
         "tsdir": tsdir,
-        "profdir": profdir,
         "griddir": griddir,
+        "profdir": profdir,
         "plotdir": plotdir,
+        "procl1dir": procl1dir,
+        "procl2dir": procl2dir,
     }
 
 
 def binary_to_nc(
-    deployment: str,
-    mode: str,
+    deployment_info: dict,
+    # deployment: str,
+    # mode: str,
     paths: str,
-    min_dt: str,
+    # min_dt: str,
+    write_raw: bool = True,
     write_timeseries: bool = True,
     write_gridded: bool = True,
     file_info: str | None = None,
 ):
     """
-    Process binary ESD slocum glider data to timeseries and/or gridded netCDF files
+    Process binary ESD slocum glider data to netCDF file(s)
 
     The contents of this function used to just be in scripts/binary_to_nc.py.
     They were moved to this structure for easier development and debugging
 
     Parameters
     ----------
-    deployment : str
-        The name of the glider deployment. Eg, amlr01-20210101
-    mode : str
-        Mode of the glider dat being processed.
-        Must be either 'rt', for real-time, or 'delayed
+    deployment_info : dict
+        A dictionary with the relevant deployment info. A dictionary is
+        used to make it easier if arguments are added or removed.
+        This dictionary must contain:
+        deployment : str
+            The name of the glider deployment. Eg, amlr01-20210101
+        mode : str
+            Mode of the glider dat being processed.
+            Must be either 'rt', for real-time, or 'delayed
+        min_dt : str
+            string that can be converted to datetime64; see utils.drop_bogus
+            All timestamps from before this value will be dropped
     paths : dict
         A dictionary of file/directory paths for various processing steps.
-        Intended to be the output of esdglider.slocum.paths_esd_gcp()
+        Intended to be the output of esdglider.glider.get_path_deployment()
         See this function for the expected key/value pairs
-    min_dt : str
-        string that can be converted to datetime64; see utils.drop_bogus
-        All timestamps from before this value will be dropped
-    write_timeseries, write_gridded : bool, default True
-        Should the timeseries and gridded, respectively,
-        xarray DataSets be both created and written to files?
+    write_raw, write_timeseries, write_gridded : bool, default True
+        Should the raw, timeseries, and gridded, respectively,
+        xarray DataSets be created and written to files?
+        Raw files are created by binary_to_raw, and include uninterpolated data
+        Timeseries files are created by pyglider's binary_to_timeseries;
+        both 'engineering' and 'science' timeseries files are created.
+        Eng and sci files have m_depth and sci_water_temp as the time bases,
+        respectively. Gridded files are created by pyglider's make_gridfiles,
+        using the science timeseries as the input.
+        Both 1m and 5m gridded datasets are created.
         Note: if True then any existing files will be clobbered
     file_path: str | None, default None
         The path of the parent processing script.
@@ -163,11 +187,13 @@ def binary_to_nc(
 
     Returns
     -------
-    A tuple of the filenames of the various netCDF files, as strings.
-    In order: the engineering and science timeseries,
+    A dictionary of the filenames of the various netCDF files, as strings.
+    In order: the raw data, the engineering and science timeseries,
     and the 1m and 5m gridded files
     """
 
+    deployment = deployment_info["deployment"]
+    mode = deployment_info["mode"]
     # --------------------------------------------
     # Choices (delayed, rt) specified in arg input
     if mode == "delayed":
@@ -178,47 +204,62 @@ def binary_to_nc(
         raise ValueError("mode must be either 'rt' or 'delayed'")
 
     # Check file and directory paths
+    deploymentyaml = paths["deploymentyaml"]
+    rawdir = paths["rawdir"]
     tsdir = paths["tsdir"]
     griddir = paths["griddir"]
-    deploymentyaml = paths["deploymentyaml"]
 
     # Get deployment and thus file name from yaml file
+    if not os.path.isfile(deploymentyaml):
+        raise FileNotFoundError(f"Could not find {deploymentyaml}")
     with open(deploymentyaml) as fin:
-        deployment_info = yaml.safe_load(fin)
-        deployment_name = deployment_info["metadata"]["deployment_name"]
+        deployment_ = yaml.safe_load(fin)
+        deployment_name = deployment_["metadata"]["deployment_name"]
     if deployment_name != deployment:
         raise ValueError(
             f"Provided deployment ({deployment}) is not the same as "
             + f"the deploymentyaml deployment_name ({deployment_name})",
         )
 
+    # Dictionary with info needed by post-processing functions
+    postproc_dict = deployment_info | {
+        "file_info": file_info,
+        "metadata_dict": {"deployment_name": deployment_name},
+        "device_dict": {},
+    }
+
     # --------------------------------------------
-    # TODO: handle compressed files, if necessary.
-    # Although maybe this should be in another function?
+    # Handle compressed files?
+
+    # --------------------------------------------
+    # Raw
+    outname_raw = os.path.join(tsdir, f"{deployment}-{mode}-raw.nc")
+    if write_raw:
+        utils.remove_file(outname_raw)
+        utils.makedirs_pass(rawdir)
+
+        outname_raw = binary_to_raw(
+            paths["binarydir"],
+            paths["cacdir"],
+            rawdir,
+            [deploymentyaml, paths["engyaml"]],
+            search=binary_search,
+            fnamesuffix=f"-{mode}-raw",
+            pp=postproc_dict,
+        )
+    else:
+        _log.info("Not writing raw file")
 
     # --------------------------------------------
     # Timeseries
+    outname_tseng = os.path.join(tsdir, f"{deployment}-{mode}-eng.nc")
+    outname_tssci = os.path.join(tsdir, f"{deployment}-{mode}-sci.nc")
     if write_timeseries:
-        # Delete previous files before starting run
+        # Delete previous files before starting run. Can't delete whole directory
         # Since gridded depend on ts, also delete gridded
-        utils.rmtree(tsdir)
-        utils.rmtree(griddir)
-
-        if not os.path.exists(tsdir):
-            _log.info(f"Creating directory at: {tsdir}")
-            os.makedirs(tsdir)
-
-        if not os.path.isfile(deploymentyaml):
-            raise FileNotFoundError(f"Could not find {deploymentyaml}")
-
-        # Dictionary with info needed by post-processing functions
-        postproc_dict = {
-            "mode": mode,
-            "min_dt": min_dt,
-            "file_info": file_info,
-            "metadata_dict": {"deployment_name": deployment_name},
-            "device_dict": {},
-        }
+        utils.remove_file(outname_tseng)
+        utils.remove_file(outname_tssci)
+        utils.makedirs_pass(tsdir)
 
         # Engineering - uses m_depth as time base
         _log.info("Generating engineering timeseries")
@@ -263,14 +304,16 @@ def binary_to_nc(
 
     else:
         _log.info("Not writing timeseries")
-        outname_tseng = os.path.join(tsdir, f"{deployment}-{mode}-eng.nc")
-        outname_tssci = os.path.join(tsdir, f"{deployment}-{mode}-sci.nc")
 
     # --------------------------------------------
     # Gridded data, 1m and 5m
     # TODO: filter to match SOCIB?
+    outname_1m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-1m.nc")
+    outname_5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
     if write_gridded:
-        utils.rmtree(griddir)
+        # utils.rmtree(griddir)
+        utils.remove_file(outname_1m)
+        utils.remove_file(outname_5m)
         if not os.path.isfile(outname_tssci):
             raise FileNotFoundError(f"Could not find {outname_tssci}")
 
@@ -294,11 +337,15 @@ def binary_to_nc(
 
     else:
         _log.info("Not writing gridded data")
-        outname_1m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-1m.nc")
-        outname_5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
 
     # --------------------------------------------
-    return outname_tseng, outname_tssci, outname_1m, outname_5m
+    return {
+        "outname_raw": outname_raw,
+        "outname_tseng": outname_tseng,
+        "outname_tssci": outname_tssci,
+        "outname_1m": outname_1m,
+        "outname_5m": outname_5m,
+    }
 
 
 def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
@@ -711,7 +758,7 @@ def binary_to_raw(
     thenames.remove("time")
 
     # get the dbd object
-    _log.info(f"{indir}/{search}")
+    _log.info(f"dbdreader pattern: {indir}/{search}")
     dbd = dbdreader.MultiDBD(pattern=f"{indir}/{search}", cacheDir=cachedir)
     sci_params = dbd.parameterNames["sci"]
     eng_params = dbd.parameterNames["eng"]
@@ -761,7 +808,7 @@ def binary_to_raw(
     sci_time = data_time[first_sci]
     time = np.union1d(eng_time, sci_time)
     _log.debug(
-        f"eng/sci/total time counts: {len(eng_time)}/{len(sci_time)}/{len(time)})"
+        f"eng/sci/total time counts: {len(eng_time)}/{len(sci_time)}/{len(time)})",
     )
 
     # get the indices of the sci and eng timestamps in the unioned times
@@ -815,7 +862,8 @@ def binary_to_raw(
 
     # Rename depth_measured, because no pyglider depth calculations
     ds = ds.rename({"depth_measured": "depth"})
-
+    ds = utils.data_var_reorder(ds, ["latitude", "longitude", "depth"])
+    
     # Add metadata - using postproc_attrs for consistency
     pp["metadata_dict"] = deployment["metadata"]
     pp["device_dict"] = deployment["glider_devices"]

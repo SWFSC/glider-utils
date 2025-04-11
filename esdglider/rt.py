@@ -11,12 +11,14 @@ import esdglider.utils as utils
 _log = logging.getLogger(__name__)
 
 
-def scrape_sfmc(deployment, project, bucket, sfmc_path, gcpproject_id, secret_id):
+def scrape_sfmc(deployment_info, bucket, sfmc_path, gcpproject_id, secret_id):
     """
     rsync files from sfmc, and send them to correct bucket directories;
     Returns 0
     """
 
+    deployment = deployment_info["deployment"]
+    project = deployment_info["project"]
     _log.info(f"Scraping files from SFMC for deployment {deployment}")
 
     # --------------------------------------------

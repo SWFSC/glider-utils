@@ -430,6 +430,16 @@ def mkdir_pass(dir):
         pass
 
 
+def makedirs_pass(dir):
+    """
+    Convenience wrapper to try to make a directory path,
+    and pass if it already exists
+    """
+    _log.debug(f"Trying to make directory {dir}")
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+
 def rmtree(dir, ignore_errors=False):
     """
     Light wrapper around shutil.rmtree
@@ -438,6 +448,18 @@ def rmtree(dir, ignore_errors=False):
     if os.path.isdir(dir):
         _log.info(f"Removing the following directory and all files in it: {dir}")
         shutil.rmtree(dir, ignore_errors=ignore_errors)
+
+
+def remove_file(file_path):
+    """
+    Light wrappoer to check if a file exists at file_path,
+    and to remove it if so
+    """
+    if os.path.exists(file_path):
+        _log.info(f"Removing file: {file_path}")
+        os.remove(file_path)
+    else:
+        _log.debug(f"No file to remove at: {file_path}")
 
 
 def line_prepender(filename, line):

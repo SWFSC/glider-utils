@@ -16,25 +16,13 @@ db_components = {
     "ctd": "CTD",
     "flbbcd": "flbbcd Fluorometer",
     "oxygen": "Oxygen Optode",
-    "shadowgraph": ["Shadowgraph cameras (11cm)", "Shadowgraph cameras (14cm)"],
-    "glidercam": "Internal Camera Modules",
+    "shadowgraph": "Shadowgraph camera",
+    "glidercam": "Glidercam",
     "azfp": "AZFP",
     "echosounder": "Signature 100 compact echosounder",
 }
-# db_ctd         = 'CTD'
-# db_flbbcd      = 'flbbcd Fluorometer'
-# db_oxygen      = 'Oxygen Optode'
-# db_shadowgraph = ['Shadowgraph cameras (11cm)', 'Shadowgraph cameras (14cm)']
-# db_glidercam   = 'Internal Camera Modules'
-# db_azfp        = 'AZFP'
-# db_echosounder = 'Signature 100 Compact echsounder'
 
-db_factory_cal = ["Factory - Initial", "Factory - Recal"]
-# Factory - Iniital
-# Factory - Initial
-# Factory - Intial
-# Factory - Recal
-# Factory - recalib
+db_factory_cal = ["Factory - Initial", "Factory - Recalibration"]
 
 
 def instrument_attrs(instr_name, devices, x, y):
@@ -75,8 +63,9 @@ def instrument_attrs(instr_name, devices, x, y):
 
 
 def make_deployment_config(
-    deployment: str,
-    project: str,
+    deployment_info: dict,
+    # deployment: str,
+    # project: str,
     out_path: str,
     db_url=None,
 ):
@@ -96,6 +85,8 @@ def make_deployment_config(
         Full path of the output (written) yaml file
     """
 
+    deployment = deployment_info["deployment"]
+    project = deployment_info["project"]
     _log.debug("Reading template yaml files")
 
     def esdglider_yaml_read(yaml_name):

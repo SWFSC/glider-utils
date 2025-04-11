@@ -11,29 +11,33 @@ import esdglider.utils as utils
 _log = logging.getLogger(__name__)
 
 
-def get_path_acoutics(project, deployment, acoustic_path):
+def get_path_acoutics(deployment_info: dict, acoustic_path: str):
     """
     Return a dictionary of acoustic-related paths
     These paths follow the directory structure outlined here:
     https://swfsc.github.io/glider-lab-manual/content/data-management.html
 
-    -----
     Parameters
-
-    project : str
-        The project name of the deployment.
-        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
-    deployment : str
-        The name of the glider deployment. Eg, amlr01-20210101
+    ----------
+    deployment_info : dict
+        A dictionary with the relevant deployment info. Specifically:
+        project : str
+            The project name of the deployment.
+            Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
+        deployment : str
+            The name of the glider deployment. Eg, amlr01-20210101
     acoustic_path : str
         The path to the top-level folder of the acoustic data.
         This is intended to be the path to the mounted acoustic bucket
 
-    -----
-    Returns:
+    Returns
+    -------
+    dict
         A dictionary with the relevant acoustic paths
-
     """
+
+    deployment = deployment_info["deployment"]
+    project = deployment_info["project"]
 
     if not os.path.isdir(acoustic_path):
         raise FileNotFoundError(f"{acoustic_path} does not exist")
@@ -55,10 +59,7 @@ def get_path_acoutics(project, deployment, acoustic_path):
     }
 
 
-def regions_evr(
-    ds: xr.Dataset,
-    evr_file_pre: str,
-):
+def regions_evr(ds: xr.Dataset, evr_file_pre: str):
     """
     Docs todo
     """

@@ -41,32 +41,34 @@ def solocam_filename_dt(filename, index_dt, format="%Y%m%d-%H%M%S"):
     return solocam_dt64s
 
 
-def get_path_imagery(project, deployment, imagery_path):
+def get_path_imagery(deployment_info: dict, imagery_path):
     """
     Return a dictionary of imagery-related paths
     These paths follow the directory structure outlined here:
     https://swfsc.github.io/glider-lab-manual/content/data-management.html
 
-    -----
     Parameters
-
-    project : str
-        The project name of the deployment.
-        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
-    deployment : str
-        The name of the glider deployment. Eg, amlr01-20210101
-    mode : str
-        Mode of the glider dat being processed.
-        Must be either 'rt', for real-time, or 'delayed
+    ----------
+    deployment_info : dict
+        A dictionary with the relevant deployment info. Specifically:
+        project : str
+            The project name of the deployment.
+            Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
+        deployment : str
+            The name of the glider deployment. Eg, amlr01-20210101
     imagery_path : str
         The path to the top-level folder of the imagery data.
         This is intended to be the path to the mounted raw imagery bucket
 
-    -----
-    Returns:
+    Returns
+    -------
+    dict
         A dictionary with the relevant paths
 
     """
+
+    deployment = deployment_info["deployment"]
+    project = deployment_info["project"]
 
     # prj_list = ['FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM']
     if not os.path.isdir(imagery_path):
