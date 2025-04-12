@@ -151,7 +151,7 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     return profileIndex, profileDirection
 
 
-def get_fill_profiles(ds, time_vals, depth_vals):
+def get_fill_profiles(ds, time_vals, depth_vals, **kwargs):
     """
     Calculate profile index and direction values,
     and fill values and attributes into ds
@@ -168,8 +168,7 @@ def get_fill_profiles(ds, time_vals, depth_vals):
     prof_idx, prof_dir = findProfiles(
         time_vals,
         depth_vals,
-        stall=20,
-        shake=200,
+        **kwargs,
     )
 
     attrs = collections.OrderedDict(

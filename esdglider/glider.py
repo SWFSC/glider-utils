@@ -107,7 +107,7 @@ def get_path_deployment(
     binarydir = os.path.join(glider_path, "data", "binary", mode)
     deploymentyaml = os.path.join(config_path, f"{deployment}.yml")
     engyaml = get_path_engyaml()
-    logdir = os.path.join(glider_path, "logs")
+    logdir = os.path.join(deployments_path, "logs")
 
     # ncdir = os.path.join(glider_path, "data", "nc")
     procl1dir = os.path.join(glider_path, "data", "processed-L1")
@@ -147,6 +147,7 @@ def binary_to_nc(
     write_timeseries: bool = True,
     write_gridded: bool = True,
     file_info: str | None = None,
+    **kwargs,    
 ):
     """
     Process binary ESD slocum glider data to netCDF file(s)
@@ -186,6 +187,9 @@ def binary_to_nc(
     file_path: str | None, default None
         The path of the parent processing script.
         If provided, will be included in the history attribute
+    **kwargs
+        Passed to utils.findProfiles. 
+        Most common may be values for stall or shake
 
     Returns
     -------
@@ -250,7 +254,7 @@ def binary_to_nc(
             pp=postproc_dict,
         )
     else:
-        _log.info("Not writing raw file")
+        _log.info("Not writing raw nc")
 
     # --------------------------------------------
     # Timeseries
@@ -277,7 +281,7 @@ def binary_to_nc(
         )
 
         _log.info(f"Post-processing engineering timeseries: {outname_tseng}")
-        tseng = postproc_eng_timeseries(outname_tseng, postproc_dict)
+        tseng = postproc_eng_timeseries(outname_tseng, postproc_dict, **kwargs)
 
         # Science - uses sci_water_temp as time_base sensor
         _log.info("Generating science timeseries")
@@ -293,19 +297,20 @@ def binary_to_nc(
         )
 
         _log.info(f"Post-processing science timeseries: {outname_tssci}")
-        tssci = postproc_sci_timeseries(outname_tssci, postproc_dict)
+        tssci = postproc_sci_timeseries(outname_tssci, postproc_dict, **kwargs)
 
         num_profiles_eng = len(np.unique(tseng.profile_index.values))
         num_profiles_sci = len(np.unique(tssci.profile_index.values))
         if num_profiles_eng != num_profiles_sci:
             _log.warning(
-                "The eng and sci timeseries have different total numbers of profiles",
+                "The eng and sci timeseries have different total numbers of"
+                + f" profiles: eng {num_profiles_eng}; sci {num_profiles_sci}",
             )
             _log.debug(f"Number of eng profiles: {num_profiles_eng}")
             _log.debug(f"Number of sci profiles: {num_profiles_sci}")
 
     else:
-        _log.info("Not writing timeseries")
+        _log.info("Not writing timeseries nc")
 
     # --------------------------------------------
     # Gridded data, 1m and 5m
@@ -338,7 +343,7 @@ def binary_to_nc(
         )
 
     else:
-        _log.info("Not writing gridded data")
+        _log.info("Not writing gridded nc")
 
     # --------------------------------------------
     return {
@@ -400,7 +405,7 @@ def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
     return ds
 
 
-def postproc_eng_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
+def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     """
     Engineering timeseries-specific post-processing, including:
         - Removing CTD vars
@@ -445,7 +450,7 @@ def postproc_eng_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
     ds = utils.drop_bogus(ds, pp["min_dt"])
 
     # Calculate profiles using measured depth
-    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
     ds = pgutils.get_distance_over_ground(ds)
 
     # Reorder data variables
@@ -467,7 +472,7 @@ def postproc_eng_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
     return ds
 
 
-def postproc_sci_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
+def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     """
     Science timeseries-specific post-processing, including:
         - remove bogus times. Eg, 1970, or before deployment start date
@@ -495,7 +500,7 @@ def postproc_sci_timeseries(ds_file: str, pp: dict) -> xr.Dataset:
 
     # Calculate profiles, using the CTD-derived depth values
     # TODO: update this to play nice with eng timeseries for rt data?
-    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values)
+    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
     ds = pgutils.get_distance_over_ground(ds)
 
     # Reorder data variables

@@ -131,6 +131,7 @@ sci_colors = {
     "salinity": cmo.haline,
     "density": colormaps["cividis"],
     "potential_density": colormaps["cividis"],
+    "profile_index": cmo.gray,
 }
 
 """List of science variables
@@ -464,7 +465,7 @@ def sci_surface_map_loop(
     """
 
     _log.info("LOOP: making surface maps")
-    for var in sci_vars:
+    for var in (sci_vars + ["profile_index"]):
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
             _log.info(
@@ -1123,6 +1124,24 @@ def ts_plot(
     return fig
 
 
+def crs_map(crs_str: str):
+    """
+    Map string crs_str to a Cartopy projection. 
+    Returns a cartopy.crs class 
+
+    This is convenience function, so that a user looking to use 
+    sci_surface_map does not have to import cartopy in their script
+
+    https://scitools.org.uk/cartopy/docs/latest/reference/projections.html
+    """
+    if crs_str == "PlateCarree":
+        return ccrs.PlateCarree()
+    elif crs_str == "Mercator":
+        return ccrs.Mercator()
+    else:
+        raise ValueError(f"invalid crs_str: {crs_str}")
+
+
 def sci_surface_map(
     ds: xr.Dataset,
     var: str,
@@ -1143,9 +1162,10 @@ def sci_surface_map(
         Gridded science dataset
     var : str
         The name of the variable to plot
-    crs : a class from cartopy.crs; default cartopy.crs.Mercator()
+    crs : 
         An instantiated cartopy projection, such as cartopy.crs.PlateCarree()
         or cartopy.crs.Mercator()
+        If crs is a string, then it is passed to plots.crs_map()
     base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
@@ -1179,6 +1199,8 @@ def sci_surface_map(
     glider_lat_max = ds.latitude.max()
 
     # Using Cartopy
+    if isinstance(crs, str):
+        crs = crs_map(crs)
     fig, ax = plt.subplots(
         figsize=(figsize_x, figsize_y),
         subplot_kw={"projection": crs},
