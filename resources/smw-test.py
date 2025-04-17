@@ -1,25 +1,17 @@
 # Sam's testing script for esdglider modules/functions
 
 import logging
-import os
 
 import xarray as xr
 
-from esdglider import config, gcp, glider, plots
+from esdglider import acoustics, config, gcp, glider, plots
 
-deployment = "calanus-20241019"
-project = "ECOSWIM"
-mode = "delayed"
-min_dt = "2024-10-19 17:37:00"
-
-# deployment = "amlr08-20220513"
-# project = "SANDIEGO"
-# mode = "delayed"
-# min_dt="2022-05-13 18:17:00"
-
-# deployment = 'amlr01-20181216'
-# project = "FREEBYRD"
-# mode = 'delayed'
+deployment_info = {
+    "deployment": "amlr03-20231128",
+    "project": "FREEBYRD",
+    "mode": "delayed",
+    "min_dt": "2023-11-28 20:46",
+}
 
 deployment_bucket = "amlr-gliders-deployments-dev"
 imagery_bucket = "amlr-gliders-imagery-raw-dev"
@@ -32,35 +24,33 @@ acoustics_path = f"{base_path}/{acoustics_bucket}"
 config_path = f"{base_path}/glider-lab/deployment-configs"
 
 
-def scrape_sfmc():
-    glider.scrape_sfmc(
-        deployment=deployment,
-        project=project,
-        bucket=deployment_bucket,
-        # sfmc_path='/var/sfmc',
-        sfmc_path=f"{base_path}/sfmc",
-        gcpproject_id="ggn-nmfs-usamlr-dev-7b99",
-        secret_id="sfmc-swoodman",
-    )
+# def scrape_sfmc():
+#     glider.scrape_sfmc(
+#         deployment=deployment,
+#         project=project,
+#         bucket=deployment_bucket,
+#         # sfmc_path='/var/sfmc',
+#         sfmc_path=f"{base_path}/sfmc",
+#         gcpproject_id="ggn-nmfs-usamlr-dev-7b99",
+#         secret_id="sfmc-swoodman",
+#     )
 
 
-def prof(paths):
-    outname_tssci = os.path.join(paths["tsdir"], f"{deployment}-{mode}-sci.nc")
-    return glider.ngdac_profiles(
-        outname_tssci,
-        paths["profdir"],
-        paths["deploymentyaml"],
-        force=True,
-    )
+# def prof(paths):
+#     outname_tssci = os.path.join(paths["tsdir"], f"{deployment}-{mode}-sci.nc")
+#     return glider.ngdac_profiles(
+#         outname_tssci,
+#         paths["profdir"],
+#         paths["deploymentyaml"],
+#         force=True,
+#     )
 
 
 def yaml():
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
     return config.make_deployment_config(
-        deployment,
-        project,
-        mode,
+        deployment_info,
         "C:/Users/sam.woodman/Downloads",
         conn_string,
     )
@@ -80,47 +70,44 @@ if __name__ == "__main__":
 
     gcp.gcs_mount_bucket(deployment_bucket, deployments_path, ro=False)
     # gcp.gcs_mount_bucket(imagery_bucket, imagery_path, ro=False)
-    # gcp.gcs_mount_bucket(acoustics_bucket, acoustics_path, ro=False)
+    gcp.gcs_mount_bucket(acoustics_bucket, acoustics_path, ro=False)
     paths = glider.get_path_deployment(
-        project,
-        deployment,
-        mode,
+        deployment_info,
         deployments_path,
         config_path,
     )
 
-    ### Testing binary_to_raw
-    x = glider.binary_to_raw(
-        paths["binarydir"],
-        paths["cacdir"],
-        paths["tsdir"],
-        [paths["deploymentyaml"], paths["engyaml"]],
-        search="*.[D|E|d|e][Bb][Dd]",
-        fnamesuffix=f"-{mode}-raw",
-        pp={
-            "mode": mode,
-            "min_dt": "2017-01-01",
-            "file_info": None,
-            "metadata_dict": {},
-            "device_dict": {},
-        },
-    )
+    # ### Testing binary_to_raw
+    # x = glider.binary_to_raw(
+    #     paths["binarydir"],
+    #     paths["cacdir"],
+    #     paths["tsdir"],
+    #     [paths["deploymentyaml"], paths["engyaml"]],
+    #     search="*.[D|E|d|e][Bb][Dd]",
+    #     fnamesuffix=f"-{mode}-raw",
+    #     pp={
+    #         "mode": mode,
+    #         "min_dt": "2017-01-01",
+    #         "file_info": None,
+    #         "metadata_dict": {},
+    #         "device_dict": {},
+    #     },
+    # )
 
     # scrape_sfmc()
     # yaml()
 
-    # ### Testing binary_to_nc
-    # outname_tseng, outname_tssci, outname_1m, outname_5m = glider.binary_to_nc(
-    #     deployment,
-    #     mode,
-    #     paths,
-    #     min_dt=min_dt,
-    #     write_timeseries=False,
-    #     write_gridded=False,
-    # )
+    ### Testing binary_to_nc
+    outname = glider.binary_to_nc(
+        deployment_info=deployment_info,
+        paths=paths,
+        write_raw=False,
+        write_timeseries=False,
+        write_gridded=False,
+    )
     # prof(paths)
 
-    # dssci = xr.load_dataset(outname_tssci)
+    dssci = xr.load_dataset(outname["outname_tssci"])
     # dseng = xr.load_dataset(outname_tseng)
     # dssci_g = xr.load_dataset(outname_5m)
 
@@ -130,11 +117,11 @@ if __name__ == "__main__":
     #     imagery.get_path_imagery(project, deployment, imagery_path)
     # )
 
-    # ### Testing acoustics
-    # acoustics.echoview_metadata(
-    #     dssci,
-    #     acoustics.get_path_acoutics(project, deployment, acoustics_path)
-    # )
+    ### Testing acoustics
+    acoustics.echoview_metadata(
+        dssci,
+        acoustics.get_path_acoutics(deployment_info, acoustics_path),
+    )
 
     # ### Testing plots
     # plots.all_loops(

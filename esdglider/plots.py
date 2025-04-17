@@ -58,11 +58,11 @@ def adj_var_label(ds, var):
     #     return f"{adjustments_labels[var]}({var} [{u}])"
     # else:
     #     return f"{var} [{u}]"
-    
+
     if var not in adjustments.keys():
         return f"{var} [{u}]"
     elif adjustments[var] == np.log10:
-        return "$log_{10}$"+f"({var} [{u}])"
+        return "$log_{10}$" + f"({var} [{u}])"
     # elif adjustments[var] == return_var:
     #     return f"{var} [{u}]"
     else:
@@ -177,7 +177,7 @@ def all_loops(
     dssci: xr.Dataset,
     dseng: xr.Dataset,
     dssci_g: xr.Dataset,
-    crs = None,
+    crs=None,
     base_path: str = None,
     bar_file: str | None = None,
 ):
@@ -194,7 +194,7 @@ def all_loops(
         Gridded science dataset
     crs : a class from cartopy.crs or None; default None
         An instantiated cartopy projection, such as cartopy.crs.PlateCarree()
-        or cartopy.crs.Mercator(). 
+        or cartopy.crs.Mercator().
         If None, surface maps are not created
     base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
@@ -225,7 +225,7 @@ def all_loops(
 
     if crs is not None:
         sci_surface_map_loop(dssci_g, crs=crs, base_path=base_path, bar=bar)
-    else: 
+    else:
         _log.info("No crs provided, and thus skipping surface maps")
 
 
@@ -434,8 +434,8 @@ def sci_surface_map_loop(
     base_path: str | None = None,
     show: bool = False,
     bar: xr.Dataset | None = None,
-    figsize_x = 8.5, 
-    figsize_y = 11, 
+    figsize_x=8.5,
+    figsize_y=11,
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
@@ -465,7 +465,7 @@ def sci_surface_map_loop(
     """
 
     _log.info("LOOP: making surface maps")
-    for var in (sci_vars + ["profile_index"]):
+    for var in sci_vars + ["profile_index"]:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
             _log.info(
@@ -474,8 +474,14 @@ def sci_surface_map_loop(
             continue
 
         sci_surface_map(
-            ds, var=var, crs=crs, base_path=base_path, show=show, bar=bar, 
-            figsize_x=figsize_x, figsize_y=figsize_y, 
+            ds,
+            var=var,
+            crs=crs,
+            base_path=base_path,
+            show=show,
+            bar=bar,
+            figsize_x=figsize_x,
+            figsize_y=figsize_y,
         )
 
 
@@ -1085,7 +1091,7 @@ def ts_plot(
     start = ds.deployment_start[0:10]
     end = ds.deployment_end[0:10]
 
-    Sg, Tg, sigma = utils.ts_calculations(ds)
+    Sg, Tg, sigma = utils.calc_ts(ds)
 
     fig, ax = plt.subplots(figsize=(9.5, 8.5))
 
@@ -1126,10 +1132,10 @@ def ts_plot(
 
 def crs_map(crs_str: str):
     """
-    Map string crs_str to a Cartopy projection. 
-    Returns a cartopy.crs class 
+    Map string crs_str to a Cartopy projection.
+    Returns a cartopy.crs class
 
-    This is convenience function, so that a user looking to use 
+    This is convenience function, so that a user looking to use
     sci_surface_map does not have to import cartopy in their script
 
     https://scitools.org.uk/cartopy/docs/latest/reference/projections.html
@@ -1149,8 +1155,8 @@ def sci_surface_map(
     base_path: str | None = None,
     show: bool = False,
     bar: xr.Dataset | None = None,
-    figsize_x = 8.5, 
-    figsize_y = 11, 
+    figsize_x=8.5,
+    figsize_y=11,
 ):
     """
     Create surface maps of science variables
@@ -1162,7 +1168,7 @@ def sci_surface_map(
         Gridded science dataset
     var : str
         The name of the variable to plot
-    crs : 
+    crs :
         An instantiated cartopy projection, such as cartopy.crs.PlateCarree()
         or cartopy.crs.Mercator()
         If crs is a string, then it is passed to plots.crs_map()

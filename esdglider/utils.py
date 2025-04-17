@@ -17,6 +17,9 @@ ESD-specific utilities
 Mostly helpers for post-processing time series files created using pyglider
 """
 
+"""Dictionary for mapping profile_direction values to strings"""
+direction_mapping = {1: "Dive", -1: "Climb"}
+
 
 # For IOOS-compliant encoding when writing to NetCDF
 def to_netcdf_esd(ds: xr.Dataset, outname: str):
@@ -151,7 +154,7 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     return profileIndex, profileDirection
 
 
-def get_fill_profiles(ds, time_vals, depth_vals, **kwargs):
+def get_fill_profiles(ds, time_vals, depth_vals, **kwargs) -> xr.Dataset:
     """
     Calculate profile index and direction values,
     and fill values and attributes into ds
@@ -178,9 +181,8 @@ def get_fill_profiles(ds, time_vals, depth_vals, **kwargs):
             ("comment", "N = inside profile N, N + 0.5 = between profiles N and N + 1"),
             ("sources", "time depth"),
             ("method", "esdglider.utils.findProfiles"),
-            ("stall", 20),
-            ("shake", 200),
-        ],
+        ]
+        + [(key, val) for key, val in kwargs.items()],
     )
     ds["profile_index"] = (("time"), prof_idx, attrs)
 
@@ -269,14 +271,10 @@ def drop_bogus(ds: xr.Dataset, min_dt: str = "1970-01-01") -> xr.Dataset:
                 + f"outside range [{value[0]}, {value[1]}] to nan",
             )
 
-        # num_orig = len(ds[var])
-        # ds = ds.where(ds[var] <= value[1], drop=False)
-        # _log.info(f"Changed {num_orig - len(ds[var])} {var} values greater than {value[1]} to nan")
-
     return ds
 
 
-def get_file_id_esd(ds):
+def get_file_id_esd(ds) -> str:
     """
     ESD's version of pyglider.utils.get_file_id.
     This version does not require a glider_serial
@@ -358,21 +356,6 @@ def encode_times(ds):
                     ds[var_name].attrs.pop(drop_attr)
             ds[var_name].encoding["units"] = "seconds since 1970-01-01T00:00:00Z"
     return ds
-
-
-def find_extensions(dir_path):  # ,  excluded = ['', '.txt', '.lnk']):
-    """
-    Get all the file extensions in the given directory
-    From https://stackoverflow.com/questions/45256250
-    """
-    extensions = set()
-    for _, _, files in Path(dir_path).walk():
-        for f in files:
-            extensions.add(Path(f).suffix)
-            # ext = Path(f).suffix.lower()
-            # if not ext in excluded:
-            #     extensions.add(ext)
-    return extensions
 
 
 def split_deployment(deployment):
@@ -466,6 +449,21 @@ def remove_file(file_path):
         _log.debug(f"No file to remove at: {file_path}")
 
 
+def find_extensions(dir_path):  # ,  excluded = ['', '.txt', '.lnk']):
+    """
+    Get all the file extensions in the given directory
+    From https://stackoverflow.com/questions/45256250
+    """
+    extensions = set()
+    for _, _, files in Path(dir_path).walk():
+        for f in files:
+            extensions.add(Path(f).suffix)
+            # ext = Path(f).suffix.lower()
+            # if not ext in excluded:
+            #     extensions.add(ext)
+    return extensions
+
+
 def line_prepender(filename, line):
     """
     Title: prepend-line-to-beginning-of-a-file
@@ -478,7 +476,7 @@ def line_prepender(filename, line):
         f.write(line.rstrip("\r\n") + "\n" + content)
 
 
-def ts_calculations(ds):
+def calc_ts(ds):
     """
     Code adapted from Jacob Partida
     Calculate variables for temperature/salinity plots
@@ -499,3 +497,47 @@ def ts_calculations(ds):
     sigma = gsw.sigma0(Sg, Tg)
 
     return Sg, Tg, sigma
+
+
+def calc_regions(ds: xr.Dataset):
+    """
+    Doc todo
+
+    Notes:
+    - removes .5 profile indexes
+    - groups by profile_index - assumes direction is which of -1/1 there is the most of
+    """
+
+    # Group by profile index, and summarize other info
+    regions_df = (
+        ds.to_pandas()
+        .reset_index()
+        # .loc[:, ["time", "latitude", "longitude", "depth", "profile_index", "profile_direction"]]
+        .loc[lambda df: df["profile_index"] % 1 == 0]
+        .groupby(["profile_index"], as_index=False)
+        .agg(
+            profile_direction=("profile_direction", lambda x: x.mode().iloc[0]),
+            min_lon=("longitude", "min"),
+            max_lon=("longitude", "max"),
+            min_lat=("latitude", "min"),
+            max_lat=("latitude", "max"),
+            start_time=("time", "min"),
+            end_time=("time", "max"),
+            start_depth=("depth", "first"),
+            end_depth=("depth", "last"),
+        )
+    )
+
+    # Check that the number of dives and climbs are the same
+    num_profiles = regions_df.shape[0]
+    num_dives = np.count_nonzero(regions_df["profile_direction"] == 1)
+    num_climbs = np.count_nonzero(regions_df["profile_direction"] == -1)
+    str_divesclimbs = "dives: {num_dives}; climbs: {num_climbs}"
+    _log.debug(f"Total profiles: {num_profiles}; {str_divesclimbs}")
+
+    if num_dives != num_climbs:
+        _log.warning(
+            "There are different number of dives and climbs: " + f"({str_divesclimbs})",
+        )
+
+    return regions_df

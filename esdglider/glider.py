@@ -147,7 +147,7 @@ def binary_to_nc(
     write_timeseries: bool = True,
     write_gridded: bool = True,
     file_info: str | None = None,
-    **kwargs,    
+    **kwargs,
 ):
     """
     Process binary ESD slocum glider data to netCDF file(s)
@@ -188,7 +188,7 @@ def binary_to_nc(
         The path of the parent processing script.
         If provided, will be included in the history attribute
     **kwargs
-        Passed to utils.findProfiles. 
+        Passed to utils.findProfiles.
         Most common may be values for stall or shake
 
     Returns
@@ -466,6 +466,9 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     else:
         ds.attrs["comment"] = ds.attrs["comment"] + "; engineering-only time series"
 
+    _log.info("eng timeseries regions check")
+    utils.calc_regions(ds)
+
     _log.debug(f"end eng postproc: ds has {len(ds.time)} values")
     utils.to_netcdf_esd(ds, ds_file)
 
@@ -521,6 +524,9 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
 
     # Update attributes
     ds = postproc_attrs(ds, pp)
+
+    _log.info("sci timeseries regions check")
+    utils.calc_regions(ds)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
     utils.to_netcdf_esd(ds, ds_file)
@@ -729,15 +735,15 @@ def binary_to_raw(
     Extract raw, unprocessed glider data using dbdreader.
     Adaptation of pyglider.slocum.binary_to_timeseries
     dbdreader only deals with flight and science computers
+
     the dbdreader MultiDBD.get() method is used,
     rather than get_sync, to read the parameters specified in
     deploymentyaml. The argument return_nans (of MultiDBD.get()) is set to
     True, so that there are two 'time bases' for the extracted data: one
     for engineering variables (from m_present_time), and one for science
-    variables (from sci_m_present_time). These times are rounded to the
-    nearest second, and then merged. These values are the time index of
-    the output file. In this case, only the engineering variables (e.g.,
-    lat/lon, pitch, roll, m_depth) are interpolated.
+    variables (from sci_m_present_time). These times are merged,
+    and these values are the time index of the output file.
+    No values are interpolated. Times < pp["min_dt"] are still dropped.
 
 
     """
@@ -884,5 +890,5 @@ def binary_to_raw(
     outname = outdir + "/" + ds.attrs["deployment_name"] + fnamesuffix + ".nc"
     _log.info("writing %s", outname)
     utils.to_netcdf_esd(ds, outname)
-    
+
     return outname

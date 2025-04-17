@@ -59,61 +59,50 @@ def get_path_acoutics(deployment_info: dict, acoustic_path: str):
     }
 
 
-def regions_evr(ds: xr.Dataset, evr_file_pre: str):
+def regions_evr(ds: xr.Dataset, evr_file_pre: str) -> pd.DataFrame:
     """
-    Docs todo
+    From the science timeseries dataset: 1) calculate dive/climb regions,
+    2) format output columns, and 3) write dive and climb regions evr files.
+    To get just the regions dataframe, see utils.calc_regions
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Science timeseries dataset
+    evr_file_pre : str
+        The file name+path prefix to use for the EVR regions file.
+        The output filename will be f"{evr_file_pre}-...-regions.evr"
+
+    Returns
+    -------
+    pd.DataFrame
+        The regions dataframe, with formatted output columns
     """
 
-    def prof_dir_str(x):
-        """Map profile_direction (1/-1 integer) to text descriptor"""
-        if x == 1:
-            return "Dive"
-        elif x == -1:
-            return "Climb"
-        else:
-            raise ValueError("Invalid profile direction integer")
-
-    # Process the dataset top create 'regions dataframe'
-    regions_df = (
-        ds.to_pandas()
-        .reset_index()
-        # .loc[:, ["time", "latitude", "longitude", "depth", "profile_index", "profile_direction"]]
-        .loc[lambda df: df["profile_index"] % 1 == 0]
-        .groupby(["profile_index", "profile_direction"], as_index=False)
-        .agg(
-            min_lon=("longitude", "min"),
-            max_lon=("longitude", "max"),
-            min_lat=("latitude", "min"),
-            max_lat=("latitude", "max"),
-            start_time=("time", "min"),
-            end_time=("time", "max"),
-            start_date_str=("time", lambda x: x.min().strftime("%Y%m%d")),
-            start_time_str=("time", lambda x: x.min().strftime("%H%M%S0000")),
-            end_date_str=("time", lambda x: x.max().strftime("%Y%m%d")),
-            end_time_str=("time", lambda x: x.max().strftime("%H%M%S0000")),
-            profile_direction_str=(
-                "profile_direction",
-                lambda x: prof_dir_str(x.iloc[0]),
-            ),
-        )
+    # Process the dataset to create 'regions' dataframe
+    _log.debug("Calculating regions")
+    regions_df = utils.calc_regions(ds).assign(
+        start_date_str=lambda d: d["start_time"].dt.strftime("%Y%m%d"),
+        start_time_str=lambda d: d["start_time"].dt.strftime("%H%M%S0000"),
+        end_date_str=lambda d: d["end_time"].dt.strftime("%Y%m%d"),
+        end_time_str=lambda d: d["end_time"].dt.strftime("%H%M%S0000"),
+        profile_direction_str=(
+            lambda d: d["profile_direction"].map(utils.direction_mapping)
+        ),
     )
+    if regions_df["profile_direction_str"].isna().any():
+        raise ValueError("Invalid profile direction integer(s)")
 
-    # Set variables that are consistent throughout the file
-    region_dict = {"Dive": 1, "Climb": -1}
-    fist_line: str = "EVRG 7 10.0.298.38422"
+    # Set values that are used throughout the EVR files
     start_depth = -1
     end_depth = 1000
 
     # For each of the dive and climb regions:
-    for r, i in region_dict.items():
-        _log.debug(r)
+    for i, r in utils.direction_mapping.items():
+        _log.info(f"working on region {r}")
         # Filter for dives/climbs, and set associated variables
         df = regions_df[regions_df["profile_direction"] == i].reset_index(drop=True)
-        # df
-        # dive_regions_df = regions_df[regions_df["profile_direction"] == 1]
-
-        nrow = len(df)
-        region_vec = [fist_line, str(nrow)]
+        region_vec = ["EVRG 7 10.0.298.38422", str(len(df))]
 
         # Loop through each row and generate the file contents
         for row in df.itertuples():
@@ -131,33 +120,10 @@ def regions_evr(ds: xr.Dataset, evr_file_pre: str):
             )
             # 'Append' this row's contents to the region vector
             region_vec.extend(["", line1, "0", "0", r, line5, f"Region {idx}"])
-            # # line1 = ' '.join(map(str, [13, 4, i+1, 0, 3, -1, 1, date_start, time_start, start_depth, date_end, time_end, end_depth]))
-            # # line5 = ' '.join(map(str, [date_start, time_start, end_depth, date_end, time_end, end_depth, date_end, time_end, start_depth, date_start, time_start, start_depth, 1]))
-            # # # Region name based on the 'profile' column
-            # # reg_name = f'Region {df.loc[i, "profile"]}'
-            # # Append to region_vec
-            # region_vec.extend(['', line1, '0', '0', region_class, line5, f"Region {i+1}"])
 
+        # Write the regions EVR file
         with open(f"{evr_file_pre}-{r.lower()}-regions.evr", "w") as f:
             f.write("\n".join(region_vec) + "\n")
-
-    # lines_1 = df.apply(
-    #     lambda row: f"13 4 {row.name+1} 0 3 -1 1 {row['start_date']} {row['start_time']} {start_depth} {row['end_date']} {row['end_time']} {end_depth}",
-    #     axis=1
-    # )
-    # lines_5 = df.apply(
-    #     lambda row: f"{row['start_date']} {row['start_time']} {end_depth} {row['end_date']} {row['end_time']} {end_depth} {row['end_date']} {row['end_time']} {start_depth} {row['start_date']} {row['start_time']} {start_depth} 1",
-    #     axis=1
-    # )
-
-    # region_names = df.apply(lambda x: f"Region {x.name+1}", axis=1)
-
-    # region_vec.extend(lines_1.tolist())
-    # region_vec.extend(['0'] * nrow)  # Add '0' for the '0' lines
-    # region_vec.extend(['0'] * nrow)  # Add '0' for the '0' lines
-    # region_vec.extend(['reg_class'] * nrow)  # Replace with actual class if necessary
-    # region_vec.extend(lines_5.tolist())
-    # region_vec.extend(region_names.tolist())
 
     return regions_df
 
