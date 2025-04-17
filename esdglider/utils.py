@@ -7,6 +7,7 @@ from pathlib import Path
 
 import gsw
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 _log = logging.getLogger(__name__)
@@ -478,8 +479,8 @@ def line_prepender(filename, line):
 
 def calc_ts(ds):
     """
-    Code adapted from Jacob Partida
     Calculate variables for temperature/salinity plots
+    Code adapted from Jacob Partida
     """
     s_lims = (
         np.floor(np.min(ds.salinity) - 0.5),
@@ -499,20 +500,43 @@ def calc_ts(ds):
     return Sg, Tg, sigma
 
 
-def calc_regions(ds: xr.Dataset):
+def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
     """
-    Doc todo
+    Calculate glider profile regions
 
-    Notes:
-    - removes .5 profile indexes
-    - groups by profile_index - assumes direction is which of -1/1 there is the most of
+    From an xarray dataset, likely produced by glider.binary_to_nc, 
+    create a dataframe with one row for each profile. 
+    Each row contains columns with summary info about that profile, including:
+    - min/max longitude
+    - min/max latitude
+    - min/max time
+    - starting/ending depth
+
+    Processing notes:
+    - This function drops removes .5 profile indexes
+    - Grouping is only by profile_index. The profile direction is assumed 
+        to be the mode of the profile_direction column. 
+        This is because a glider may stall or shake, 
+        and thus have multiple directions within a profile
+
+    The function logs a warning if there are different numbers of 
+    dive and climb profiles.
+
+    Parameters
+    ----------
+    ds : xarray Dataset
+        Dataset with glider timeseries data
+
+    Returns
+    -------
+    pandas Dataframe
+        Regions data frame with one row for each profile in ds    
     """
 
     # Group by profile index, and summarize other info
     regions_df = (
         ds.to_pandas()
         .reset_index()
-        # .loc[:, ["time", "latitude", "longitude", "depth", "profile_index", "profile_direction"]]
         .loc[lambda df: df["profile_index"] % 1 == 0]
         .groupby(["profile_index"], as_index=False)
         .agg(
@@ -532,12 +556,13 @@ def calc_regions(ds: xr.Dataset):
     num_profiles = regions_df.shape[0]
     num_dives = np.count_nonzero(regions_df["profile_direction"] == 1)
     num_climbs = np.count_nonzero(regions_df["profile_direction"] == -1)
-    str_divesclimbs = "dives: {num_dives}; climbs: {num_climbs}"
+    str_divesclimbs = f"dives: {num_dives}; climbs: {num_climbs}"
     _log.debug(f"Total profiles: {num_profiles}; {str_divesclimbs}")
 
     if num_dives != num_climbs:
         _log.warning(
-            "There are different number of dives and climbs: " + f"({str_divesclimbs})",
+            "There are different number of dives and climbs: " + 
+            f"({str_divesclimbs})",
         )
 
     return regions_df

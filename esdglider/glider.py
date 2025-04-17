@@ -308,6 +308,9 @@ def binary_to_nc(
             )
             _log.debug(f"Number of eng profiles: {num_profiles_eng}")
             _log.debug(f"Number of sci profiles: {num_profiles_sci}")
+        else:
+            _log.info("The eng and sci timeseries have the same profiles counts")
+
 
     else:
         _log.info("Not writing timeseries nc")
