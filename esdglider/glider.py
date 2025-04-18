@@ -186,15 +186,15 @@ def binary_to_nc(
         The path of the parent processing script.
         If provided, will be included in the history attribute
     **kwargs
-        Optional arguments passed to utils.findProfiles. 
+        Optional arguments passed to utils.findProfiles.
         See findProfiles for arg descriptions. Default values for binary_to_nc:
         findprof = {
-            "length": 0, 
-            "period": 0, 
-            "inversion": math.inf, 
-            "interrupt": math.inf, 
-            "stall": 1, 
-            "shake": 0, 
+            "length": 0,
+            "period": 0,
+            "inversion": math.inf,
+            "interrupt": math.inf,
+            "stall": 20,
+            "shake": 20,
         }
 
     Returns
@@ -239,15 +239,15 @@ def binary_to_nc(
         "metadata_dict": {"deployment_name": deployment_name},
         "device_dict": {},
     }
-    
+
     # Set default values for findProfiles function, and update with user vales
     findprof = {
-        "length": 0, 
-        "period": 0, 
-        "inversion": math.inf, 
-        "interrupt": math.inf, 
-        "stall": 20, 
-        "shake": 20, 
+        "length": 0,
+        "period": 0,
+        "inversion": math.inf,
+        "interrupt": math.inf,
+        "stall": 10,
+        "shake": 10,
     }
     findprof.update(kwargs)
 
@@ -327,7 +327,6 @@ def binary_to_nc(
             _log.debug(f"Number of sci profiles: {num_profiles_sci}")
         else:
             _log.info("The eng and sci timeseries have the same profiles counts")
-
 
     else:
         _log.info("Not writing timeseries nc")
@@ -519,25 +518,25 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
     # Remove times < min_dt
-    ds = utils.drop_bogus(ds, pp["min_dt"])    
+    ds = utils.drop_bogus(ds, pp["min_dt"])
 
     # Drop rows in science where pressure is nan
     # This was done because:
     #   1) in principle there should be no depth is pressure is nan
-    #   2) pyglider does a 'zero screen' 
-    #   3) nan pressure values all appear to be at the surface, 
+    #   2) pyglider does a 'zero screen'
+    #   3) nan pressure values all appear to be at the surface,
     #       and often have weird associated values
     if "pressure" in list(ds.keys()):
         num_orig = len(ds.time)
         pressure_nan = np.isnan(ds.pressure.values)
         _log.debug(f"depth values: {ds.depth.values[pressure_nan]}")
         if any(ds.depth.values[pressure_nan] >= 5):
-            _log.warning("Some nan pressure values that will be "
-                            + "dropped have a depth >=5")
+            _log.warning(
+                "Some nan pressure values that will be " + "dropped have a depth >=5",
+            )
         ds = ds.where(~np.isnan(ds.pressure), drop=True)
         if (num_orig - len(ds.time)) > 0:
             _log.info(f"Dropped {num_orig - len(ds.time)} nan pressure values")
-
 
     # Calculate profiles, using the CTD-derived depth values
     # Need to update this to play nice with eng timeseries for rt data?

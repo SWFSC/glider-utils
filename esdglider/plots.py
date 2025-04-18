@@ -270,6 +270,7 @@ def sci_gridded_loop(
         sci_timesection_plot(ds, var, base_path=base_path, show=show)
         sci_spatialsection_plot(ds, var, base_path=base_path, show=show)
         sci_spatialgrid_plot(ds, var, base_path=base_path, show=show)
+    _log.info("Completed gridded science plots")
 
 
 def eng_tvt_loop(
@@ -303,6 +304,7 @@ def eng_tvt_loop(
     eng_dict = eng_plots_to_make(ds)
     for key in eng_dict.keys():
         eng_tvt_plot(ds, eng_dict, key, base_path=base_path, show=show)
+    _log.info("Completed engineering tvt plots")
 
 
 def sci_timeseries_loop(
@@ -333,9 +335,8 @@ def sci_timeseries_loop(
         Nothing
     """
 
-    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
-
     _log.info("LOOP: making science timeseries plots")
+    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
     for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -345,6 +346,7 @@ def sci_timeseries_loop(
             continue
 
         sci_timeseries_plot(ds, var, base_path=base_path, show=show)
+    _log.info("Completed science timeseries plots")
 
 
 def eng_timeseries_loop(
@@ -375,8 +377,8 @@ def eng_timeseries_loop(
         Nothing
     """
 
-    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
     _log.info("LOOP: making engineering timeseries plots")
+    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
     for var in eng_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -386,6 +388,7 @@ def eng_timeseries_loop(
             continue
 
         eng_timeseries_plot(ds, var, base_path=base_path, show=show)
+    _log.info("Completed engineering timeseries plots")
 
 
 def sci_ts_loop(
@@ -426,6 +429,7 @@ def sci_ts_loop(
             continue
 
         ts_plot(ds, var, base_path=base_path, show=show)
+    _log.info("Completed ts plots")
 
 
 def sci_surface_map_loop(
@@ -483,6 +487,7 @@ def sci_surface_map_loop(
             figsize_x=figsize_x,
             figsize_y=figsize_y,
         )
+    _log.info("Completed surface maps")
 
 
 def save_plot(
@@ -495,8 +500,6 @@ def save_plot(
         Ensure 'file_dir' (a string) is a directory, and make it if necessary
         Save the matplotlib 'figure' object to 'file_name' (str) in 'file_dir'
     """
-    # if not base_path is None:
-    #     file_dir = os.path.join(base_path, "engineering", "thisVsThat")
     if not os.path.isdir(file_dir):
         os.makedirs(file_dir)
     file_path = os.path.join(file_dir, file_name)

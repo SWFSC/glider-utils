@@ -169,17 +169,17 @@ def get_fill_profiles(ds, time_vals, depth_vals, **kwargs) -> xr.Dataset:
         num_nan = sum(np.isnan(ds.depth.values))
         _log.warning(f"There are {num_nan} nan depth values")
 
-    prof_idx, prof_dir = findProfiles(
-        time_vals,
-        depth_vals,
-        **kwargs,
-    )
+    prof_idx, prof_dir = findProfiles(time_vals, depth_vals, **kwargs)
 
+    idx_comment = (
+        "N = inside profile N, N + 0.5 = between profiles N and N + 1. "
+        + "Parameters listed as attributes"
+    )
     attrs = collections.OrderedDict(
         [
             ("long_name", "profile index"),
             ("units", "1"),
-            ("comment", "N = inside profile N, N + 0.5 = between profiles N and N + 1"),
+            ("comment", idx_comment),
             ("sources", "time depth"),
             ("method", "esdglider.utils.findProfiles"),
         ]
@@ -507,8 +507,8 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
     """
     Calculate glider profile regions
 
-    From an xarray dataset, likely produced by glider.binary_to_nc, 
-    create a dataframe with one row for each profile. 
+    From an xarray dataset, likely produced by glider.binary_to_nc,
+    create a dataframe with one row for each profile.
     Each row contains columns with summary info about that profile, including:
     - min/max longitude
     - min/max latitude
@@ -517,12 +517,12 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
 
     Processing notes:
     - This function drops removes .5 profile indexes
-    - Grouping is only by profile_index. The profile direction is assumed 
-        to be the mode of the profile_direction column. 
-        This is because a glider may stall or shake, 
+    - Grouping is only by profile_index. The profile direction is assumed
+        to be the mode of the profile_direction column.
+        This is because a glider may stall or shake,
         and thus have multiple directions within a profile
 
-    The function logs a warning if there are different numbers of 
+    The function logs a warning if there are different numbers of
     dive and climb profiles.
 
     Parameters
@@ -533,7 +533,7 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
     Returns
     -------
     pandas Dataframe
-        Regions data frame with one row for each profile in ds    
+        Regions data frame with one row for each profile in ds
     """
 
     # Group by profile index, and summarize other info
@@ -553,6 +553,9 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
             start_depth=("depth", "first"),
             end_depth=("depth", "last"),
         )
+        # .assign(
+        #     profile_direction_str=lambda d: d["profile_direction"].map(direction_mapping),
+        # )
     )
 
     # Check that the number of dives and climbs are the same
@@ -564,8 +567,7 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
 
     if num_dives != num_climbs:
         _log.warning(
-            "There are different number of dives and climbs: " + 
-            f"({str_divesclimbs})",
+            "There are different number of dives and climbs: " + f"({str_divesclimbs})",
         )
 
     return regions_df

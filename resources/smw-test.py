@@ -4,7 +4,7 @@ import logging
 
 import xarray as xr
 
-from esdglider import acoustics, config, gcp, glider, plots
+from esdglider import acoustics, config, gcp, glider
 
 deployment_info = {
     "deployment": "amlr03-20231128",
@@ -58,7 +58,7 @@ def yaml():
 
 if __name__ == "__main__":
     logging.basicConfig(
-        format='%(name)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]', 
+        format="%(name)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]",
         level=logging.DEBUG,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
