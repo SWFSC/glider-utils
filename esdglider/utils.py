@@ -216,7 +216,10 @@ def drop_bogus(ds: xr.Dataset, min_dt: str = "1970-01-01") -> xr.Dataset:
         Passed to np.datetime64 to be used to filter.
         For instance, '2017-01-01', or '2020-03-06 12:00:00'.
 
-    Returns: filtered Dataset
+    Returns
+    -------
+    xarray Dataset
+        Dataset with bogus rows rows dropped, and bodus values changed to nan
     """
 
     # if not (ds_type in ['sci', 'eng']):

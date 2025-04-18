@@ -58,7 +58,7 @@ def yaml():
 
 if __name__ == "__main__":
     logging.basicConfig(
-        format="%(module)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]",
+        format='%(name)s:%(asctime)s:%(levelname)s:%(message)s [line %(lineno)d]', 
         level=logging.DEBUG,
         datefmt="%Y-%m-%d %H:%M:%S",
     )

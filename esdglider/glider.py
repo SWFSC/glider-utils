@@ -1,5 +1,6 @@
 import importlib
 import logging
+import math
 import os
 
 import netCDF4
@@ -139,10 +140,7 @@ def get_path_deployment(
 
 def binary_to_nc(
     deployment_info: dict,
-    # deployment: str,
-    # mode: str,
     paths: str,
-    # min_dt: str,
     write_raw: bool = True,
     write_timeseries: bool = True,
     write_gridded: bool = True,
@@ -188,8 +186,16 @@ def binary_to_nc(
         The path of the parent processing script.
         If provided, will be included in the history attribute
     **kwargs
-        Passed to utils.findProfiles.
-        Most common may be values for stall or shake
+        Optional arguments passed to utils.findProfiles. 
+        See findProfiles for arg descriptions. Default values for binary_to_nc:
+        findprof = {
+            "length": 0, 
+            "period": 0, 
+            "inversion": math.inf, 
+            "interrupt": math.inf, 
+            "stall": 1, 
+            "shake": 0, 
+        }
 
     Returns
     -------
@@ -228,11 +234,22 @@ def binary_to_nc(
         )
 
     # Dictionary with info needed by post-processing functions
-    postproc_dict = deployment_info | {
+    postproc_info = deployment_info | {
         "file_info": file_info,
         "metadata_dict": {"deployment_name": deployment_name},
         "device_dict": {},
     }
+    
+    # Set default values for findProfiles function, and update with user vales
+    findprof = {
+        "length": 0, 
+        "period": 0, 
+        "inversion": math.inf, 
+        "interrupt": math.inf, 
+        "stall": 20, 
+        "shake": 20, 
+    }
+    findprof.update(kwargs)
 
     # --------------------------------------------
     # Handle compressed files?
@@ -251,7 +268,7 @@ def binary_to_nc(
             [deploymentyaml, paths["engyaml"]],
             search=binary_search,
             fnamesuffix=f"-{mode}-raw",
-            pp=postproc_dict,
+            pp=postproc_info,
         )
     else:
         _log.info("Not writing raw nc")
@@ -281,7 +298,7 @@ def binary_to_nc(
         )
 
         _log.info(f"Post-processing engineering timeseries: {outname_tseng}")
-        tseng = postproc_eng_timeseries(outname_tseng, postproc_dict, **kwargs)
+        tseng = postproc_eng_timeseries(outname_tseng, postproc_info, **findprof)
 
         # Science - uses sci_water_temp as time_base sensor
         _log.info("Generating science timeseries")
@@ -297,7 +314,7 @@ def binary_to_nc(
         )
 
         _log.info(f"Post-processing science timeseries: {outname_tssci}")
-        tssci = postproc_sci_timeseries(outname_tssci, postproc_dict, **kwargs)
+        tssci = postproc_sci_timeseries(outname_tssci, postproc_info, **findprof)
 
         num_profiles_eng = len(np.unique(tseng.profile_index.values))
         num_profiles_sci = len(np.unique(tssci.profile_index.values))
@@ -502,10 +519,28 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
     # Remove times < min_dt
-    ds = utils.drop_bogus(ds, pp["min_dt"])
+    ds = utils.drop_bogus(ds, pp["min_dt"])    
+
+    # Drop rows in science where pressure is nan
+    # This was done because:
+    #   1) in principle there should be no depth is pressure is nan
+    #   2) pyglider does a 'zero screen' 
+    #   3) nan pressure values all appear to be at the surface, 
+    #       and often have weird associated values
+    if "pressure" in list(ds.keys()):
+        num_orig = len(ds.time)
+        pressure_nan = np.isnan(ds.pressure.values)
+        _log.debug(f"depth values: {ds.depth.values[pressure_nan]}")
+        if any(ds.depth.values[pressure_nan] >= 5):
+            _log.warning("Some nan pressure values that will be "
+                            + "dropped have a depth >=5")
+        ds = ds.where(~np.isnan(ds.pressure), drop=True)
+        if (num_orig - len(ds.time)) > 0:
+            _log.info(f"Dropped {num_orig - len(ds.time)} nan pressure values")
+
 
     # Calculate profiles, using the CTD-derived depth values
-    # TODO: update this to play nice with eng timeseries for rt data?
+    # Need to update this to play nice with eng timeseries for rt data?
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
     ds = pgutils.get_distance_over_ground(ds)
 
