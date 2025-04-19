@@ -18,9 +18,6 @@ ESD-specific utilities
 Mostly helpers for post-processing time series files created using pyglider
 """
 
-"""Dictionary for mapping profile_direction values to strings"""
-direction_mapping = {1: "Dive", -1: "Climb"}
-
 
 # For IOOS-compliant encoding when writing to NetCDF
 def to_netcdf_esd(ds: xr.Dataset, outname: str):
@@ -40,25 +37,25 @@ def to_netcdf_esd(ds: xr.Dataset, outname: str):
 
 def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     """
-    Function copied exactly from:
+    Function copied exactly (other than pre-commit formatting) from:
     https://github.com/OceanGNS/PGPT/blob/main/scripts/gliderfuncs.py#L196
 
-        Identify individual profiles and compute vertical direction from depth sequence.
+    Identify individual profiles and compute vertical direction from depth sequence.
 
-        Args:
-                stamp (np.ndarray): A 1D array of timestamps.
-                depth (np.ndarray): A 1D array of depths.
-                **kwargs (optional): Optional arguments including:
-                        - length (int): Minimum length of a profile (default=0).
-                        - period (float): Minimum duration of a profile (default=0).
-                        - inversion (float): Maximum depth inversion between cast segments of a profile (default=0).
-                        - interrupt (float): Maximum time separation between cast segments of a profile (default=0).
-                        - stall (float): Maximum range of a stalled segment (default=0).
-                        - shake (float): Maximum duration of a shake segment (default=0).
+    Args:
+            stamp (np.ndarray): A 1D array of timestamps.
+            depth (np.ndarray): A 1D array of depths.
+            **kwargs (optional): Optional arguments including:
+                    - length (int): Minimum length of a profile (default=0).
+                    - period (float): Minimum duration of a profile (default=0).
+                    - inversion (float): Maximum depth inversion between cast segments of a profile (default=0).
+                    - interrupt (float): Maximum time separation between cast segments of a profile (default=0).
+                    - stall (float): Maximum range of a stalled segment (default=0).
+                    - shake (float): Maximum duration of a shake segment (default=0).
 
-        Returns:
-                profile_index (np.ndarray): A 1D array of profile indices.
-                profile_direction (np.ndarray): A 1D array of vertical directions.
+    Returns:
+            profile_index (np.ndarray): A 1D array of profile indices.
+            profile_direction (np.ndarray): A 1D array of vertical directions.
     """
     if not (isinstance(stamp, np.ndarray) and isinstance(depth, np.ndarray)):
         stamp = stamp.to_numpy()
@@ -503,6 +500,10 @@ def calc_ts(ds):
     return Sg, Tg, sigma
 
 
+"""Dictionary for mapping profile_direction values to strings"""
+direction_mapping = {1: "Dive", -1: "Climb"}
+
+
 def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
     """
     Calculate glider profile regions
@@ -533,7 +534,7 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
     Returns
     -------
     pandas Dataframe
-        Regions data frame with one row for each profile in ds
+        Regions data frame with one row for each dive/climb profile in ds
     """
 
     # Group by profile index, and summarize other info
@@ -543,22 +544,44 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
         .loc[lambda df: df["profile_index"] % 1 == 0]
         .groupby(["profile_index"], as_index=False)
         .agg(
-            profile_direction=("profile_direction", lambda x: x.mode().iloc[0]),
-            min_lon=("longitude", "min"),
-            max_lon=("longitude", "max"),
-            min_lat=("latitude", "min"),
-            max_lat=("latitude", "max"),
+            profile_direction=(
+                "profile_direction", lambda x: x.mode().iloc[0]),
             start_time=("time", "min"),
             end_time=("time", "max"),
             start_depth=("depth", "first"),
             end_depth=("depth", "last"),
+            min_lon=("longitude", "min"),
+            max_lon=("longitude", "max"),
+            min_lat=("latitude", "min"),
+            max_lat=("latitude", "max"),
         )
-        # .assign(
-        #     profile_direction_str=lambda d: d["profile_direction"].map(direction_mapping),
-        # )
+        .assign(
+            profile_direction_str=(
+                lambda d: d["profile_direction"].map(direction_mapping))
+        )
     )
 
-    # Check that the number of dives and climbs are the same
+    return regions_df
+
+
+def check_regions(ds: xr.Dataset, depth_warn: float = 2) -> pd.DataFrame:
+    """
+    Perform sanity checks on the regions dataframe, including:
+    - Check for the same numbers of dive and climb profiles
+
+    Parameters
+    ----------
+    ds : xarray Dataset
+        Dataset with glider timeseries data
+
+    Returns
+    -------
+    pandas Dataframe
+        'between' data frame: one row for each 0.5 profile in ds
+    """
+    regions_df = calc_regions(ds)
+
+    # Check: the number of dives and climbs are the same
     num_profiles = regions_df.shape[0]
     num_dives = np.count_nonzero(regions_df["profile_direction"] == 1)
     num_climbs = np.count_nonzero(regions_df["profile_direction"] == -1)
@@ -570,4 +593,43 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
             "There are different number of dives and climbs: " + f"({str_divesclimbs})",
         )
 
-    return regions_df
+    # Check: For each group of the 0.5 (i.e., between) profiles, 
+    # what is the time and depth split
+    # NOTE: a maybe better check would be to get the difference between 
+    # subsequent dive/climb profiles
+    between_df = (
+        ds.to_pandas()
+        .reset_index()
+        .loc[lambda df: df["profile_index"] % 1 == 0.5]
+        .groupby(["profile_index"], as_index=False)
+        .agg(
+            start_time=("time", "min"),
+            end_time=("time", "max"),
+            start_depth=("depth", "first"),
+            end_depth=("depth", "last"),
+        )
+        .assign(
+            time_diff = lambda d: (d["end_time"] - d["start_time"]), 
+            depth_diff = lambda d: abs(d["end_depth"] - d["start_depth"]), 
+            prof_loc = lambda d: np.where(d["end_depth"] >= 10, "Deep", "Surface")
+        )
+    )
+
+    _log.debug(f"The max depth diff is {between_df.depth_diff.max()}")
+    _log.debug(f"The max time diff is {between_df.time_diff.max()}")
+
+    if between_df.depth_diff.max() >= depth_warn:
+        profs = between_df.profile_index[between_df.depth_diff >= depth_warn]
+        _log.warning(
+            f"depth difference >= {depth_warn} for the following profile(s): "
+            + ", ".join([str(i) for i in profs.values])
+        )
+
+        surf_between = between_df[between_df.prof_loc == "Surface"]
+        surf_profs = surf_between.profile_index[surf_between.depth_diff >= depth_warn]
+        _log.warning(
+            f"depth difference >= {depth_warn} for the following surface profile(s): "
+            + ", ".join([str(i) for i in surf_profs.values])
+        )
+
+    return between_df
