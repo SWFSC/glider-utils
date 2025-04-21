@@ -85,13 +85,8 @@ def regions_evr(ds: xr.Dataset, evr_file_pre: str) -> pd.DataFrame:
         start_date_str=lambda d: d["start_time"].dt.strftime("%Y%m%d"),
         start_time_str=lambda d: d["start_time"].dt.strftime("%H%M%S0000"),
         end_date_str=lambda d: d["end_time"].dt.strftime("%Y%m%d"),
-        end_time_str=lambda d: d["end_time"].dt.strftime("%H%M%S0000"),
-        profile_direction_str=(
-            lambda d: d["profile_direction"].map(utils.direction_mapping)
-        ),
+        end_time_str=lambda d: d["end_time"].dt.strftime("%H%M%S0000")
     )
-    if regions_df["profile_direction_str"].isna().any():
-        raise ValueError("Invalid profile direction integer(s)")
 
     # Set values that are used throughout the EVR files
     start_depth = -1

@@ -191,10 +191,10 @@ def binary_to_nc(
         findprof = {
             "length": 0,
             "period": 0,
-            "inversion": math.inf,
-            "interrupt": math.inf,
-            "stall": 20,
-            "shake": 20,
+            inversion = math.inf, 
+            interrupt = math.inf,
+            stall=0.5,
+            shake=0,
         }
 
     Returns
@@ -246,8 +246,8 @@ def binary_to_nc(
         "period": 0,
         "inversion": math.inf,
         "interrupt": math.inf,
-        "stall": 10,
-        "shake": 10,
+        "stall": 0.5,
+        "shake": 0,
     }
     findprof.update(kwargs)
 
