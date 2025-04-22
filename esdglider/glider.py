@@ -13,6 +13,7 @@ import yaml
 
 try:
     import dbdreader
+
     have_dbdreader = True
 except ImportError:
     have_dbdreader = True
@@ -187,7 +188,7 @@ def binary_to_nc(
         findprof = {
             "length": 0,
             "period": 0,
-            inversion = math.inf, 
+            inversion = math.inf,
             interrupt = math.inf,
             stall=0.5,
             shake=0,
@@ -567,33 +568,31 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     return ds
 
 
-def drop_ts_ranges(ds, drop_list, ds_type, plotdir = None):
-    """
-    """
+def drop_ts_ranges(ds, drop_list, ds_type, plotdir=None):
+    """ """
     _log.info(f"There are {len(ds.time)} points in the original {ds_type} dataset")
-    
-    # Create the 
+
+    # Create the
     todrop = np.full(len(ds.time), False)
 
     # For each tuple in drop_list, update todrop array
     for i in drop_list:
-        i_todrop = (
-            (ds.time.values >= np.datetime64(i[0])) 
-            & (ds.time.values <= np.datetime64(i[1]))
+        i_todrop = (ds.time.values >= np.datetime64(i[0])) & (
+            ds.time.values <= np.datetime64(i[1])
         )
         todrop = todrop | i_todrop
         num_todrop = np.count_nonzero(i_todrop)
         _log.info(f"Dropping {num_todrop} points between {i[0]} and {i[1]}")
-    
+
     # Make plot
     if plotdir is not None:
         plots.scatter_drop_plot(ds, todrop, ds_type, plotdir)
 
     todrop_mask = xr.DataArray(todrop, dims="time", coords={"time": ds.time})
-    ds = ds.where(~todrop_mask , drop=True)
+    ds = ds.where(~todrop_mask, drop=True)
     _log.info(f"There are now {len(ds.time)} points in the dataset")
 
-    _log.info(f"Calculating new distance over ground")
+    _log.info("Calculating new distance over ground")
     ds = pgutils.get_distance_over_ground(ds)
 
     return ds

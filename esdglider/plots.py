@@ -6,12 +6,12 @@ import cartopy.feature as cfeature
 import cmocean.cm as cmo
 import matplotlib
 import matplotlib.dates as mdates
-from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from matplotlib import colormaps
 from matplotlib.gridspec import GridSpec
+from matplotlib.patches import Patch
 
 from esdglider import utils
 
@@ -47,7 +47,7 @@ def adj_var(ds, var):
 
 
 def adj_var_label(ds, var):
-    """Get the formatted log label for the plot"""
+    """Get the formatted label for the plot"""
     u = ds[var].attrs["units"]
     # if var not in list(units.keys()):
     #     u2 = "missing"
@@ -209,7 +209,7 @@ def all_loops(
     """
 
     _log.info("Doing all of the loops")
-    utils.rmtree(base_path)
+    # utils.rmtree(base_path)
 
     sci_gridded_loop(dssci_g, base_path)
     sci_timeseries_loop(dssci, base_path)
@@ -510,24 +510,82 @@ def save_plot(
     fig.savefig(file_path)
 
 
+def scatter_plot(
+    ds: xr.Dataset,
+    ds_type: str,
+    base_path: str | None = None,
+    show: bool = False,
+):
+    """ """
+
+    # Prep
+    _log.info(f"Making basic scatter plot for {ds_type} timeseries")
+    deployment = ds.deployment_name
+
+    # if ds_type == "sci":
+    #     cmap_var = sci_colors[var]
+    # elif ds_type in ["eng", "raw"]:
+    #     cmap_var = cmo.gray
+    # else:
+    #     raise ValueError("ds_type must be 'sci', 'eng', or 'raw'")
+
+    # Plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # if var is not None:
+    #     if var not in list(ds.data_vars):
+    #         raise ValueError(f"Var {var} not found in ds")
+    #     p = ax.scatter(ds.longitude, ds.latitude, c=ds[var], cmap=cmap_var, s=3)
+    #     fig.colorbar(p, location="right").set_label(
+    #         label=adj_var_label(ds, var),
+    #         size=label_size,
+    #     )
+    # else:
+    ax.scatter(ds.longitude, ds.latitude, s=3)
+
+    # Labels and title
+    ax.set_xlabel("Longitude", size=label_size)
+    ax.set_ylabel("Latitude", size=label_size)
+    ax.set_title(
+        f"{deployment}: All points for {ds_type} timeseries",
+        size=title_size,
+    )
+    ax.grid(True)
+
+    if base_path is not None:
+        save_plot(
+            fig,
+            os.path.join(base_path, "pointMaps"),
+            f"{deployment}_{ds_type}_scatter.png",
+        )
+
+    if show:
+        plt.show()
+    plt.close(fig)
+
+    return fig
+
+
 def scatter_drop_plot(
-    ds: xr.Dataset, 
-    todrop: np.array, 
-    ds_type: str, 
-    base_path: str | None = None, 
+    ds: xr.Dataset,
+    todrop: np.array,
+    ds_type: str,
+    base_path: str | None = None,
     show: bool = False,
 ):
     """
     DOCS
     """
 
+    # Prep
+    _log.info(f"Making drop scatter plot for {ds_type} timeseries")
     deployment = ds.deployment_name
 
-    color_kept = "#0072B2"    # Blue
-    color_dropped = "#D55E00" # Orange
+    color_kept = "#0072B2"  # Blue
+    color_dropped = "#D55E00"  # Orange
     colors = np.where(todrop, color_dropped, color_kept)
 
-        # Plot
+    # Plot
     fig, ax = plt.subplots(figsize=(8, 6))
 
     ax.scatter(ds.longitude, ds.latitude, c=colors, s=3)
@@ -535,20 +593,23 @@ def scatter_drop_plot(
     # Labels and title
     ax.set_xlabel("Longitude", size=label_size)
     ax.set_ylabel("Latitude", size=label_size)
-    ax.set_title(f"{deployment}: Dropped points for {ds_type} timeseries", 
-                    size=title_size)
+    ax.set_title(
+        f"{deployment}: Dropped points for {ds_type} timeseries",
+        size=title_size,
+    )
     ax.grid(True)
 
     legend_elements = [
-        Patch(facecolor=color_dropped, label='Dropped'),
-        Patch(facecolor=color_kept, label='Kept')
+        Patch(facecolor=color_dropped, label="Dropped"),
+        Patch(facecolor=color_kept, label="Kept"),
     ]
     ax.legend(handles=legend_elements)
 
+    # Save and show
     if base_path is not None:
         save_plot(
             fig,
-            os.path.join(base_path, "dropped"), 
+            os.path.join(base_path, "pointMaps"),
             f"{deployment}_{ds_type}_dropped.png",
         )
 
@@ -619,7 +680,7 @@ def sci_timesection_plot(
     if base_path is not None:
         save_plot(
             fig,
-            os.path.join(base_path, "science", "timeSections"),
+            os.path.join(base_path, "timeSections-sci"),
             f"{deployment}_{var}_timesection.png",
         )
 
@@ -732,7 +793,7 @@ def sci_spatialsection_plot(
     if base_path is not None:
         save_plot(
             fig,
-            os.path.join(base_path, "science", "spatialSections"),
+            os.path.join(base_path, "spatialSections-sci"),
             f"{deployment}_{var}_spatialSections.png",
         )
 
@@ -832,7 +893,7 @@ def sci_spatialgrid_plot(
     if base_path is not None:
         save_plot(
             fig,
-            os.path.join(base_path, "science", "spatialGrids"),
+            os.path.join(base_path, "spatialGrids-sci"),
             f"{deployment}_{var}_spatialGrids.png",
         )
 
@@ -973,8 +1034,8 @@ def eng_tvt_plot(
     if base_path is not None:
         save_plot(
             fig,
-            os.path.join(base_path, "engineering", "thisVsThat"),
-            f"{deployment}_{key}_engmisc.png",
+            os.path.join(base_path, "thisVsThat-eng"),
+            f"{deployment}_{key}_engtvt.png",
         )
 
     if show:
@@ -1035,7 +1096,7 @@ def eng_timeseries_plot(
     if base_path is not None:
         save_plot(
             fig,
-            os.path.join(base_path, "engineering", "timeSeries"),
+            os.path.join(base_path, "timeSeries-eng"),
             f"{deployment}_{var}_timeseries.png",
         )
 
@@ -1097,7 +1158,7 @@ def sci_timeseries_plot(
     if base_path is not None:
         save_plot(
             fig,
-            os.path.join(base_path, "science", "timeSeries"),
+            os.path.join(base_path, "timeSeries-sci"),
             f"{deployment}_{var}_timeseries.png",
         )
 
@@ -1173,7 +1234,7 @@ def ts_plot(
     if base_path is not None:
         save_plot(
             fig,
-            os.path.join(base_path, "science", "TS"),
+            os.path.join(base_path, "TS-sci"),
             f"{deployment}_{var}_tsPlot.png",
         )
 
@@ -1325,7 +1386,7 @@ def sci_surface_map(
     if base_path is not None:
         save_plot(
             fig,
-            os.path.join(base_path, "science", "maps"),
+            os.path.join(base_path, "maps-sci"),
             f"{deployment}_{var}_map_0-10.png",
         )
 

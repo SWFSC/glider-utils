@@ -10,9 +10,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from esdglider import plots
-from pyglider import utils as pgutils
-
 _log = logging.getLogger(__name__)
 
 
@@ -64,56 +61,86 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     if not (isinstance(stamp, np.ndarray) and isinstance(depth, np.ndarray)):
         stamp = stamp.to_numpy()
         depth = depth.to_numpy()
-    
+
     # Flatten input arrays
     depth, stamp = depth.flatten(), stamp.flatten()
-    
+
     # Check if the stamp is a datetime object and convert to elapsed seconds if necessary
     if np.issubdtype(stamp.dtype, np.datetime64):
-        stamp = (stamp - stamp[0]).astype('timedelta64[s]').astype(float)
-    
+        stamp = (stamp - stamp[0]).astype("timedelta64[s]").astype(float)
+
     # Set default parameter values (did not set type np.timedelta64(0, 'ns') )
-    optionsList = { "length": 0, "period": 0, "inversion": 0, "interrupt": 0, "stall": 0, "shake": 0}
+    optionsList = {
+        "length": 0,
+        "period": 0,
+        "inversion": 0,
+        "interrupt": 0,
+        "stall": 0,
+        "shake": 0,
+    }
     optionsList.update(kwargs)
-    
-    validIndex = np.argwhere(np.logical_not(np.isnan(depth)) & np.logical_not(np.isnan(stamp))).flatten()
+
+    validIndex = np.argwhere(
+        np.logical_not(np.isnan(depth)) & np.logical_not(np.isnan(stamp))
+    ).flatten()
     validIndex = validIndex.astype(int)
-    
+
     sdy = np.sign(np.diff(depth[validIndex], n=1, axis=0))
     depthPeak = np.ones(np.size(validIndex), dtype=bool)
-    depthPeak[1:len(depthPeak) - 1,] = np.diff(sdy, n=1, axis=0) != 0
+    depthPeak[1 : len(depthPeak) - 1,] = np.diff(sdy, n=1, axis=0) != 0
     depthPeakIndex = validIndex[depthPeak]
-    sgmtFrst = stamp[depthPeakIndex[0:len(depthPeakIndex) - 1,]]
+    sgmtFrst = stamp[depthPeakIndex[0 : len(depthPeakIndex) - 1,]]
     sgmtLast = stamp[depthPeakIndex[1:,]]
-    sgmtStrt = depth[depthPeakIndex[0:len(depthPeakIndex) - 1,]]
+    sgmtStrt = depth[depthPeakIndex[0 : len(depthPeakIndex) - 1,]]
     sgmtFnsh = depth[depthPeakIndex[1:,]]
     sgmtSinc = sgmtLast - sgmtFrst
     sgmtVinc = sgmtFnsh - sgmtStrt
     sgmtVdir = np.sign(sgmtVinc)
 
-    castSgmtValid = np.logical_not(np.logical_or(np.abs(sgmtVinc) <= optionsList["stall"], sgmtSinc <= optionsList["shake"]))
+    castSgmtValid = np.logical_not(
+        np.logical_or(
+            np.abs(sgmtVinc) <= optionsList["stall"], sgmtSinc <= optionsList["shake"]
+        )
+    )
     castSgmtIndex = np.argwhere(castSgmtValid).flatten()
-    castSgmtLapse = sgmtFrst[castSgmtIndex[1:]] - sgmtLast[castSgmtIndex[0:len(castSgmtIndex) - 1]]
-    castSgmtSpace = -np.abs(sgmtVdir[castSgmtIndex[0:len(castSgmtIndex) - 1]] * (sgmtStrt[castSgmtIndex[1:]] - sgmtFnsh[castSgmtIndex[0:len(castSgmtIndex) - 1]]))
+    castSgmtLapse = (
+        sgmtFrst[castSgmtIndex[1:]]
+        - sgmtLast[castSgmtIndex[0 : len(castSgmtIndex) - 1]]
+    )
+    castSgmtSpace = -np.abs(
+        sgmtVdir[castSgmtIndex[0 : len(castSgmtIndex) - 1]]
+        * (
+            sgmtStrt[castSgmtIndex[1:]]
+            - sgmtFnsh[castSgmtIndex[0 : len(castSgmtIndex) - 1]]
+        )
+    )
     castSgmtDirch = np.diff(sgmtVdir[castSgmtIndex], n=1, axis=0)
-    castSgmtBound = np.logical_not((castSgmtDirch[:,] == 0) & (castSgmtLapse[:,] <= optionsList["interrupt"]) & (castSgmtSpace <= optionsList["inversion"]))
+    castSgmtBound = np.logical_not(
+        (castSgmtDirch[:,] == 0)
+        & (castSgmtLapse[:,] <= optionsList["interrupt"])
+        & (castSgmtSpace <= optionsList["inversion"])
+    )
     castSgmtHeadValid = np.ones(np.size(castSgmtIndex), dtype=bool)
     castSgmtTailValid = np.ones(np.size(castSgmtIndex), dtype=bool)
     castSgmtHeadValid[1:,] = castSgmtBound
-    castSgmtTailValid[0:len(castSgmtTailValid) - 1,] = castSgmtBound
+    castSgmtTailValid[0 : len(castSgmtTailValid) - 1,] = castSgmtBound
 
     castHeadIndex = depthPeakIndex[castSgmtIndex[castSgmtHeadValid]]
     castTailIndex = depthPeakIndex[castSgmtIndex[castSgmtTailValid] + 1]
     castLength = np.abs(depth[castTailIndex] - depth[castHeadIndex])
     castPeriod = stamp[castTailIndex] - stamp[castHeadIndex]
-    castValid = np.logical_not(np.logical_or(castLength <= optionsList["length"], castPeriod <= optionsList["period"]))
+    castValid = np.logical_not(
+        np.logical_or(
+            castLength <= optionsList["length"], castPeriod <= optionsList["period"]
+        )
+    )
     castHead = np.zeros(np.size(depth))
     castTail = np.zeros(np.size(depth))
     castHead[castHeadIndex[castValid] + 1] = 0.5
     castTail[castTailIndex[castValid]] = 0.5
 
     profileIndex = 0.5 + np.cumsum(castHead + castTail)
-    profileDirection = np.empty((len(depth,)))
+    profileDirection = np.empty((len(depth)))
     profileDirection[:] = np.nan
 
     for i in range(len(validIndex) - 1):
@@ -184,7 +211,7 @@ def get_fill_profiles(ds, time_vals, depth_vals, **kwargs) -> xr.Dataset:
 #     if (num_orig - len(ds.time)) > 0:
 #         _log.info(
 #             f"Dropped {num_orig - len(ds.time)} values between "
-#             + f"{left_dt64} and {right_dt64}", 
+#             + f"{left_dt64} and {right_dt64}",
 #         )
 #     else:
 #         _log.info("No points to drop")
@@ -535,7 +562,9 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
         .groupby(["profile_index"], as_index=False)
         .agg(
             profile_direction=(
-                "profile_direction", lambda x: x.mode().iloc[0]),
+                "profile_direction",
+                lambda x: x.mode().iloc[0],
+            ),
             start_time=("time", "min"),
             end_time=("time", "max"),
             start_depth=("depth", "first"),
@@ -547,10 +576,11 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
         )
         .assign(
             profile_description=(
-                lambda d: d["profile_direction"].map(direction_mapping))
+                lambda d: d["profile_direction"].map(direction_mapping)
+            ),
         )
     )
-    
+
     if regions_df["profile_description"].isna().any():
         raise ValueError("Invalid profile direction integer(s)")
 
@@ -574,30 +604,29 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
         'profile summary' data frame
     """
 
-    # Internal helper functions            
-    def calc_profile_locations(df, surface_max = 10):
-        """ Determine if a between profile is at the surface or at depth"""
+    # Internal helper functions
+    def calc_profile_locations(df, surface_max=10):
+        """Determine if a between profile is at the surface or at depth"""
         st = df["start_depth"] < surface_max
         en = df["end_depth"] < surface_max
         prof = df["profile_index"] % 1 == 0
 
         return np.where(prof, "Profile", np.where(st | en, "Surface", "Deep"))
-    
+
     def check_between_depth_diff(df, loc, depth_warn):
-        """ Helper function to check surface/deep depth differences"""
+        """Helper function to check surface/deep depth differences"""
         if df.depth_diff.max() >= depth_warn:
             df_towarn = df.profile_index[df.depth_diff >= depth_warn]
             _log.warning(
                 f"depth difference >= {depth_warn} "
                 + f"for the following {loc} profile(s): "
-                + ", ".join([str(i) for i in df_towarn.values])
+                + ", ".join([str(i) for i in df_towarn.values]),
             )
         else:
             _log.info(f"There are no surface depth difference >= {depth_warn}")
-    
 
     # Check: the number of dives and climbs are the same
-    regions_df = calc_regions(ds) #need profile_direction
+    regions_df = calc_regions(ds)  # need profile_direction
     num_profiles = regions_df.shape[0]
     num_dives = np.count_nonzero(regions_df["profile_direction"] == 1)
     num_climbs = np.count_nonzero(regions_df["profile_direction"] == -1)
@@ -611,7 +640,7 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
     else:
         _log.info("There are the same number of dives and climbs")
 
-    # Check: between profiles with too large of depth differences    
+    # Check: between profiles with too large of depth differences
     df = (
         ds.to_pandas()
         .reset_index()
@@ -623,9 +652,9 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
             end_depth=("depth", "last"),
         )
         .assign(
-            time_diff = lambda d: (d["end_time"] - d["start_time"]), 
-            depth_diff = lambda d: abs(d["end_depth"] - d["start_depth"]), 
-            profile_loc = lambda d: calc_profile_locations(d)
+            time_diff=lambda d: (d["end_time"] - d["start_time"]),
+            depth_diff=lambda d: abs(d["end_depth"] - d["start_depth"]),
+            profile_loc=lambda d: calc_profile_locations(d),
         )
     )
 
