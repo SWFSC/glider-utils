@@ -6,6 +6,7 @@ import cartopy.feature as cfeature
 import cmocean.cm as cmo
 import matplotlib
 import matplotlib.dates as mdates
+from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
@@ -217,10 +218,11 @@ def all_loops(
     sci_ts_loop(dssci, base_path)
 
     if bar_file is not None:
+        _log.info(f"Loading bar file from {bar_file}")
         bar = xr.load_dataset(bar_file).rename({"latitude": "lat", "longitude": "lon"})
         bar = bar.where(bar.z <= 0, drop=True)
     else:
-        _log.info("No bar file path, so skipping surface maps")
+        _log.info("No bar file path")
         bar = None
 
     if crs is not None:
@@ -506,6 +508,55 @@ def save_plot(
 
     _log.debug(f"Saving {file_path}")
     fig.savefig(file_path)
+
+
+def scatter_drop_plot(
+    ds: xr.Dataset, 
+    todrop: np.array, 
+    ds_type: str, 
+    base_path: str | None = None, 
+    show: bool = False,
+):
+    """
+    DOCS
+    """
+
+    deployment = ds.deployment_name
+
+    color_kept = "#0072B2"    # Blue
+    color_dropped = "#D55E00" # Orange
+    colors = np.where(todrop, color_dropped, color_kept)
+
+        # Plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    ax.scatter(ds.longitude, ds.latitude, c=colors, s=3)
+
+    # Labels and title
+    ax.set_xlabel("Longitude", size=label_size)
+    ax.set_ylabel("Latitude", size=label_size)
+    ax.set_title(f"{deployment}: Dropped points for {ds_type} timeseries", 
+                    size=title_size)
+    ax.grid(True)
+
+    legend_elements = [
+        Patch(facecolor=color_dropped, label='Dropped'),
+        Patch(facecolor=color_kept, label='Kept')
+    ]
+    ax.legend(handles=legend_elements)
+
+    if base_path is not None:
+        save_plot(
+            fig,
+            os.path.join(base_path, "dropped"), 
+            f"{deployment}_{ds_type}_dropped.png",
+        )
+
+    if show:
+        plt.show()
+    plt.close(fig)
+
+    return fig
 
 
 def sci_timesection_plot(

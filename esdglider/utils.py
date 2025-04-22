@@ -10,6 +10,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from esdglider import plots
+from pyglider import utils as pgutils
+
 _log = logging.getLogger(__name__)
 
 
@@ -21,6 +24,7 @@ Mostly helpers for post-processing time series files created using pyglider
 
 # For IOOS-compliant encoding when writing to NetCDF
 def to_netcdf_esd(ds: xr.Dataset, outname: str):
+    _log.info(f"Writing dataset with ESD encoding to: {outname}")
     ds.to_netcdf(
         outname,
         "w",
@@ -168,13 +172,24 @@ def get_fill_profiles(ds, time_vals, depth_vals, **kwargs) -> xr.Dataset:
     return ds
 
 
-def drop_between(ds: xr.Dataset, left: str, right: str) -> xr.Dataset:
-    """ Drop from ds where time is between left and right"""
-    left_dt64 = np.datetime64(left)
-    right_dt64 = np.datetime64(right)
-    tokeep = left_dt64 | right_dt64
+# def drop_between(ds: xr.Dataset, left: str, right: str) -> xr.Dataset:
+#     """ Drop from ds where time is between left and right"""
+#     num_orig = len(ds.time)
+#     left_dt64 = np.datetime64(left)
+#     right_dt64 = np.datetime64(right)
+#     tokeep = (ds.time <= left_dt64) | (ds.time >= right_dt64)
 
-    return ds.where(tokeep, drop=True)
+#     ds_dropped = ds.where(~tokeep, drop=True)
+#     ds = ds.where(tokeep, drop=True)
+#     if (num_orig - len(ds.time)) > 0:
+#         _log.info(
+#             f"Dropped {num_orig - len(ds.time)} values between "
+#             + f"{left_dt64} and {right_dt64}", 
+#         )
+#     else:
+#         _log.info("No points to drop")
+
+#     return ds, ds_dropped
 
 
 def drop_bogus(ds: xr.Dataset, min_dt: str = "1970-01-01") -> xr.Dataset:
@@ -218,7 +233,7 @@ def drop_bogus(ds: xr.Dataset, min_dt: str = "1970-01-01") -> xr.Dataset:
     ds = ds.where(ll_good, drop=True)
     if (num_orig - len(ds.time)) > 0:
         _log.info(
-            f"Dropped {num_orig - len(ds.time)} nan " + "or out of range lat/lons",
+            f"Dropped {num_orig - len(ds.time)} nan or out of range lat/lons",
         )
 
     # For science variables, change out of range values to nan
@@ -622,7 +637,5 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
     check_between_depth_diff(between_deep, "deep", 10)
 
     # TODO: check for excessive pts or amt of time at surface during profile
-
-    
 
     return df

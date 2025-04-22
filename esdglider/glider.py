@@ -13,12 +13,11 @@ import yaml
 
 try:
     import dbdreader
-
     have_dbdreader = True
 except ImportError:
     have_dbdreader = True
 
-import esdglider.utils as utils
+from esdglider import plots, utils
 
 _log = logging.getLogger(__name__)
 
@@ -41,9 +40,6 @@ def get_path_engyaml() -> str:
 
 def get_path_deployment(
     deployment_info: dict,
-    # project: str,
-    # deployment: str,
-    # mode: str,
     deployments_path: str,
     config_path: str,
 ) -> dict:
@@ -120,7 +116,7 @@ def get_path_deployment(
     griddir = procl1dir
     profdir = os.path.join(procl1dir, f"ngdac-{mode}")
 
-    plotdir = os.path.join(glider_path, "plots")
+    plotdir = os.path.join(glider_path, "plots", mode)
 
     return {
         "cacdir": cacdir,
@@ -567,6 +563,38 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
     utils.to_netcdf_esd(ds, ds_file)
+
+    return ds
+
+
+def drop_ts_ranges(ds, drop_list, ds_type, plotdir = None):
+    """
+    """
+    _log.info(f"There are {len(ds.time)} points in the original {ds_type} dataset")
+    
+    # Create the 
+    todrop = np.full(len(ds.time), False)
+
+    # For each tuple in drop_list, update todrop array
+    for i in drop_list:
+        i_todrop = (
+            (ds.time.values >= np.datetime64(i[0])) 
+            & (ds.time.values <= np.datetime64(i[1]))
+        )
+        todrop = todrop | i_todrop
+        num_todrop = np.count_nonzero(i_todrop)
+        _log.info(f"Dropping {num_todrop} points between {i[0]} and {i[1]}")
+    
+    # Make plot
+    if plotdir is not None:
+        plots.scatter_drop_plot(ds, todrop, ds_type, plotdir)
+
+    todrop_mask = xr.DataArray(todrop, dims="time", coords={"time": ds.time})
+    ds = ds.where(~todrop_mask , drop=True)
+    _log.info(f"There are now {len(ds.time)} points in the dataset")
+
+    _log.info(f"Calculating new distance over ground")
+    ds = pgutils.get_distance_over_ground(ds)
 
     return ds
 
