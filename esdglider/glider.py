@@ -253,12 +253,12 @@ def binary_to_nc(
 
     # --------------------------------------------
     # Raw
-    outname_raw = os.path.join(tsdir, f"{deployment}-{mode}-raw.nc")
+    outname_tsraw = os.path.join(tsdir, f"{deployment}-{mode}-raw.nc")
     if write_raw:
-        utils.remove_file(outname_raw)
+        utils.remove_file(outname_tsraw)
         utils.makedirs_pass(rawdir)
 
-        outname_raw = binary_to_raw(
+        outname_tsraw = binary_to_raw(
             paths["binarydir"],
             paths["cacdir"],
             rawdir,
@@ -331,17 +331,17 @@ def binary_to_nc(
     # --------------------------------------------
     # Gridded data, 1m and 5m
     # TODO: filter to match SOCIB?
-    outname_1m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-1m.nc")
-    outname_5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
+    outname_gr1m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-1m.nc")
+    outname_gr5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
     if write_gridded:
         # utils.rmtree(griddir)
-        utils.remove_file(outname_1m)
-        utils.remove_file(outname_5m)
+        utils.remove_file(outname_gr1m)
+        utils.remove_file(outname_gr5m)
         if not os.path.isfile(outname_tssci):
             raise FileNotFoundError(f"Could not find {outname_tssci}")
 
         _log.info("Generating 1m gridded data")
-        outname_1m = pgncprocess.make_gridfiles(
+        outname_gr1m = pgncprocess.make_gridfiles(
             outname_tssci,
             griddir,
             deploymentyaml,
@@ -350,7 +350,7 @@ def binary_to_nc(
         )
 
         _log.info("Generating 5m gridded data")
-        outname_5m = pgncprocess.make_gridfiles(
+        outname_gr5m = pgncprocess.make_gridfiles(
             outname_tssci,
             griddir,
             deploymentyaml,
@@ -363,11 +363,11 @@ def binary_to_nc(
 
     # --------------------------------------------
     return {
-        "outname_raw": outname_raw,
+        "outname_tsraw": outname_tsraw,
         "outname_tseng": outname_tseng,
         "outname_tssci": outname_tssci,
-        "outname_1m": outname_1m,
-        "outname_5m": outname_5m,
+        "outname_gr1m": outname_gr1m,
+        "outname_gr5m": outname_gr5m,
     }
 
 
