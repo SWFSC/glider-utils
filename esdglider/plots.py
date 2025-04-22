@@ -22,6 +22,17 @@ _log = logging.getLogger(__name__)
 label_size = 11
 title_size = 13
 
+# Folder names
+scatter_path = "pointMaps"
+timesection_path = "timeSections-sci"
+spatialsection_path = "spatialSections-sci"
+spatialgrid_path = "spatialGrids-sci"
+tvt_path = "thisVsThat-eng"
+timeseries_eng_path = "timeSeries-eng"
+timeseries_sci_path = "timeSeries-sci"
+ts_path = "TS-sci"
+surfacemap_sci_path = "maps-sci"
+
 """Helper functions and dictionaries for plot formats/display
 
 Parameters
@@ -174,10 +185,8 @@ eng_vars = [
 ]
 
 
-def all_loops(
-    dssci: xr.Dataset,
-    dseng: xr.Dataset,
-    dssci_g: xr.Dataset,
+def esd_all_plots(
+    ds_paths: dict,
     crs=None,
     base_path: str = None,
     bar_file: str | None = None,
@@ -187,35 +196,51 @@ def all_loops(
 
     Parameters
     ----------
-    dssci : xarray Dataset
-        Timeseries science dataset
-    dseng : xarray Dataset
-        Timeseries engineering dataset
-    dssci_g : xarray Dataset
-        Gridded science dataset
-    crs : a class from cartopy.crs or None; default None
+    ds_paths : dict
+        A dictionary with the nc file paths for the various plots. Required:
+        - 'outname_tseng': path to the engineering timeseries dataset
+        - 'outname_tssci': path to the science timeseries dataset
+        - 'outname_gr5m': path to the 5m gridded dataset
+        - 'outname_tsraw': path to the raw timeseries dataset
+    crs : a class from cartopy.crs or None (default None)
         An instantiated cartopy projection, such as cartopy.crs.PlateCarree()
         or cartopy.crs.Mercator().
         If None, surface maps are not created
-    base_path : str
+    base_path : str or None (default None)
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
-    show : bool
-        Boolean indicating if the plots should be shown before being closed
+    bar_file : str or None (default None)
+        Path to the ETOPO nc file to use for contour lines.
+        If None (default), then contour lines will not be drawn
 
     Returns
     -------
         Nothing
     """
 
-    _log.info("Doing all of the loops")
-    # utils.rmtree(base_path)
+    _log.info("Doing all of the plots")
+    # utils.rmtree(base_path) #TODO: move to each loop
 
-    sci_gridded_loop(dssci_g, base_path)
-    sci_timeseries_loop(dssci, base_path)
-    eng_timeseries_loop(dseng, base_path)
-    eng_tvt_loop(dseng, base_path)
-    sci_ts_loop(dssci, base_path)
+    # Load datasets
+    _log.info("Loading datasets")
+    ds_eng = xr.load_dataset(ds_paths["outname_tseng"])
+    ds_sci = xr.load_dataset(ds_paths["outname_tssci"])
+    ds_gr5m = xr.load_dataset(ds_paths["outname_gr5m"])
+    ds_raw = xr.load_dataset(ds_paths["outname_tsraw"])
+
+    # Scatter plots
+    scatter_plot(ds_eng, "eng", base_path)
+    scatter_plot(ds_sci, "sci", base_path)
+    ll_good = ~(np.isnan(ds_raw.longitude) | np.isnan(ds_raw.latitude))
+    ds_raw = ds_raw.where(ll_good, drop=True)
+    scatter_plot(ds_raw, "raw", base_path)
+
+    # Sci/eng loops
+    sci_gridded_loop(ds_gr5m, base_path)
+    sci_timeseries_loop(ds_sci, base_path)
+    eng_timeseries_loop(ds_eng, base_path)
+    eng_tvt_loop(ds_eng, base_path)
+    sci_ts_loop(ds_sci, base_path)
 
     if bar_file is not None:
         _log.info(f"Loading bar file from {bar_file}")
@@ -226,7 +251,7 @@ def all_loops(
         bar = None
 
     if crs is not None:
-        sci_surface_map_loop(dssci_g, crs=crs, base_path=base_path, bar=bar)
+        sci_surface_map_loop(ds_gr5m, crs=crs, base_path=base_path, bar=bar)
     else:
         _log.info("No crs provided, and thus skipping surface maps")
 
@@ -259,8 +284,13 @@ def sci_gridded_loop(
         Nothing
     """
 
-    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
     _log.info("LOOP: making gridded science plots")
+    # If doing the loop, remove past plots
+    if base_path is not None:
+        utils.rmtree(os.path.join(base_path, timesection_path))
+        utils.rmtree(os.path.join(base_path, spatialsection_path))
+        utils.rmtree(os.path.join(base_path, spatialgrid_path))
+
     for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -303,6 +333,10 @@ def eng_tvt_loop(
     """
 
     _log.info("LOOP: making engineering tvt plots")
+    # If doing the loop, remove past plots
+    if base_path is not None:
+        utils.rmtree(os.path.join(base_path, tvt_path))
+
     eng_dict = eng_plots_to_make(ds)
     for key in eng_dict.keys():
         eng_tvt_plot(ds, eng_dict, key, base_path=base_path, show=show)
@@ -338,7 +372,10 @@ def sci_timeseries_loop(
     """
 
     _log.info("LOOP: making science timeseries plots")
-    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
+    # If doing the loop, remove past plots
+    if base_path is not None:
+        utils.rmtree(os.path.join(base_path, timeseries_sci_path))
+
     for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -380,7 +417,10 @@ def eng_timeseries_loop(
     """
 
     _log.info("LOOP: making engineering timeseries plots")
-    # plt.scatter(sci_ds_g.time, sci_ds_g.profile)
+    # If doing the loop, remove past plots
+    if base_path is not None:
+        utils.rmtree(os.path.join(base_path, timeseries_eng_path))
+
     for var in eng_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -422,6 +462,10 @@ def sci_ts_loop(
     """
 
     _log.info("LOOP: making ts plots")
+    # If doing the loop, remove past plots
+    if base_path is not None:
+        utils.rmtree(os.path.join(base_path, ts_path))
+
     for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -471,6 +515,10 @@ def sci_surface_map_loop(
     """
 
     _log.info("LOOP: making surface maps")
+    # If doing the loop, remove past plots
+    if base_path is not None:
+        utils.rmtree(os.path.join(base_path, surfacemap_sci_path))
+
     for var in sci_vars + ["profile_index"]:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
@@ -492,22 +540,28 @@ def sci_surface_map_loop(
     _log.info("Completed surface maps")
 
 
-def save_plot(
-    fig: matplotlib.figure.Figure,
-    file_dir: str,
-    file_name: str,
-):
+def save_plot(fig: matplotlib.figure.Figure, fname: str):
     """
-    Wrapper function to:
-        Ensure 'file_dir' (a string) is a directory, and make it if necessary
-        Save the matplotlib 'figure' object to 'file_name' (str) in 'file_dir'
+    Wrapper function to save the matplotlib 'figure' object to 'fname'.
+    Create directory to 'fname' if necessary.
+
+    Parameters
+    ----------
+    fig : matplotlib.figure.Figure
+        figure to save
+    fname : str
+        See https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.savefig.html
+
+    Returns
+    -------
+    Nothing
     """
+    file_dir = os.path.dirname(fname)
     if not os.path.isdir(file_dir):
         os.makedirs(file_dir)
-    file_path = os.path.join(file_dir, file_name)
 
-    _log.debug(f"Saving {file_path}")
-    fig.savefig(file_path)
+    _log.debug(f"Saving {fname}")
+    fig.savefig(fname)
 
 
 def scatter_plot(
@@ -516,48 +570,49 @@ def scatter_plot(
     base_path: str | None = None,
     show: bool = False,
 ):
-    """ """
+    """
+    Saves the plot to 'scatter_path' folder within 'base_path'
+
+    Parameters
+    ----------
+    ds : xarray dataset
+        Science, engineering, or raw timeseries dataset.
+    ds_type : str
+        dataset (timeseries) type: one of 'sci', 'eng', or 'raw'
+    base_path : str
+        The 'base' of the plot path. If None, then the plot will not be saved
+        Intended to be the 'plotdir' output of slocum.get_path_deployments
+    show : bool
+        Boolean indicating if the plots should be shown before being closed
+
+    Returns
+    -------
+        matplotlib.Figure.figure object
+
+    """
 
     # Prep
     _log.info(f"Making basic scatter plot for {ds_type} timeseries")
     deployment = ds.deployment_name
-
-    # if ds_type == "sci":
-    #     cmap_var = sci_colors[var]
-    # elif ds_type in ["eng", "raw"]:
-    #     cmap_var = cmo.gray
-    # else:
-    #     raise ValueError("ds_type must be 'sci', 'eng', or 'raw'")
+    title_str = f"{deployment}: All points for {ds_type} timeseries"
 
     # Plot
     fig, ax = plt.subplots(figsize=(8, 6))
-
-    # if var is not None:
-    #     if var not in list(ds.data_vars):
-    #         raise ValueError(f"Var {var} not found in ds")
-    #     p = ax.scatter(ds.longitude, ds.latitude, c=ds[var], cmap=cmap_var, s=3)
-    #     fig.colorbar(p, location="right").set_label(
-    #         label=adj_var_label(ds, var),
-    #         size=label_size,
-    #     )
-    # else:
     ax.scatter(ds.longitude, ds.latitude, s=3)
 
     # Labels and title
     ax.set_xlabel("Longitude", size=label_size)
     ax.set_ylabel("Latitude", size=label_size)
-    ax.set_title(
-        f"{deployment}: All points for {ds_type} timeseries",
-        size=title_size,
-    )
+    ax.set_title(title_str, size=title_size)
     ax.grid(True)
 
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "pointMaps"),
+        fname = os.path.join(
+            base_path,
+            scatter_path,
             f"{deployment}_{ds_type}_scatter.png",
         )
+        save_plot(fig, fname)
 
     if show:
         plt.show()
@@ -574,7 +629,27 @@ def scatter_drop_plot(
     show: bool = False,
 ):
     """
-    DOCS
+    Saves the plot to 'scatter_path' folder within 'base_path'
+
+    Parameters
+    ----------
+    ds : xarray dataset
+        Science or engineering timeseries dataset.
+    todrop : numpy.array
+        Boolean array indicating which points will be dropped,
+        and thus should be colored differently.
+        Must be smae length as the time dimension of ds
+    ds_type : str
+        dataset (timeseries) type: one of 'sci' or 'eng'
+    base_path : str
+        The 'base' of the plot path. If None, then the plot will not be saved
+        Intended to be the 'plotdir' output of slocum.get_path_deployments
+    show : bool
+        Boolean indicating if the plots should be shown before being closed
+
+    Returns
+    -------
+        matplotlib.Figure.figure object
     """
 
     # Prep
@@ -607,11 +682,12 @@ def scatter_drop_plot(
 
     # Save and show
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "pointMaps"),
+        fname = os.path.join(
+            base_path,
+            scatter_path,
             f"{deployment}_{ds_type}_dropped.png",
         )
+        save_plot(fig, fname)
 
     if show:
         plt.show()
@@ -628,7 +704,7 @@ def sci_timesection_plot(
 ):
     """
     Create timesection plots: variable plotted on time and depth
-    Saves the plot to path: base_path/science/timeSections
+    Saves the plot to 'timesection_path' folder within 'base_path'
 
     Parameters
     ----------
@@ -677,12 +753,14 @@ def sci_timesection_plot(
     #     label.set(rotation=15, horizontalalignment='center')
     fig.autofmt_xdate()
     # fig_cnt += 1
+
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "timeSections-sci"),
+        fname = os.path.join(
+            base_path,
+            timesection_path,
             f"{deployment}_{var}_timesection.png",
         )
+        save_plot(fig, fname)
 
     if show:
         plt.show()
@@ -699,7 +777,7 @@ def sci_spatialsection_plot(
 ):
     """
     Create spatialsection plots: variable plotted on lat or lon, and depth
-    Saves the plot to path: base_path/science/spatialSections
+    Saves the plot to 'spatialsection_path' folder within 'base_path'
 
     Parameters
     ----------
@@ -791,11 +869,12 @@ def sci_spatialsection_plot(
     # fig_cnt += 1
 
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "spatialSections-sci"),
+        fname = os.path.join(
+            base_path,
+            spatialsection_path,
             f"{deployment}_{var}_spatialSections.png",
         )
+        save_plot(fig, fname)
 
     if show:
         plt.show()
@@ -812,7 +891,7 @@ def sci_spatialgrid_plot(
 ):
     """
     Create spatial grid plots: plot variable value by lat/lon/depth
-    If specified, saves the plot to path: base_path/science/spatialGrids
+    Saves the plot to 'spatialgrid_path' folder within 'base_path'
 
     Parameters
     ----------
@@ -891,11 +970,12 @@ def sci_spatialgrid_plot(
     fig.suptitle(f"Deployment {deployment} for project {project}", size=title_size)
 
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "spatialGrids-sci"),
+        fname = os.path.join(
+            base_path,
+            spatialgrid_path,
             f"{deployment}_{var}_spatialGrids.png",
         )
+        save_plot(fig, fname)
 
     if show:
         plt.show()
@@ -977,7 +1057,7 @@ def eng_tvt_plot(
 ):
     """
     Creates 'this vs that' plots of engineering variables
-    Saves the plot to path: base_path/engineering/thisVsThat
+    Saves the plot to 'tvt_path' folder within 'base_path'
 
     Parameters
     ----------
@@ -1032,11 +1112,8 @@ def eng_tvt_plot(
         fig.autofmt_xdate()
 
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "thisVsThat-eng"),
-            f"{deployment}_{key}_engtvt.png",
-        )
+        fname = os.path.join(base_path, tvt_path, f"{deployment}_{key}_engtvt.png")
+        save_plot(fig, fname)
 
     if show:
         plt.show()
@@ -1053,7 +1130,7 @@ def eng_timeseries_plot(
 ):
     """
     Create timeseries plots of engineering variables
-    Saves the plot to path: base_path/engineering/timeSeries
+    Saves the plot to 'timeseries_eng_path' folder within 'base_path'
 
     Parameters
     ----------
@@ -1094,11 +1171,12 @@ def eng_timeseries_plot(
     fig.autofmt_xdate()
 
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "timeSeries-eng"),
+        fname = os.path.join(
+            base_path,
+            timeseries_eng_path,
             f"{deployment}_{var}_timeseries.png",
         )
+        save_plot(fig, fname)
 
     if show:
         plt.show()
@@ -1115,7 +1193,7 @@ def sci_timeseries_plot(
 ):
     """
     Create timeseries plots of science variables
-    Saves the plot to path: base_path/science/timeSeries
+    Saves the plot to 'timeseries_sci_path' folder within 'base_path'
 
     Parameters
     ----------
@@ -1156,11 +1234,12 @@ def sci_timeseries_plot(
     fig.autofmt_xdate()
 
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "timeSeries-sci"),
+        fname = os.path.join(
+            base_path,
+            timeseries_sci_path,
             f"{deployment}_{var}_timeseries.png",
         )
+        save_plot(fig, fname)
 
     if show:
         plt.show()
@@ -1177,7 +1256,7 @@ def ts_plot(
 ):
     """
     Create ts plots of science variables
-    Saves the plot to path: base_path/science/TS
+    Saves the plot to 'ts_path' folder within 'base_path'
 
     Parameters
     ----------
@@ -1230,13 +1309,9 @@ def ts_plot(
     ax.set_xlabel("Salinity [PSU]", size=label_size)
     ax.set_ylabel("Potential temperature [°C]", size=label_size)
 
-    # plt.savefig(f"{sci_save_path}/TS/{deployment}_{var}_tsPlot.png")
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "TS-sci"),
-            f"{deployment}_{var}_tsPlot.png",
-        )
+        fname = os.path.join(base_path, ts_path, f"{deployment}_{var}_tsPlot.png")
+        save_plot(fig, fname)
 
     if show:
         plt.show()
@@ -1275,7 +1350,7 @@ def sci_surface_map(
 ):
     """
     Create surface maps of science variables
-    Saves the plot to path: base_path/science/maps
+    Saves the plot to 'surfacemap_sci_path' folder within 'base_path'
 
     Parameters
     ----------
@@ -1384,11 +1459,12 @@ def sci_surface_map(
     )
 
     if base_path is not None:
-        save_plot(
-            fig,
-            os.path.join(base_path, "maps-sci"),
+        fname = os.path.join(
+            base_path,
+            surfacemap_sci_path,
             f"{deployment}_{var}_map_0-10.png",
         )
+        save_plot(fig, fname)
 
     if show:
         plt.show()
