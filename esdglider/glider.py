@@ -1,6 +1,5 @@
 import importlib
 import logging
-import math
 import os
 
 import netCDF4
@@ -146,7 +145,7 @@ def binary_to_nc(
     **kwargs,
 ):
     """
-    Process binary ESD slocum glider data to netCDF file(s). 
+    Process binary ESD slocum glider data to netCDF file(s).
     For more info, see:
     https://swfsc.github.io/glider-lab-manual/content/dataproc-gliders.html
 
@@ -239,7 +238,9 @@ def binary_to_nc(
         "metadata_dict": {"deployment_name": deployment_name},
         "device_dict": {},
         "profile_summary_path": os.path.join(
-            paths["tsdir"], f"{deployment}-{mode}-profiles.csv")
+            paths["tsdir"],
+            f"{deployment}-{mode}-profiles.csv",
+        ),
     }
 
     # # Set default values for findProfiles function, and update with user vales
@@ -252,9 +253,9 @@ def binary_to_nc(
     #     "shake": 0,
     #             stall=3,
     #     # shake=200,
-    #     # inversion = 10, 
+    #     # inversion = 10,
     #     interrupt = 120,
-    #     period = 60, 
+    #     period = 60,
     # }
     # findprof.update(kwargs)
 
@@ -276,13 +277,15 @@ def binary_to_nc(
             search=binary_search,
             fnamesuffix=f"-{mode}-raw",
             pp=postproc_info,
-            **kwargs, 
+            **kwargs,
         )
 
         # Save profile summary
-        tsraw =  xr.load_dataset(outname_tsraw)
-        _log.info("Writing profile summary CSV to %s", 
-                    postproc_info["profile_summary_path"])
+        tsraw = xr.load_dataset(outname_tsraw)
+        _log.info(
+            "Writing profile summary CSV to %s",
+            postproc_info["profile_summary_path"],
+        )
         prof_summ = utils.calc_profile_summary(tsraw)
         prof_summ.to_csv(postproc_info["profile_summary_path"], index=False)
 
@@ -347,12 +350,13 @@ def binary_to_nc(
         utils.check_profiles(tssci)
 
         prof_max_diff = abs(
-            (tssci.profile_index.max()-tseng.profile_index.max()).values)
+            (tssci.profile_index.max() - tseng.profile_index.max()).values,
+        )
         if prof_max_diff > 0.5:
             _log.warning(
                 "The max profile idx of eng and sci timeseries is different "
                 + "by more than 0.5. This means "
-                + "they have a different number of functional profiles"
+                + "they have a different number of functional profiles",
             )
             _log.warning(f"Min idx for eng: {tseng.profile_index.values.min()}")
             _log.warning(f"Min idx for sci: {tssci.profile_index.values.min()}")
@@ -405,7 +409,7 @@ def binary_to_nc(
 
 
 def postproc_attrs(ds: xr.Dataset, pp: dict):
-    """    
+    """
     Update attrbites of xarray DataSet ds
     pp is dictionary that provides values needed by postproc_attrs
     Used for both eng, sci, and raw timeseries
@@ -453,14 +457,14 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
 
 
 def postproc_general(
-        ds: xr.Dataset, 
-        pp: dict, 
-        drop_vars: list | None = None, 
-        **kwargs
-    ) -> xr.Dataset:
+    ds: xr.Dataset,
+    pp: dict,
+    drop_vars: list | None = None,
+    **kwargs,
+) -> xr.Dataset:
     """
     Post-processing steps shared by the science and engineering timeseries
-    
+
     Returns the ds Dataset with updated values and attributes
     """
 
@@ -481,7 +485,7 @@ def postproc_general(
                 _log.debug(f"depth values: {ds.depth.values[var_nan]}")
                 if any(ds.depth.values[var_nan] >= 5):
                     _log.warning(
-                        f"Some nan {var} values that will be " 
+                        f"Some nan {var} values that will be "
                         + "dropped have a depth >=5",
                     )
                 ds = ds.where(~np.isnan(ds[var]), drop=True)
@@ -493,13 +497,13 @@ def postproc_general(
 
     # Calculate profiles using measured depth
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
-    
+
     # If provided, then update the profile indices by joining raw profiles
     if "profile_summary_path" in pp.keys():
         # Join profiles generated using raw timeseries
         prof_summ = pd.read_csv(
-            pp["profile_summary_path"], 
-            parse_dates = ["start_time", "end_time"]
+            pp["profile_summary_path"],
+            parse_dates=["start_time", "end_time"],
         )
         ds = utils.join_profiles(ds, prof_summ, **kwargs)
 
@@ -559,12 +563,12 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
 
     # # Calculate profiles using measured depth
     # ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
-    
+
     # # If provided, then update the profile indices by joining raw profiles
     # if "profile_summary_path" in pp.keys():
     #     # Join profiles generated using raw timeseries
     #     prof_summ = pd.read_csv(
-    #         pp["profile_summary_path"], 
+    #         pp["profile_summary_path"],
     #         parse_dates = ["start_time", "end_time"]
     #     )
     #     ds = utils.join_profiles(ds, prof_summ, **kwargs)
@@ -641,7 +645,7 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     # if "profile_summary_path" in pp.keys():
     #     # Join profiles generated using raw timeseries
     #     prof_summ = pd.read_csv(
-    #         pp["profile_summary_path"], 
+    #         pp["profile_summary_path"],
     #         parse_dates = ["start_time", "end_time"]
     #     )
     #     ds = utils.join_profiles(ds, prof_summ, **kwargs)
@@ -680,7 +684,7 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
 
 
 def drop_ts_ranges(ds, drop_list, ds_type, plotdir=None):
-    """ 
+    """
     Drop dataset points that are within given time ranges
 
     Paramaters
@@ -690,7 +694,7 @@ def drop_ts_ranges(ds, drop_list, ds_type, plotdir=None):
     drop_list : list of tuples
         A list of tuples of time ranges to drop from ds
     ds_type : str
-        String indicating if ds is a raw, eng, or sci timeseries; 
+        String indicating if ds is a raw, eng, or sci timeseries;
         passed to plots.scatter_drop_plot
     plotdir : str | None (default None)
         Path to plot directory; passed to plots.scatter_drop_plot
@@ -699,7 +703,7 @@ def drop_ts_ranges(ds, drop_list, ds_type, plotdir=None):
     Returns
     -------
     xarray Dataset
-        Input ds, with points within specified time ranges dropped. 
+        Input ds, with points within specified time ranges dropped.
         Also saves 'dropped' scatter plots to plotdir, if specified.
     """
     _log.info(f"There are {len(ds.time)} points in the original {ds_type} dataset")
@@ -925,13 +929,13 @@ def binary_to_raw(
     *,
     search="*.[D|E]BD",
     fnamesuffix="",
-    pp={}, 
+    pp={},
     **kwargs,
 ):
     """
     Extract raw, unprocessed glider data using dbdreader.
     Adaptation of pyglider.slocum.binary_to_timeseries
-    dbdreader only deals with flight and science computers, 
+    dbdreader only deals with flight and science computers,
     hence only calssifying variables as 'eng' or 'sci'
 
     the dbdreader MultiDBD.get() method is used,

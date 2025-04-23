@@ -208,7 +208,7 @@ def get_fill_profiles(ds, time_vals, depth_vals, **kwargs) -> xr.Dataset:
 #     # Create idx_values array
 #     idx_values = np.full(time_values.shape, np.nan, dtype=np.float64)
 
-#     # Fill the output 
+#     # Fill the output
 #     for _, row in df.iterrows():
 #         # time start/ends are mutually exclusive, so use >= and <=
 #         mask = (time_values >= row['start_time']) & (time_values <= row['end_time'])
@@ -219,7 +219,7 @@ def get_fill_profiles(ds, time_vals, depth_vals, **kwargs) -> xr.Dataset:
 
 def join_profiles(ds, df, **kwargs):
     """
-    'Join' profile indexes to a dataset by time, 
+    'Join' profile indexes to a dataset by time,
     using a summary dataframe with profile start and end times
 
     Parameters
@@ -238,26 +238,27 @@ def join_profiles(ds, df, **kwargs):
         Dataset ds, with new profile_index column
     """
 
-    time_values = ds['time'].values
+    time_values = ds["time"].values
     idx_values = np.full(time_values.shape, np.nan, dtype=np.float64)
     for _, row in df.iterrows():
         # time start/ends are mutually exclusive, so use >= and <=
-        mask = (time_values >= row['start_time']) & (time_values <= row['end_time'])
-        idx_values[mask] = row['profile_index']
+        mask = (time_values >= row["start_time"]) & (time_values <= row["end_time"])
+        idx_values[mask] = row["profile_index"]
     # idx_values = join_by_time(ds, df, "profile_index")
 
     # Sanity checks
-    abs_idx_diff = abs(ds.profile_index.values-idx_values).max()
+    abs_idx_diff = abs(ds.profile_index.values - idx_values).max()
     if abs_idx_diff > 1:
         _log.warning(
-            f"The absolute value of the old minus new index values is {abs_idx_diff}"
+            f"The absolute value of the old minus new index values is {abs_idx_diff}",
         )
 
     if any(np.isnan(idx_values)):
         _log.warning(
             f"There are {np.count_nonzero(np.isnan(idx_values))} "
-            + "nan profile index values")
-    
+            + "nan profile index values",
+        )
+
     # Attributes and add to dataset
     idx_comment = (
         "N = inside profile N, N + 0.5 = between profiles N and N + 1. "
@@ -273,8 +274,8 @@ def join_profiles(ds, df, **kwargs):
         ]
         + [(key, val) for key, val in kwargs.items()],
     )
-    ds['profile_index'] = ('time', idx_values, attrs)
-    
+    ds["profile_index"] = ("time", idx_values, attrs)
+
     return ds
 
 
@@ -581,6 +582,7 @@ def calc_ts(ds):
 """Dictionary for mapping profile_direction values to strings"""
 direction_mapping = {1: "Dive", -1: "Climb"}
 
+
 def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
     """
     Calculate glider profile regions, for acoustic data processing
@@ -647,7 +649,7 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
 
 def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
     """
-    For each profile, ie after grouping by profile_index, 
+    For each profile, ie after grouping by profile_index,
     calculate summary information.
 
     Parameters
@@ -667,21 +669,21 @@ def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
         - distance_traveled: the distance traveled during that profile (max-min)
         - num_points: the number of records during that profile
         - time_at_surface_s: the time at the surface, in integer seconds.
-            The amount of time during the profile the glider was at a depth <5m. 
+            The amount of time during the profile the glider was at a depth <5m.
             Not timedelta for more intuitive writing to CSV files
-        - time_range_s: the absolute value of the difference between the time 
-            min/max, in seconds. 
+        - time_range_s: the absolute value of the difference between the time
+            min/max, in seconds.
             Not timedelta for more intuitive writing to CSV files
-        - profile_description: string indicating whether the profile index was a 
-            'Dive', 'Climb', 'Deep' (between profiles at depth), 
-            or 'Surface' (between profiles at surface). 
+        - profile_description: string indicating whether the profile index was a
+            'Dive', 'Climb', 'Deep' (between profiles at depth),
+            or 'Surface' (between profiles at surface).
     """
 
     # Define helper functions
     def _custom_agg(group, surface_depth=5):
         """
-        Custom aggregation function for profile_summary. 
-        See 'calc_profile_summary' docs for more details 
+        Custom aggregation function for profile_summary.
+        See 'calc_profile_summary' docs for more details
 
         Parameters
         ----------
@@ -714,36 +716,35 @@ def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
         if all(group["profile_index"] % 1 == 0.5):
             profile_direction = 0
         else:
-            profile_direction=group["profile_direction"].mode().iloc[0]
+            profile_direction = group["profile_direction"].mode().iloc[0]
 
         return pd.Series(
             {
-                "profile_direction": profile_direction, 
+                "profile_direction": profile_direction,
                 "start_time": group["time"].min(),
                 "end_time": group["time"].max(),
                 "start_depth": start_depth,
                 "end_depth": end_depth,
-                "depth_range": depth_range, 
+                "depth_range": depth_range,
                 "distance_traveled": dog.max() - dog.min(),
-                "num_points": group.shape[0], 
+                "num_points": group.shape[0],
                 "time_at_surface_s": tas,
-            }
+            },
         )
-    
+
     def _calc_profile_descriptions(df, surface_depth=10):
         """Determine if a between profile is at the surface or at depth"""
         st = df["start_depth"] < surface_depth
         en = df["end_depth"] < surface_depth
         prof = df["profile_index"] % 1 == 0
-        
-        prof_description = np.where(
-            prof, 
-            df["profile_direction"].map(direction_mapping), 
-            np.where(st | en, "Surface", "Deep")
-        )
-        
-        return prof_description
 
+        prof_description = np.where(
+            prof,
+            df["profile_direction"].map(direction_mapping),
+            np.where(st | en, "Surface", "Deep"),
+        )
+
+        return prof_description
 
     # Calculate the dataframe
     df = (
@@ -753,7 +754,8 @@ def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
         .apply(_custom_agg)
         .assign(
             time_range_s=lambda d: (
-                (d["end_time"] - d["start_time"]).dt.total_seconds().astype(int)),
+                (d["end_time"] - d["start_time"]).dt.total_seconds().astype(int)
+            ),
             profile_description=lambda d: _calc_profile_descriptions(d),
         )
     )
@@ -779,10 +781,10 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
     pandas Dataframe
         output of calc_profile_summary(ds)
     """
-    
+
     # Generate profile summary data frame, other products
     _log.info("Starting profile checks")
-    df = calc_profile_summary(ds)    
+    df = calc_profile_summary(ds)
     between_df = df[df["profile_index"] % 1 == 0.5]
     between_surf = between_df[between_df.profile_description == "Surface"]
     between_deep = between_df[between_df.profile_description == "Deep"]
@@ -803,10 +805,12 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
     # Check: no surface profiles have both a start or end depth of >3
     # The depth range check makes sure we don't catch gliders that turn around
     # below the surface
-    depth_start_end_check = between_surf[(
-        ((between_surf["start_depth"] > 3) | (between_surf["end_depth"] > 3))
-        & (between_surf["depth_range"] > 3)
-    )]
+    depth_start_end_check = between_surf[
+        (
+            ((between_surf["start_depth"] > 3) | (between_surf["end_depth"] > 3))
+            & (between_surf["depth_range"] > 3)
+        )
+    ]
     if depth_start_end_check.shape[0] > 0:
         _log.warning(
             f"There are {depth_start_end_check.shape[0]} surface profiles "
