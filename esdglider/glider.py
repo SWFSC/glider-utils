@@ -5,6 +5,7 @@ import os
 
 import netCDF4
 import numpy as np
+import pandas as pd
 import pyglider.ncprocess as pgncprocess
 import pyglider.slocum as pgslocum
 import pyglider.utils as pgutils
@@ -145,7 +146,9 @@ def binary_to_nc(
     **kwargs,
 ):
     """
-    Process binary ESD slocum glider data to netCDF file(s)
+    Process binary ESD slocum glider data to netCDF file(s). 
+    For more info, see:
+    https://swfsc.github.io/glider-lab-manual/content/dataproc-gliders.html
 
     The contents of this function used to just be in scripts/binary_to_nc.py.
     They were moved to this structure for easier development and debugging
@@ -188,10 +191,10 @@ def binary_to_nc(
         findprof = {
             "length": 0,
             "period": 0,
-            inversion = math.inf,
-            interrupt = math.inf,
-            stall=0.5,
-            shake=0,
+            "inversion": 10,
+            "interrupt": 120,
+            "stall": 0.5,
+            "shake": 0,
         }
 
     Returns
@@ -235,18 +238,25 @@ def binary_to_nc(
         "file_info": file_info,
         "metadata_dict": {"deployment_name": deployment_name},
         "device_dict": {},
+        "profile_summary_path": os.path.join(
+            paths["tsdir"], f"{deployment}-{mode}-profiles.csv")
     }
 
-    # Set default values for findProfiles function, and update with user vales
-    findprof = {
-        "length": 0,
-        "period": 0,
-        "inversion": math.inf,
-        "interrupt": math.inf,
-        "stall": 0.5,
-        "shake": 0,
-    }
-    findprof.update(kwargs)
+    # # Set default values for findProfiles function, and update with user vales
+    # findprof = {
+    #     "length": 0,
+    #     "period": 0,
+    #     "inversion": 10,
+    #     "interrupt": 120,
+    #     "stall": 0.5,
+    #     "shake": 0,
+    #             stall=3,
+    #     # shake=200,
+    #     # inversion = 10, 
+    #     interrupt = 120,
+    #     period = 60, 
+    # }
+    # findprof.update(kwargs)
 
     # --------------------------------------------
     # Handle compressed files?
@@ -266,7 +276,20 @@ def binary_to_nc(
             search=binary_search,
             fnamesuffix=f"-{mode}-raw",
             pp=postproc_info,
+            **kwargs, 
         )
+
+        # Save profile summary
+        tsraw =  xr.load_dataset(outname_tsraw)
+        _log.info("Writing profile summary CSV to %s", 
+                    postproc_info["profile_summary_path"])
+        prof_summ = utils.calc_profile_summary(tsraw)
+        prof_summ.to_csv(postproc_info["profile_summary_path"], index=False)
+
+        # Brief profile sanity check
+        _log.info("raw profile checks")
+        utils.check_profiles(tsraw)
+
     else:
         _log.info("Not writing raw nc")
 
@@ -274,11 +297,15 @@ def binary_to_nc(
     # Timeseries
     outname_tseng = os.path.join(tsdir, f"{deployment}-{mode}-eng.nc")
     outname_tssci = os.path.join(tsdir, f"{deployment}-{mode}-sci.nc")
+    outname_gr1m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-1m.nc")
+    outname_gr5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
     if write_timeseries:
         # Delete previous files before starting run. Can't delete whole directory
         # Since gridded depend on ts, also delete gridded
         utils.remove_file(outname_tseng)
         utils.remove_file(outname_tssci)
+        utils.remove_file(outname_gr1m)
+        utils.remove_file(outname_gr5m)
         utils.makedirs_pass(tsdir)
 
         # Engineering - uses m_depth as time base
@@ -295,7 +322,7 @@ def binary_to_nc(
         )
 
         _log.info(f"Post-processing engineering timeseries: {outname_tseng}")
-        tseng = postproc_eng_timeseries(outname_tseng, postproc_info, **findprof)
+        tseng = postproc_eng_timeseries(outname_tseng, postproc_info, **kwargs)
 
         # Science - uses sci_water_temp as time_base sensor
         _log.info("Generating science timeseries")
@@ -311,19 +338,28 @@ def binary_to_nc(
         )
 
         _log.info(f"Post-processing science timeseries: {outname_tssci}")
-        tssci = postproc_sci_timeseries(outname_tssci, postproc_info, **findprof)
+        tssci = postproc_sci_timeseries(outname_tssci, postproc_info, **kwargs)
 
-        num_profiles_eng = len(np.unique(tseng.profile_index.values))
-        num_profiles_sci = len(np.unique(tssci.profile_index.values))
-        if num_profiles_eng != num_profiles_sci:
+        # Brief profile sanity check
+        _log.info("eng profile checks")
+        utils.check_profiles(tseng)
+        _log.info("sci profile checks")
+        utils.check_profiles(tssci)
+
+        prof_max_diff = abs(
+            (tssci.profile_index.max()-tseng.profile_index.max()).values)
+        if prof_max_diff > 0.5:
             _log.warning(
-                "The eng and sci timeseries have different total numbers of"
-                + f" profiles: eng {num_profiles_eng}; sci {num_profiles_sci}",
+                "The max profile idx of eng and sci timeseries is different "
+                + "by more than 0.5. This means "
+                + "they have a different number of functional profiles"
             )
-            _log.debug(f"Number of eng profiles: {num_profiles_eng}")
-            _log.debug(f"Number of sci profiles: {num_profiles_sci}")
+            _log.warning(f"Min idx for eng: {tseng.profile_index.values.min()}")
+            _log.warning(f"Min idx for sci: {tssci.profile_index.values.min()}")
+            _log.warning(f"Max idx for eng: {tseng.profile_index.values.max()}")
+            _log.warning(f"Max idx for sci: {tssci.profile_index.values.max()}")
         else:
-            _log.info("The eng and sci timeseries have the same profiles counts")
+            _log.info("The eng and sci timeseries have the same functional profiles")
 
     else:
         _log.info("Not writing timeseries nc")
@@ -331,10 +367,7 @@ def binary_to_nc(
     # --------------------------------------------
     # Gridded data, 1m and 5m
     # TODO: filter to match SOCIB?
-    outname_gr1m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-1m.nc")
-    outname_gr5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
     if write_gridded:
-        # utils.rmtree(griddir)
         utils.remove_file(outname_gr1m)
         utils.remove_file(outname_gr5m)
         if not os.path.isfile(outname_tssci):
@@ -371,13 +404,11 @@ def binary_to_nc(
     }
 
 
-def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
-    """
+def postproc_attrs(ds: xr.Dataset, pp: dict):
+    """    
     Update attrbites of xarray DataSet ds
     pp is dictionary that provides values needed by postproc_attrs
-    Used for both engineering and science timeseries
-
-    Returns the ds Dataset with updated attributes
+    Used for both eng, sci, and raw timeseries
     """
 
     # Rerun pyglider metadata functions, now that drop_bogus has been run
@@ -417,6 +448,63 @@ def postproc_attrs(ds: xr.Dataset, pp: dict) -> xr.Dataset:
 
     if pp["mode"] == "delayed":
         ds.attrs["title"] = ds.attrs["title"] + "-delayed"
+
+    return ds
+
+
+def postproc_general(
+        ds: xr.Dataset, 
+        pp: dict, 
+        drop_vars: list | None = None, 
+        **kwargs
+    ) -> xr.Dataset:
+    """
+    Post-processing steps shared by the science and engineering timeseries
+    
+    Returns the ds Dataset with updated values and attributes
+    """
+
+    # ATTRIBUTES
+    ds = postproc_attrs(ds, pp)
+
+    # VALUES
+    # Remove times < min_dt, and drop other bogus.
+    ds = utils.drop_bogus(ds, pp["min_dt"])
+
+    if drop_vars is not None:
+        # This functionality is here so it is run after drop_bogus
+        for var in drop_vars:
+            if var in list(ds.keys()):
+                _log.info(f"Dropping points with nan values for {var}")
+                num_orig = len(ds.time)
+                var_nan = np.isnan(ds[var].values)
+                _log.debug(f"depth values: {ds.depth.values[var_nan]}")
+                if any(ds.depth.values[var_nan] >= 5):
+                    _log.warning(
+                        f"Some nan {var} values that will be " 
+                        + "dropped have a depth >=5",
+                    )
+                ds = ds.where(~np.isnan(ds[var]), drop=True)
+                if (num_orig - len(ds.time)) > 0:
+                    _log.info(f"Dropped {num_orig - len(ds.time)} nan {var} values")
+
+    # After dropping, recalculate distance over ground
+    ds = pgutils.get_distance_over_ground(ds)
+
+    # Calculate profiles using measured depth
+    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
+    
+    # If provided, then update the profile indices by joining raw profiles
+    if "profile_summary_path" in pp.keys():
+        # Join profiles generated using raw timeseries
+        prof_summ = pd.read_csv(
+            pp["profile_summary_path"], 
+            parse_dates = ["start_time", "end_time"]
+        )
+        ds = utils.join_profiles(ds, prof_summ, **kwargs)
+
+    # Profiles check
+    utils.check_profiles(ds)
 
     return ds
 
@@ -462,28 +550,37 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     # With depth (CTD) gone, rename depth_measured
     ds = ds.rename({"depth_measured": "depth"})
 
-    # Remove times < min_dt
-    ds = utils.drop_bogus(ds, pp["min_dt"])
+    # General updates
+    ds = postproc_general(ds, pp, **kwargs)
 
-    # Calculate profiles using measured depth
-    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
-    ds = pgutils.get_distance_over_ground(ds)
+    # # Remove times < min_dt, and drop other bogus.
+    # ds = utils.drop_bogus(ds, pp["min_dt"])
+    # ds = pgutils.get_distance_over_ground(ds)
+
+    # # Calculate profiles using measured depth
+    # ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
+    
+    # # If provided, then update the profile indices by joining raw profiles
+    # if "profile_summary_path" in pp.keys():
+    #     # Join profiles generated using raw timeseries
+    #     prof_summ = pd.read_csv(
+    #         pp["profile_summary_path"], 
+    #         parse_dates = ["start_time", "end_time"]
+    #     )
+    #     ds = utils.join_profiles(ds, prof_summ, **kwargs)
 
     # Reorder data variables
     new_start = ["latitude", "longitude", "depth", "profile_index"]
     ds = utils.data_var_reorder(ds, new_start)
 
     # Update attributes
-    ds = postproc_attrs(ds, pp)
+    # ds = postproc_attrs(ds, pp)
     if "comment" not in ds.attrs:
         ds.attrs["comment"] = "engineering-only time series"
     elif not ds.attrs["comment"].strip():
         ds.attrs["comment"] = "engineering-only time series"
     else:
         ds.attrs["comment"] = ds.attrs["comment"] + "; engineering-only time series"
-
-    _log.info("eng timeseries regions check")
-    utils.calc_regions(ds)
 
     _log.debug(f"end eng postproc: ds has {len(ds.time)} values")
     utils.to_netcdf_esd(ds, ds_file)
@@ -514,8 +611,8 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     ds = xr.load_dataset(ds_file)
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
-    # Remove times < min_dt
-    ds = utils.drop_bogus(ds, pp["min_dt"])
+    # # Remove times < min_dt
+    # ds = utils.drop_bogus(ds, pp["min_dt"])
 
     # Drop rows in science where pressure is nan
     # This was done because:
@@ -523,22 +620,39 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     #   2) pyglider does a 'zero screen'
     #   3) nan pressure values all appear to be at the surface,
     #       and often have weird associated values
-    if "pressure" in list(ds.keys()):
-        num_orig = len(ds.time)
-        pressure_nan = np.isnan(ds.pressure.values)
-        _log.debug(f"depth values: {ds.depth.values[pressure_nan]}")
-        if any(ds.depth.values[pressure_nan] >= 5):
-            _log.warning(
-                "Some nan pressure values that will be " + "dropped have a depth >=5",
-            )
-        ds = ds.where(~np.isnan(ds.pressure), drop=True)
-        if (num_orig - len(ds.time)) > 0:
-            _log.info(f"Dropped {num_orig - len(ds.time)} nan pressure values")
 
-    # Calculate profiles, using the CTD-derived depth values
-    # Need to update this to play nice with eng timeseries for rt data?
-    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
-    ds = pgutils.get_distance_over_ground(ds)
+    # if "pressure" in list(ds.keys()):
+    #     num_orig = len(ds.time)
+    #     pressure_nan = np.isnan(ds.pressure.values)
+    #     _log.debug(f"depth values: {ds.depth.values[pressure_nan]}")
+    #     if any(ds.depth.values[pressure_nan] >= 5):
+    #         _log.warning(
+    #             "Some nan pressure values that will be " + "dropped have a depth >=5",
+    #         )
+    #     ds = ds.where(~np.isnan(ds.pressure), drop=True)
+    #     if (num_orig - len(ds.time)) > 0:
+    #         _log.info(f"Dropped {num_orig - len(ds.time)} nan pressure values")
+
+    # # Calculate profiles, using the CTD-derived depth values
+    # ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
+    # ds = pgutils.get_distance_over_ground(ds)
+
+    # # If provided, update the profile indices by joining raw profiles
+    # if "profile_summary_path" in pp.keys():
+    #     # Join profiles generated using raw timeseries
+    #     prof_summ = pd.read_csv(
+    #         pp["profile_summary_path"], 
+    #         parse_dates = ["start_time", "end_time"]
+    #     )
+    #     ds = utils.join_profiles(ds, prof_summ, **kwargs)
+
+    # General updates
+    # NOTE: Drop rows in science where pressure is nan, because:
+    #   1) in principle there should be no depth is pressure is nan
+    #   2) pyglider does a 'zero screen'
+    #   3) nan pressure values all appear to be at the surface,
+    #       and often have weird associated values
+    ds = postproc_general(ds, pp, drop_vars=["pressure"], **kwargs)
 
     # Reorder data variables
     new_start = [
@@ -556,11 +670,8 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     ]
     ds = utils.data_var_reorder(ds, new_start)
 
-    # Update attributes
-    ds = postproc_attrs(ds, pp)
-
-    _log.info("sci timeseries regions check")
-    utils.calc_regions(ds)
+    # # Update attributes
+    # ds = postproc_attrs(ds, pp)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
     utils.to_netcdf_esd(ds, ds_file)
@@ -569,7 +680,28 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
 
 
 def drop_ts_ranges(ds, drop_list, ds_type, plotdir=None):
-    """ """
+    """ 
+    Drop dataset points that are within given time ranges
+
+    Paramaters
+    ----------
+    ds : xarray Dataset
+        Timeseries dataset]
+    drop_list : list of tuples
+        A list of tuples of time ranges to drop from ds
+    ds_type : str
+        String indicating if ds is a raw, eng, or sci timeseries; 
+        passed to plots.scatter_drop_plot
+    plotdir : str | None (default None)
+        Path to plot directory; passed to plots.scatter_drop_plot
+        If None, then no plots are saved
+
+    Returns
+    -------
+    xarray Dataset
+        Input ds, with points within specified time ranges dropped. 
+        Also saves 'dropped' scatter plots to plotdir, if specified.
+    """
     _log.info(f"There are {len(ds.time)} points in the original {ds_type} dataset")
 
     # Create the
@@ -793,12 +925,14 @@ def binary_to_raw(
     *,
     search="*.[D|E]BD",
     fnamesuffix="",
-    pp={},
+    pp={}, 
+    **kwargs,
 ):
     """
     Extract raw, unprocessed glider data using dbdreader.
     Adaptation of pyglider.slocum.binary_to_timeseries
-    dbdreader only deals with flight and science computers
+    dbdreader only deals with flight and science computers, 
+    hence only calssifying variables as 'eng' or 'sci'
 
     the dbdreader MultiDBD.get() method is used,
     rather than get_sync, to read the parameters specified in
@@ -809,7 +943,8 @@ def binary_to_raw(
     and these values are the time index of the output file.
     No values are interpolated. Times < pp["min_dt"] are still dropped.
 
-
+    pp is the ESD post-process dictionary
+    kwargs is passed to utils.findProfiles
     """
 
     if not have_dbdreader:
@@ -937,9 +1072,16 @@ def binary_to_raw(
     # Drop rows with nan values across all data variables
     ds = ds.dropna("time", how="all")
 
-    # Rename depth_measured, because no pyglider depth calculations
+    # Depth calculation, and name management
+    ds = pgutils.get_glider_depth(ds).rename({"depth": "depth_ctd"})
     ds = ds.rename({"depth_measured": "depth"})
-    ds = utils.data_var_reorder(ds, ["latitude", "longitude", "depth"])
+
+    # Calculate profiles and distance_over_ground
+    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
+    ds = pgutils.get_distance_over_ground(ds)
+
+    new_start = ["latitude", "longitude", "depth", "profile_index"]
+    ds = utils.data_var_reorder(ds, new_start)
 
     # Add metadata - using postproc_attrs for consistency
     pp["metadata_dict"] = deployment["metadata"]
