@@ -105,6 +105,16 @@ netcdf_variables:
     source: m_leakdetect_voltage_science
     units: V
 
+  gps_latitude:
+    comment: GPS latitude
+    source: m_gps_lat
+    units: degrees_north
+
+  gps_longitude:
+    comment: GPS longitude
+    source: m_gps_lon
+    units: degrees_east
+
   vacuum:
     source: m_vacuum
     units: inHg
