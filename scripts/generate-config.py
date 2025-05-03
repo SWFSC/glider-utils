@@ -12,7 +12,10 @@ sqlalchemy engine. It should not be committed to GitHub.
 """
 
 path_config = "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-configs"
-
+deployment_info = {
+    "deployment": "unit_1024-20250224",
+    "project": "SANDIEGO",
+}
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -24,10 +27,4 @@ if __name__ == "__main__":
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
 
-    config.make_deployment_config(
-        # "calanus-20241019", "ECOSWIM",
-        "amlr01-20181216",
-        "FREEBYRD",
-        path_config,
-        conn_string,
-    )
+    config.make_deployment_config(deployment_info, path_config, conn_string)

@@ -11,7 +11,8 @@ import esdglider.utils as utils
 _log = logging.getLogger(__name__)
 
 
-# Names of Components in the ESD Glider Database
+# Names of Components in the ESD Glider Database (table Device_Type)
+# NOTE: if changing a key value, must adjust code below
 db_components = {
     "ctd": "CTD",
     "flbbcd": "flbbcd Fluorometer",
@@ -20,8 +21,11 @@ db_components = {
     "glidercam": "Glidercam",
     "azfp": "AZFP",
     "echosounder": "Signature 100 compact echosounder",
+    "bsipar": "PAR sensor", 
+    "pam": "PAM sensor", 
 }
 
+# Calibration type name from Calibration_Type table
 db_factory_cal = ["Factory - Initial", "Factory - Recalibration"]
 
 
@@ -157,72 +161,94 @@ def make_deployment_config(
         #     if value in components:
         #         prof_vars[f"instrument_{key}"] = fill_instrument(key, devices, db_devices, db_cals)
         instruments = {}
+        for key, value in db_components.items():
+            if value in components:
+                _log.info("Generating config for component %s", value)
+                instruments[f"instrument_{key}"] = instrument_attrs(
+                    key,
+                    devices,
+                    db_devices,
+                    db_cals,
+                )
+            else:
+                # If we're here, it means this instrument is not on the glider
+                _log.debug("No component %s", value)
+                if key == "ctd":
+                    raise ValueError("Glider must have a CTD")
+                if key == "flbbcd":
+                    netcdf_vars.pop("chlorophyll", None)
+                    netcdf_vars.pop("cdom", None)
+                    netcdf_vars.pop("backscatter_700", None)
+                if key == "oxygen":
+                    netcdf_vars.pop("oxygen_concentration", None)
+                    netcdf_vars.pop("oxygen_saturation", None)
 
-        key = "ctd"
-        if db_components[key] in components:
-            instruments[f"instrument_{key}"] = instrument_attrs(
-                key,
-                devices,
-                db_devices,
-                db_cals,
-            )
-        else:
-            raise ValueError("Glider must have a CTD")
 
-        key = "flbbcd"
-        if db_components[key] in components:
-            instruments[f"instrument_{key}"] = instrument_attrs(
-                key,
-                devices,
-                db_devices,
-                db_cals,
-            )
-        else:
-            netcdf_vars.pop("chlorophyll", None)
-            netcdf_vars.pop("cdom", None)
-            netcdf_vars.pop("backscatter_700", None)
+        # key = "ctd"
+        # if db_components[key] in components:
+        #     instruments[f"instrument_{key}"] = instrument_attrs(
+        #         key,
+        #         devices,
+        #         db_devices,
+        #         db_cals,
+        #     )
+        # else:
+        #     raise ValueError("Glider must have a CTD")
 
-        key = "oxygen"
-        if db_components[key] in components:
-            instruments[f"instrument_{key}"] = instrument_attrs(
-                key,
-                devices,
-                db_devices,
-                db_cals,
-            )
-        else:
-            netcdf_vars.pop("oxygen_concentration", None)
+        # key = "flbbcd"
+        # if db_components[key] in components:
+        #     instruments[f"instrument_{key}"] = instrument_attrs(
+        #         key,
+        #         devices,
+        #         db_devices,
+        #         db_cals,
+        #     )
+        # else:
+        #     netcdf_vars.pop("chlorophyll", None)
+        #     netcdf_vars.pop("cdom", None)
+        #     netcdf_vars.pop("backscatter_700", None)
+
+        # key = "oxygen"
+        # if db_components[key] in components:
+        #     instruments[f"instrument_{key}"] = instrument_attrs(
+        #         key,
+        #         devices,
+        #         db_devices,
+        #         db_cals,
+        #     )
+        # else:
+        #     netcdf_vars.pop("oxygen_concentration", None)
 
         # TODO: how to handle multiple shadowgraph models?
         # if not set(db_components['shadowgraph']).isdisjoint(components):
         #     pass
 
-        key = "glidercam"
-        if db_components[key] in components:
-            instruments[f"instrument_{key}"] = instrument_attrs(
-                key,
-                devices,
-                db_devices,
-                db_cals,
-            )
+        # key = "glidercam"
+        # if db_components[key] in components:
+        #     instruments[f"instrument_{key}"] = instrument_attrs(
+        #         key,
+        #         devices,
+        #         db_devices,
+        #         db_cals,
+        #     )
 
-        key = "azfp"
-        if db_components[key] in components:
-            instruments[f"instrument_{key}"] = instrument_attrs(
-                key,
-                devices,
-                db_devices,
-                db_cals,
-            )
+        # key = "azfp"
+        # if db_components[key] in components:
+        #     instruments[f"instrument_{key}"] = instrument_attrs(
+        #         key,
+        #         devices,
+        #         db_devices,
+        #         db_cals,
+        #     )
 
-        key = "echosounder"
-        if db_components[key] in components:
-            instruments[f"instrument_{key}"] = instrument_attrs(
-                key,
-                devices,
-                db_devices,
-                db_cals,
-            )
+        # key = "echosounder"
+        # if db_components[key] in components:
+        #     instruments[f"instrument_{key}"] = instrument_attrs(
+        #         key,
+        #         devices,
+        #         db_devices,
+        #         db_cals,
+        #     )
 
     else:
         _log.info("no database URL provided, and thus no connection attempted")

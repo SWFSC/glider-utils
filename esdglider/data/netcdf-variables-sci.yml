@@ -86,27 +86,47 @@ chlorophyll:
   long_name:    chlorophyll
   standard_name: concentration_of_chlorophyll_in_sea_water
   units:        mg m-3
+  observation_type: measured
   instrument:   "instrument_flbbcd"
 
 cdom:
   source:  sci_flbbcd_cdom_units
   long_name:    CDOM
   units:        ppb
+  observation_type: calculated
   instrument:   "instrument_flbbcd"
 
 backscatter_700:
   source:  sci_flbbcd_bb_units
   long_name:    700 nm wavelength backscatter
   units:         "1"
+  observation_type: calculated
   instrument:   "instrument_flbbcd"
 
 # Oxygen
 oxygen_concentration:
   source:  sci_oxy4_oxygen
   long_name:    oxygen concentration
+  standard_name: fractional_saturation_of_oxygen_in_sea_water
+  units:        percent
+  observation_type: "measured"
+  instrument:   "instrument_oxygen"
+
+oxygen_saturation:
+  source:  sci_oxy4_saturation
+  long_name:    oxygen concentration
   standard_name: mole_concentration_of_dissolved_molecular_oxygen_in_sea_water
   units:        umol l-1
+  observation_type: "measured"
   instrument:   "instrument_oxygen"
+
+# PAR
+bsipar_par:
+  source:  sci_bsipar_par
+  long_name: sci_bsipar_par
+  units: uE/m^2sec
+  observation_type: "measured"
+  instrument:   "instrument_bsipar"
 
 # Engineering variables needed for eg acoustics
 heading:
