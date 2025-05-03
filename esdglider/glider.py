@@ -225,6 +225,7 @@ def binary_to_nc(
         raise FileNotFoundError(f"Could not find {deploymentyaml}")
     with open(deploymentyaml) as fin:
         deployment_ = yaml.safe_load(fin)
+        # TODO can we get rid of this, and instead write deployment_name from deployment variablle?
         deployment_name = deployment_["metadata"]["deployment_name"]
     if deployment_name != deployment:
         raise ValueError(
@@ -269,6 +270,7 @@ def binary_to_nc(
         utils.remove_file(outname_tsraw)
         utils.makedirs_pass(rawdir)
 
+        _log.info("Generating raw nc")
         outname_tsraw = binary_to_raw(
             paths["binarydir"],
             paths["cacdir"],
