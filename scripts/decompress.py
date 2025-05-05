@@ -9,13 +9,11 @@ This script is intended to help users quickly generate decompressed
 binary files, as a light wrapper around dbdreader functions.
 """
 
-
-
 deployment_info = {
-    "deployment": "stenella-20250414",
+    "deployment": "unit_1024-20250224",
     "project": "SANDIEGO",
     "mode": "delayed",
-    # "min_dt": "2023-11-28 20:46",
+    "min_dt": "2025-02-24",
 }
 
 if __name__ == "__main__":

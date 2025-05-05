@@ -1,16 +1,16 @@
 metadata:
   comment: 'Basic config for testing'
-  deployment_name: "risso-20250414"
-  glider_name: "risso"
+  deployment_name: "unit_1024-20250224"
+  glider_name: "unit_1024"
   glider_serial: ""
   
 glider_devices:
   ctd:
-  serial: '9714'
+  serial: ''
   long_name: 'Conductivity, Temperature, Depth (CTD) Sensor'
   make_model: 'Sea-Bird GPCTD'
-  factory_calibrated: '2021-07-30'
-  calibration_date: '2021-07-30'
+  factory_calibrated: ''
+  calibration_date: ''
   calibration_report: ""
   comment: "Pumped"
 
@@ -183,3 +183,4 @@ profile_variables:
     units:             degrees_east
     valid_max:         "180.0"
     valid_min:         "-180.0"
+    
