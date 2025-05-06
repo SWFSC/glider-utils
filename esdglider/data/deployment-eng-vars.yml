@@ -142,6 +142,7 @@ netcdf_variables:
     units:        degree_east
 
   # data parameters - required for pyglider processing
+  # these variables are not included in the -eng NetCDF file
   conductivity:
     source:  sci_water_cond
     long_name:    water conductivity
