@@ -36,7 +36,10 @@ longitude:
   valid_min:    -180.0
   coordinate_reference_frame:  urn:ogc:crs:EPSG::4326
 
-# science data parameters
+# science data parameters. 
+#   NOTE: if adding new science parameters, then update plots.sci_colors
+#   NOTE: pyglider.utils.get_derived_eos_raw internally calculates:
+#   salinity, potential density, density, and potential temperature
 conductivity:
   source:  sci_water_cond
   long_name:    water conductivity
@@ -107,16 +110,16 @@ backscatter_700:
 oxygen_concentration:
   source:  sci_oxy4_oxygen
   long_name:    oxygen concentration
-  standard_name: fractional_saturation_of_oxygen_in_sea_water
-  units:        percent
+  standard_name: mole_concentration_of_dissolved_molecular_oxygen_in_sea_water
+  units:         umol l-1
   observation_type: "measured"
   instrument:   "instrument_oxygen"
 
 oxygen_saturation:
   source:  sci_oxy4_saturation
-  long_name:    oxygen concentration
-  standard_name: mole_concentration_of_dissolved_molecular_oxygen_in_sea_water
-  units:        umol l-1
+  long_name:    oxygen saturation
+  standard_name: fractional_saturation_of_oxygen_in_sea_water
+  units:         percent
   observation_type: "measured"
   instrument:   "instrument_oxygen"
 

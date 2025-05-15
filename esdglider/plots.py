@@ -9,7 +9,6 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-from matplotlib import colormaps
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Patch
 
@@ -81,19 +80,20 @@ def adj_var_label(ds, var):
         raise ValueError(f"var {var}: not an expected adjustments value")
 
 
-"""Dictionary of adjustments to make to variables to plot
+"""Dictionary of adjustments to make to variables to plot. 
+Functionally, this is variables that should be plotted with log10
 """
 adjustments = {
-    # "temperature": return_var,
     "chlorophyll": np.log10,
     "cdom": np.log10,
     "backscatter_700": np.log10,
+    # "temperature": return_var,
     # "oxygen_concentration": return_var,
     # "salinity": return_var,
     # "density": return_var,
 }
 
-# """ Dictionary of label adjustments; correspnds to adjustments dict
+# """ Dictionary of label adjustments; corresponds to adjustments dict
 # """
 # adjustments_labels = {
 #     "chlorophyll": "$log_{10}$",
@@ -131,35 +131,35 @@ adjustments = {
 #     "total_num_inflections": "1",
 # }
 
-"""Dictionary of the colors to use for different variables
 """
-sci_colors = {
-    "cdom": cmo.solar,
-    "chlorophyll": cmo.algae,
-    "oxygen_concentration": cmo.tempo,
-    "backscatter_700": colormaps["terrain"],
+Dictionary of the sci variables to plot, and the colors to use
+
+These should be all possible variables, 
+as plotting functions have checks to skip vars not in the dataset
+
+These colors were chosen by choosing the cmocean colormap 
+described in https://tos.org/oceanography/assets/docs/29-3_thyng.pdf, 
+or that most closely matched variables colors in the R package oce
+(eg, https://dankelley.github.io/oce/reference/oceColorsOxygen.html)
+"""
+sci_vars = {
     "temperature": cmo.thermal,
     "potential_temperature": cmo.thermal,
+    "conductivity": cmo.tempo,
     "salinity": cmo.haline,
-    "density": colormaps["cividis"],
-    "potential_density": colormaps["cividis"],
+    "density": cmo.dense, #colormaps["cividis"],
+    "potential_density": cmo.dense,
+    "oxygen_concentration": cmo.oxy, #cmo.tempo,
+    "oxygen_saturation": cmo.oxy,
+    "chlorophyll": cmo.algae,
+    "cdom": cmo.matter,
+    "backscatter_700": cmo.delta, #colormaps["terrain"],
+    "bsipar_par": cmo.turbid, 
     "profile_index": cmo.gray,
 }
 
-"""List of science variables
-Plotting functions loop through this list to plot science vars
 """
-sci_vars = [
-    "temperature",
-    "salinity",
-    "density",
-    "chlorophyll",
-    "cdom",
-    "oxygen_concentration",
-    "backscatter_700",
-]
-
-"""List of engineering variables
+List of engineering variables to plot
 Plotting functions loop through this list to plot engineering vars
 """
 eng_vars = [
@@ -263,7 +263,7 @@ def sci_gridded_loop(
 ):
     """
     A loop/wrapper function to use a gridded science dataset to make plots
-    of all sci_vars variables.
+    of all sci_vars keys.
     Specifically, for each sci_var present in the dataset,
     create timesection, spatialsection, and spatialgrid plots
 
@@ -350,7 +350,7 @@ def sci_timeseries_loop(
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
-    of all sci_vars variables.
+    of all sci_vars keys.
     Specifically, for each sci_var present in the dataset,
     create a timeseries plot
 
@@ -440,8 +440,8 @@ def sci_ts_loop(
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
-    of all sci_vars variables.
-    Specifically, for each sci_vars present in the dataset,
+    of all sci_vars kyes.
+    Specifically, for each sci_vars key present in the dataset,
     create a ts plot
 
     Arguments let the user specify if these plots should be saved, and/or shown
@@ -468,10 +468,14 @@ def sci_ts_loop(
 
     for var in sci_vars:
         _log.debug(f"var {var}")
-        if var not in list(ds.data_vars):
-            _log.info(
-                f"Variable {var} not present in timeseries sci ds. Skipping plots",
-            )
+        # if var not in list(ds.data_vars):
+        #     _log.info(
+        #         f"Variable {var} not present in timeseries sci ds. Skipping plots",
+        #     )
+        #     continue
+            
+        if var in ["potential_temperature", "profile_index"]:
+            _log.info(f"Skipping {var}, because it is not relevant for TS plots")
             continue
 
         ts_plot(ds, var, base_path=base_path, show=show)
@@ -489,8 +493,8 @@ def sci_surface_map_loop(
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
-    of all sci_vars variables.
-    Specifically, for each sci_vars present in the dataset,
+    of all sci_vars keys.
+    Specifically, for each sci_vars key present in the dataset,
     create a surface map using the bar dataset
 
     Arguments let the user specify if these plots should be saved, and/or shown
@@ -519,7 +523,7 @@ def sci_surface_map_loop(
     if base_path is not None:
         utils.rmtree(os.path.join(base_path, surfacemap_sci_path))
 
-    for var in sci_vars + ["profile_index"]:
+    for var in sci_vars:
         _log.debug(f"var {var}")
         if var not in list(ds.data_vars):
             _log.info(
@@ -737,7 +741,7 @@ def sci_timesection_plot(
     std = np.nanstd(ds[var])
     mean = np.nanmean(ds[var])
 
-    p1 = ax.pcolormesh(ds.time, ds.depth, adj_var(ds, var), cmap=sci_colors[var])
+    p1 = ax.pcolormesh(ds.time, ds.depth, adj_var(ds, var), cmap=sci_vars[var])
     fig.colorbar(p1).set_label(label=adj_var_label(ds, var), size=label_size)
     ax.invert_yaxis()
 
@@ -813,7 +817,7 @@ def sci_spatialsection_plot(
         ds.longitude,
         ds.depth,
         adj_var(ds, var),
-        cmap=sci_colors[var],
+        cmap=sci_vars[var],
     )
     axs[0].invert_yaxis()
     axs[0].set_xlabel("Longitude [Deg]", size=label_size)
@@ -835,9 +839,9 @@ def sci_spatialsection_plot(
         ds.latitude,
         ds.depth,
         adj_var(ds, var),
-        cmap=sci_colors[var],
+        cmap=sci_vars[var],
     )
-    # p2 = axs[1].pcolormesh(sci_ds_g.latitude, sci_ds_g.depth, sci_ds_g[var], cmap=sci_colors[var])
+    # p2 = axs[1].pcolormesh(sci_ds_g.latitude, sci_ds_g.depth, sci_ds_g[var], cmap=sci_vars[var])
     fig.colorbar(p2).set_label(label=adj_var_label(ds, var), size=label_size)
     # axs[1].invert_yaxis()
 
@@ -934,21 +938,21 @@ def sci_spatialgrid_plot(
     # mean = np.nanmean(sci_ds_g[var])
 
     # _,_,var_ = np.meshgrid(sci_ds_g.longitude.values, sci_ds_g.latitude.values, sci_ds_g[var].sel(depth=0, method='nearest'))
-    # ax0.pcolormesh(sci_ds_g.longitude, sci_ds_g.latitude, var_[:,:,0], cmap=sci_colors[var])
+    # ax0.pcolormesh(sci_ds_g.longitude, sci_ds_g.latitude, var_[:,:,0], cmap=sci_vars[var])
 
     p = ax0.scatter(
         ds.longitude,
         ds.latitude,
         c=ds[var].sel(depth=0, method="nearest"),
-        cmap=sci_colors[var],
+        cmap=sci_vars[var],
     )
 
     ax0.set_ylabel("Latitude [Deg]", size=label_size)
     ax0.set_xticks([])
     ax0.set_xticklabels([])
 
-    # ax0.scatter(sci_ds.longitude, sci_ds.latitude, c=sci_ds[var], cmap=sci_colors[var])
-    ax1.pcolormesh(ds.longitude, ds.depth, adj_var(ds, var), cmap=sci_colors[var])
+    # ax0.scatter(sci_ds.longitude, sci_ds.latitude, c=sci_ds[var], cmap=sci_vars[var])
+    ax1.pcolormesh(ds.longitude, ds.depth, adj_var(ds, var), cmap=sci_vars[var])
     ax1.set_ylabel("Depth [m]", size=label_size)
     ax1.set_xlabel("Longitude [Deg]", size=label_size)
     ax1.invert_yaxis()
@@ -957,7 +961,7 @@ def sci_spatialgrid_plot(
         ds.depth,
         ds.latitude,
         np.transpose(adj_var(ds, var).values),
-        cmap=sci_colors[var],
+        cmap=sci_vars[var],
     )
     ax2.set_xlabel("Depth [m]", size=label_size)
     ax2.set_yticks([])
@@ -1228,7 +1232,7 @@ def sci_timeseries_plot(
     ax.invert_yaxis()
     ax.set_title(f"Deployment {deployment} for project {project}", size=title_size)
 
-    p = ax.scatter(ds.time, ds.depth, c=adj_var(ds, var), cmap=sci_colors[var], s=3)
+    p = ax.scatter(ds.time, ds.depth, c=adj_var(ds, var), cmap=sci_vars[var], s=3)
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%m/%d %H:%M"))
     fig.colorbar(p, location="right").set_label(adj_var_label(ds, var), size=label_size)
     fig.autofmt_xdate()
@@ -1295,7 +1299,7 @@ def ts_plot(
         ds.salinity,
         ds.potential_temperature,
         c=adj_var(ds, var),
-        cmap=sci_colors[var],
+        cmap=sci_vars[var],
         s=5,
     )
     fig.colorbar(
@@ -1306,8 +1310,10 @@ def ts_plot(
     ).set_label(label=adj_var_label(ds, var), size=label_size)
 
     ax.set_title(f"{deployment} from {start} to {end}", size=title_size)
-    ax.set_xlabel("Salinity [PSU]", size=label_size)
-    ax.set_ylabel("Potential temperature [°C]", size=label_size)
+    ax.set_xlabel(adj_var_label(ds, "salinity"), size=label_size)
+    ax.set_ylabel(adj_var_label(ds, "potential_temperature"), size=label_size)
+    # ax.set_xlabel("Salinity [PSU]", size=label_size)
+    # ax.set_ylabel("Potential temperature [°C]", size=label_size)
 
     if base_path is not None:
         fname = os.path.join(base_path, ts_path, f"{deployment}_{var}_tsPlot.png")
@@ -1429,7 +1435,7 @@ def sci_surface_map(
         ds.longitude,
         ds.latitude,
         c=ds[var].where(ds.depth <= 10, drop=True).mean(dim="depth"),
-        cmap=sci_colors[var],
+        cmap=sci_vars[var],
         s=10,
         zorder=2.5,
         transform=ccrs.PlateCarree(),
