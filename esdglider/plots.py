@@ -80,7 +80,7 @@ def adj_var_label(ds, var):
         raise ValueError(f"var {var}: not an expected adjustments value")
 
 
-"""Dictionary of adjustments to make to variables to plot. 
+"""Dictionary of adjustments to make to variables to plot.
 Functionally, this is variables that should be plotted with log10
 """
 adjustments = {
@@ -134,11 +134,11 @@ adjustments = {
 """
 Dictionary of the sci variables to plot, and the colors to use
 
-These should be all possible variables, 
+These should be all possible variables,
 as plotting functions have checks to skip vars not in the dataset
 
-These colors were chosen by choosing the cmocean colormap 
-described in https://tos.org/oceanography/assets/docs/29-3_thyng.pdf, 
+These colors were chosen by choosing the cmocean colormap
+described in https://tos.org/oceanography/assets/docs/29-3_thyng.pdf,
 or that most closely matched variables colors in the R package oce
 (eg, https://dankelley.github.io/oce/reference/oceColorsOxygen.html)
 """
@@ -147,14 +147,14 @@ sci_vars = {
     "potential_temperature": cmo.thermal,
     "conductivity": cmo.tempo,
     "salinity": cmo.haline,
-    "density": cmo.dense, #colormaps["cividis"],
+    "density": cmo.dense,  # colormaps["cividis"],
     "potential_density": cmo.dense,
-    "oxygen_concentration": cmo.oxy, #cmo.tempo,
+    "oxygen_concentration": cmo.oxy,  # cmo.tempo,
     "oxygen_saturation": cmo.oxy,
     "chlorophyll": cmo.algae,
     "cdom": cmo.matter,
-    "backscatter_700": cmo.delta, #colormaps["terrain"],
-    "bsipar_par": cmo.turbid, 
+    "backscatter_700": cmo.delta,  # colormaps["terrain"],
+    "bsipar_par": cmo.turbid,
     "profile_index": cmo.gray,
 }
 
@@ -473,7 +473,7 @@ def sci_ts_loop(
         #         f"Variable {var} not present in timeseries sci ds. Skipping plots",
         #     )
         #     continue
-            
+
         if var in ["potential_temperature", "profile_index"]:
             _log.info(f"Skipping {var}, because it is not relevant for TS plots")
             continue

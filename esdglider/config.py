@@ -21,8 +21,8 @@ db_components = {
     "glidercam": "Glidercam",
     "azfp": "AZFP",
     "echosounder": "Signature 100 compact echosounder",
-    "bsipar": "PAR sensor", 
-    "pam": "PAM sensor", 
+    "bsipar": "PAR sensor",
+    "pam": "PAM sensor",
 }
 
 # Calibration type name from Calibration_Type table
@@ -182,7 +182,6 @@ def make_deployment_config(
                 if key == "oxygen":
                     netcdf_vars.pop("oxygen_concentration", None)
                     netcdf_vars.pop("oxygen_saturation", None)
-
 
         # key = "ctd"
         # if db_components[key] in components:

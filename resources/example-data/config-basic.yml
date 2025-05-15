@@ -3,7 +3,7 @@ metadata:
   deployment_name: "unit_1024-20250224"
   glider_name: "unit_1024"
   glider_serial: ""
-  
+
 glider_devices:
   ctd:
   serial: ''
@@ -183,4 +183,4 @@ profile_variables:
     units:             degrees_east
     valid_max:         "180.0"
     valid_min:         "-180.0"
-    
+

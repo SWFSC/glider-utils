@@ -36,7 +36,7 @@ longitude:
   valid_min:    -180.0
   coordinate_reference_frame:  urn:ogc:crs:EPSG::4326
 
-# science data parameters. 
+# science data parameters.
 #   NOTE: if adding new science parameters, then update plots.sci_colors
 #   NOTE: pyglider.utils.get_derived_eos_raw internally calculates:
 #   salinity, potential density, density, and potential temperature

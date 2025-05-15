@@ -1,11 +1,12 @@
 import logging
 import os
-from dbdreader.decompress import is_compressed, decompress_file
+
+from dbdreader.decompress import decompress_file, is_compressed
 
 from esdglider import gcp, glider
 
 """
-This script is intended to help users quickly generate decompressed 
+This script is intended to help users quickly generate decompressed
 binary files, as a light wrapper around dbdreader functions.
 """
 
@@ -41,7 +42,6 @@ if __name__ == "__main__":
             decompress_file(os.path.join(binarydir, fin))
         else:
             logging.debug("skipping %s", fin)
-
 
     binarydir_files = os.listdir(binarydir)
     logging.info("There are now %s files in %s", len(binarydir_files), binarydir)

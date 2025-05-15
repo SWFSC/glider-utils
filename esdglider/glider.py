@@ -324,7 +324,7 @@ def binary_to_nc(
             fnamesuffix=f"-{mode}-eng",
             time_base="m_depth",
             profile_filt_time=None,
-            maxgap=300, 
+            maxgap=300,
         )
 
         _log.info(f"Post-processing engineering timeseries: {outname_tseng}")
@@ -341,7 +341,7 @@ def binary_to_nc(
             fnamesuffix=f"-{mode}-sci",
             time_base="sci_water_temp",
             profile_filt_time=None,
-            maxgap=300, 
+            maxgap=300,
         )
 
         _log.info(f"Post-processing science timeseries: {outname_tssci}")

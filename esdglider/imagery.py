@@ -186,15 +186,15 @@ def imagery_timeseries(ds, paths, ext="jpg"):
     ds_interp = ds.interp(time=df.time.values)
 
     vars_toignore = [
-        #handled above
-        "profile_index", 
+        # handled above
+        "profile_index",
         "profile_direction",
-        #in standard datasets, but not necessary here 
-        "distance_over_ground", 
-        'waypoint_latitude', 
-        'waypoint_longitude', 
-        'water_velocity_eastward', 
-        'water_velocity_northward', 
+        # in standard datasets, but not necessary here
+        "distance_over_ground",
+        "waypoint_latitude",
+        "waypoint_longitude",
+        "water_velocity_eastward",
+        "water_velocity_northward",
     ]
     vars_list = [var for var in list(ds.data_vars) if var not in vars_toignore]
 
