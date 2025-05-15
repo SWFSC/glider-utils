@@ -182,24 +182,21 @@ def imagery_timeseries(ds, paths, ext="jpg"):
     ds_sel = ds_prof.reindex(time=img_times, method="pad")
     df = df.join(ds_sel.to_pandas(), on="time", how="left")
 
-    # For each variable that exists, extract interpolated values
+    # For each variable that exists, extract interpolated values to df
     ds_interp = ds.interp(time=df.time.values)
-    vars_list = [
-        "latitude",
-        "longitude",
-        "depth",
-        "heading",
-        "pitch",
-        "roll",
-        "conductivity",
-        "temperature",
-        "pressure",
-        "salinity",
-        "density",
-        "oxygen_concentration",
-        "chlorophyll",
-        "cdom",
+
+    vars_toignore = [
+        #handled above
+        "profile_index", 
+        "profile_direction",
+        #in standard datasets, but not necessary here 
+        "distance_over_ground", 
+        'waypoint_latitude', 
+        'waypoint_longitude', 
+        'water_velocity_eastward', 
+        'water_velocity_northward', 
     ]
+    vars_list = [var for var in list(ds.data_vars) if var not in vars_toignore]
 
     for var in vars_list:
         if var not in list(ds_interp.keys()):
