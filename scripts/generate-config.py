@@ -11,9 +11,13 @@ from a local computer to access the datbase
 sqlalchemy engine. It should not be committed to GitHub.
 """
 
-path_config = "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-configs"
+# For testing
+path_config = "C:/Users/sam.woodman/Downloads"
+
+# path_config = "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-configs"
 deployment_info = {
-    "deployment": "unit_1024-20250224",
+    # "deployment": "unit_1024-20250224",
+    "deployment": "amlr08-20220513",
     "project": "SANDIEGO",
 }
 

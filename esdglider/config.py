@@ -138,6 +138,7 @@ def make_deployment_config(
         # Extract the Glider and Glider_Deployment IDs,
         # glider_id = db_depl["Glider_ID"].values[0]
         glider_deployment_id = db_depl["Glider_Deployment_ID"].values[0]
+        # glider_serial = 
 
         # Get metadata info
         metadata["deployment_id"] = str(glider_deployment_id)
@@ -256,7 +257,9 @@ def make_deployment_config(
     metadata["deployment_name"] = deployment
     metadata["project"] = project
     metadata["glider_name"] = deployment_split[0]
-    metadata["glider_serial"] = ""
+    metadata["glider_serial"] = db_devices.loc[
+        db_devices['Device_Type'] == 'Teledyne Glider Slocum G3', 'Serial_Num'
+    ].values[0]
 
     if project == "FREEBYRD":
         metadata["sea_name"] = "Southern Ocean"
