@@ -6,12 +6,12 @@ acknowledgment: 'This work was supported by funding from NOAA.'
 comment: ' '
 contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Cossio, Caleb Flaim, Jacob Partida, Eric Bjorkstedt, Jason C. Clarke, Samuel Woodman'
 contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Glider Pilot, Research Fish Biologist, Glider Pilot, Data Manager'
-creator_email: christian.reiss@noaa.gov
+creator_email: creisssd@gmail.com
 creator_name: 'Christian Reiss'
 creator_url: https://www.fisheries.noaa.gov/about/southwest-fisheries-science-center
 format_version: IOOS_Glider_NetCDF_v2.0.nc
 glider_name: <glider name>
-glider_serial: ''
+glider_serial: <glider serial>
 glider_model: 'Teledyne Webb Research Slocum G3 glider'
 glider_instrument_name: slocum
 institution: 'NOAA SWFSC Ecosystem Science Division'
@@ -31,8 +31,8 @@ metadata_link: 'https://swfsc.github.io/glider-lab-manual/'
 naming_authority: gov.noaa.fisheries
 platform_type: 'Slocum Glider'
 project: <project name>
-publisher_email: christian.reiss@noaa.gov
-publisher_name: Christian Reiss
+publisher_email: sam.woodman@noaa.gov
+publisher_name: Sam Woodman
 publisher_url: https://www.fisheries.noaa.gov/about/southwest-fisheries-science-center
 references: 'https://swfsc.github.io/glider-lab-manual/, https://github.com/c-proof/pyglider, https://github.com/SWFSC/glider-utils'
 sea_name: <sea name>
