@@ -51,14 +51,21 @@ def get_path_deployment(
 
     Parameters
     ----------
-    project : str
-        The project name of the deployment.
-        Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
-    deployment : str
-        The name of the glider deployment. Eg, amlr01-20210101
-    mode : str
-        Mode of the glider dat being processed.
-        Must be either 'rt', for real-time, or 'delayed
+    deployment_info : dict
+        A dictionary with the relevant deployment info. A dictionary is
+        used to make it easier if arguments are added or removed.
+        This dictionary must contain at least:
+        deployment : str
+            The name of the glider deployment. Eg, amlr01-20210101
+        project : str
+            The project name of the deployment.
+            Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
+        mode : str
+            Mode of the glider dat being processed.
+            Must be either 'rt', for real-time, or 'delayed
+        min_dt : str
+            string that can be converted to datetime64; see utils.drop_bogus
+            All timestamps from before this value will be dropped
     deployments_path : str
         The path to the top-level folder of the glider data.
         This is inteded to be the path to the mounted glider deployments bucket
@@ -95,19 +102,12 @@ def get_path_deployment(
         _log.error(f"glider_path ({glider_path}) does not exist")
         return
 
-    # if write_imagery:
-    #     if not os.path.isdir(imagery_path):
-    #         _log.error('write_imagery is true, and thus imagery_path ' +
-    #                       f'({imagery_path}) must be a valid path')
-    #         return
-
     cacdir = os.path.join(deployments_path, "cache")
     binarydir = os.path.join(glider_path, "data", "binary", mode)
     deploymentyaml = os.path.join(config_path, f"{deployment}.yml")
     engyaml = get_path_engyaml()
     logdir = os.path.join(deployments_path, "logs")
 
-    # ncdir = os.path.join(glider_path, "data", "nc")
     procl1dir = os.path.join(glider_path, "data", "processed-L1")
     procl2dir = os.path.join(glider_path, "data", "processed-L2")
 
@@ -157,7 +157,7 @@ def binary_to_nc(
     deployment_info : dict
         A dictionary with the relevant deployment info. A dictionary is
         used to make it easier if arguments are added or removed.
-        This dictionary must contain:
+        This dictionary must contain at least:
         deployment : str
             The name of the glider deployment. Eg, amlr01-20210101
         mode : str
@@ -225,7 +225,7 @@ def binary_to_nc(
         raise FileNotFoundError(f"Could not find {deploymentyaml}")
     with open(deploymentyaml) as fin:
         deployment_ = yaml.safe_load(fin)
-        # TODO can we get rid of this, and instead write deployment_name from deployment variablle?
+        # TODO can we get rid of this, and instead write deployment_name from deployment variable?
         deployment_name = deployment_["metadata"]["deployment_name"]
     if deployment_name != deployment:
         raise ValueError(
@@ -243,25 +243,6 @@ def binary_to_nc(
             f"{deployment}-{mode}-profiles.csv",
         ),
     }
-
-    # # Set default values for findProfiles function, and update with user vales
-    # findprof = {
-    #     "length": 0,
-    #     "period": 0,
-    #     "inversion": 10,
-    #     "interrupt": 120,
-    #     "stall": 0.5,
-    #     "shake": 0,
-    #             stall=3,
-    #     # shake=200,
-    #     # inversion = 10,
-    #     interrupt = 120,
-    #     period = 60,
-    # }
-    # findprof.update(kwargs)
-
-    # --------------------------------------------
-    # Handle compressed files?
 
     # --------------------------------------------
     # Raw
@@ -291,12 +272,21 @@ def binary_to_nc(
         prof_summ = utils.calc_profile_summary(tsraw)
         prof_summ.to_csv(postproc_info["profile_summary_path"], index=False)
 
-        # Brief profile sanity check
-        _log.info("raw profile checks")
+        # Write deployment_start and deployment_end to postproc_info
+        postproc_info["deployment_start"] = tsraw.attrs['deployment_start']
+        postproc_info["deployment_end"] = tsraw.attrs['deployment_end']
+
+        # Brief profile and depth sanity checks
+        _log.info("raw timeseries checks")
         utils.check_profiles(tsraw)
+        utils.check_depth(tsraw)
+
 
     else:
         _log.info("Not writing raw nc")
+        tsraw = xr.load_dataset(outname_tsraw)
+        postproc_info["deployment_start"] = tsraw.attrs['deployment_start']
+        postproc_info["deployment_end"] = tsraw.attrs['deployment_end']
 
     # --------------------------------------------
     # Timeseries
@@ -416,24 +406,40 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
     """
     Update attrbites of xarray DataSet ds
     pp is dictionary that provides values needed by postproc_attrs
-    Used for both eng, sci, and raw timeseries
+    Used for all of eng, sci, and raw timeseries
     """
 
     # Rerun pyglider metadata functions, now that drop_bogus has been run
-    # 'hack' to be able to use pyglider function
+    #   pp is a 'hack' to be able to use pyglider function
     ds = pgutils.fill_metadata(ds, pp["metadata_dict"], pp["device_dict"])
-    ds.attrs["deployment_start"] = str(ds.time.values[0])[:19]
-    ds.attrs["deployment_end"] = str(ds.time.values[-1])[:19]
 
-    # glider_serial is not relevant for ESD,
-    # but is req'd by pyglider so can't delete until now
-    try:
-        del ds.attrs["glider_serial"]
-    except KeyError:
-        _log.warning("Unable to delete glider_serial attribute")
-        pass
+    # When used within binary_to_nc, this code makes sure the values 
+    # are only calculated from the raw dataset
+    if "deployment_start" in pp.keys():
+        ds.attrs['deployment_start'] = pp["deployment_start"]
+        ds.attrs['deployment_end'] = pp["deployment_end"]
+    else:
+        
+        ds.attrs['deployment_start'] = str(ds['time'].values[0])
+        ds.attrs['deployment_end'] = str(ds['time'].values[-1])
 
-    # ESD updates, or fixes of pyglider attributes
+    # Determine the glider ID using min_dt, and check vs ID from time
+    min_dt64 = np.datetime64(pp["min_dt"])
+    min_dt_str = min_dt64.item().strftime("%Y%m%dT%H%M")
+    ds.attrs["id"] = f"{ds.attrs['glider_name']}-{min_dt_str}"
+
+    time_str = ds.time.values[0].astype("datetime64[s]").item().strftime("%Y%m%dT%H%M")
+    if min_dt_str != time_str:
+        _log.warning(
+            "The dataset ID generated from the metadata (%s) "
+            + "is different from that generated from the time (%s)", 
+            min_dt_str, 
+            time_str, 
+        )
+
+    # Other ESD updates, or fixes, of pyglider attributes
+    # ds.attrs["id"] = utils.get_file_id_esd(ds)
+    ds.attrs['title'] = ds.attrs['id']
     ds.attrs["processing_level"] = (
         "Minimal data screening. "
         + "Data provided as is, with no expressed or implied assurance "
@@ -454,8 +460,8 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
         ],
     )
 
-    if pp["mode"] == "delayed":
-        ds.attrs["title"] = ds.attrs["title"] + "-delayed"
+    # if pp["mode"] == "delayed":
+    #     ds.attrs["title"] = ds.attrs["title"] + "-delayed"
 
     return ds
 
@@ -472,11 +478,8 @@ def postproc_general(
     Returns the ds Dataset with updated values and attributes
     """
 
-    # ATTRIBUTES
-    ds = postproc_attrs(ds, pp)
-
     # VALUES
-    # Remove times < min_dt, and drop other bogus.
+    # Remove times that are nan or <min_dt, and drop other bogus values
     ds = utils.drop_bogus(ds, pp["min_dt"])
 
     if drop_vars is not None:
@@ -511,6 +514,9 @@ def postproc_general(
         )
         ds = utils.join_profiles(ds, prof_summ, **kwargs)
 
+    # ATTRIBUTES, after dropping vars, etc
+    ds = postproc_attrs(ds, pp)
+
     # Profiles check
     utils.check_profiles(ds)
 
@@ -541,7 +547,8 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     ds = xr.load_dataset(ds_file)
     _log.debug(f"begin eng postproc: ds has {len(ds.time)} values")
 
-    # Drop CTD variables required or created by binary_to_timeseries
+    # Drop CTD variables required or created by binary_to_timeseries, 
+    # which are not relevant for the engineering NetCDF
     ds = ds.drop_vars(
         [
             "depth",
@@ -561,28 +568,11 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     # General updates
     ds = postproc_general(ds, pp, **kwargs)
 
-    # # Remove times < min_dt, and drop other bogus.
-    # ds = utils.drop_bogus(ds, pp["min_dt"])
-    # ds = pgutils.get_distance_over_ground(ds)
-
-    # # Calculate profiles using measured depth
-    # ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
-
-    # # If provided, then update the profile indices by joining raw profiles
-    # if "profile_summary_path" in pp.keys():
-    #     # Join profiles generated using raw timeseries
-    #     prof_summ = pd.read_csv(
-    #         pp["profile_summary_path"],
-    #         parse_dates = ["start_time", "end_time"]
-    #     )
-    #     ds = utils.join_profiles(ds, prof_summ, **kwargs)
-
     # Reorder data variables
     new_start = ["latitude", "longitude", "depth", "profile_index"]
     ds = utils.data_var_reorder(ds, new_start)
 
-    # Update attributes
-    # ds = postproc_attrs(ds, pp)
+    # Update eng-specific attributes
     if "comment" not in ds.attrs:
         ds.attrs["comment"] = "engineering-only time series"
     elif not ds.attrs["comment"].strip():
@@ -619,41 +609,6 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     ds = xr.load_dataset(ds_file)
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
-    # # Remove times < min_dt
-    # ds = utils.drop_bogus(ds, pp["min_dt"])
-
-    # Drop rows in science where pressure is nan
-    # This was done because:
-    #   1) in principle there should be no depth is pressure is nan
-    #   2) pyglider does a 'zero screen'
-    #   3) nan pressure values all appear to be at the surface,
-    #       and often have weird associated values
-
-    # if "pressure" in list(ds.keys()):
-    #     num_orig = len(ds.time)
-    #     pressure_nan = np.isnan(ds.pressure.values)
-    #     _log.debug(f"depth values: {ds.depth.values[pressure_nan]}")
-    #     if any(ds.depth.values[pressure_nan] >= 5):
-    #         _log.warning(
-    #             "Some nan pressure values that will be " + "dropped have a depth >=5",
-    #         )
-    #     ds = ds.where(~np.isnan(ds.pressure), drop=True)
-    #     if (num_orig - len(ds.time)) > 0:
-    #         _log.info(f"Dropped {num_orig - len(ds.time)} nan pressure values")
-
-    # # Calculate profiles, using the CTD-derived depth values
-    # ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
-    # ds = pgutils.get_distance_over_ground(ds)
-
-    # # If provided, update the profile indices by joining raw profiles
-    # if "profile_summary_path" in pp.keys():
-    #     # Join profiles generated using raw timeseries
-    #     prof_summ = pd.read_csv(
-    #         pp["profile_summary_path"],
-    #         parse_dates = ["start_time", "end_time"]
-    #     )
-    #     ds = utils.join_profiles(ds, prof_summ, **kwargs)
-
     # General updates
     # NOTE: Drop rows in science where pressure is nan, because:
     #   1) in principle there should be no depth is pressure is nan
@@ -677,9 +632,6 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
         "potential_density",
     ]
     ds = utils.data_var_reorder(ds, new_start)
-
-    # # Update attributes
-    # ds = postproc_attrs(ds, pp)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
     utils.to_netcdf_esd(ds, ds_file)
@@ -777,10 +729,9 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
     meta = deployment["metadata"]
     with xr.open_dataset(inname) as ds:
         _log.info("Extracting profiles: opening %s", inname)
-        trajectory = utils.get_file_id_esd(ds).encode()
+        trajectory = ds.attrs["id"].encode()
         trajlen = len(trajectory)
 
-        # TODO: do floor like oceanGNS??
         profiles = np.unique(ds.profile_index)
         profiles = [p for p in profiles if (~np.isnan(p) and not (p % 1) and (p > 0))]
         for p in profiles:
@@ -791,7 +742,8 @@ def ngdac_profiles(inname, outdir, deploymentyaml, force=False):
             if force or (not os.path.exists(outname)):
                 # this is the id for the whole file, not just this profile..
                 dss["trajectory"] = trajectory
-                # trajlen = len(pgutils.get_file_id(ds).encode())
+                # dss['trajectory'] = utils.get_file_id(ds).encode()
+                # trajlen = len(utils.get_file_id(ds).encode())
                 dss["trajectory"].attrs["cf_role"] = "trajectory_id"
                 dss["trajectory"].attrs["comment"] = (
                     "A trajectory is a single"
@@ -1084,6 +1036,9 @@ def binary_to_raw(
     ds = pgutils.get_glider_depth(ds).rename({"depth": "depth_ctd"})
     ds = ds.rename({"depth_measured": "depth"})
 
+    # Only keep depth_ctd values where pressure is not nan
+    ds['depth_ctd'] = ds['depth_ctd'].where(~np.isnan(ds['pressure']))
+
     # Calculate profiles and distance_over_ground
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
     ds = pgutils.get_distance_over_ground(ds)
@@ -1094,7 +1049,7 @@ def binary_to_raw(
     # Add metadata - using postproc_attrs for consistency
     pp["metadata_dict"] = deployment["metadata"]
     pp["device_dict"] = deployment["glider_devices"]
-    postproc_attrs(ds, pp)
+    ds = postproc_attrs(ds, pp)
     ds.attrs["processing_level"] = (
         "No data screening - raw data read using dbdreader's MultiDBD.get(). "
         + "Data provided as is, with no expressed or implied assurance "
