@@ -56,8 +56,8 @@ def access_secret_version(project_id, secret_id, version_id="latest"):
 #  https://github.com/us-amlr/shaip/blob/main/shaip/utils.py
 def gcs_unmount_bucket(mountpoint):
     """
-    Run the command to unmount a bucket mounted at 'mountpoint' using gcsfuse
-    mountpoint must be a string
+    Run the command to unmount a GCS bucket mounted 
+    at path 'mountpoint' (a string) using gcsfuse
     https://cloud.google.com/storage/docs/gcs-fuse
     """
     subprocess.run(["fusermount", "-u", mountpoint])
@@ -75,10 +75,8 @@ def gcs_mount_bucket(bucket, mountpoint, ro=False):
     ----------
     bucket : str
         Name of bucket ot mount. Eg, 'amlr-gliders-imagery-raw-dev'
-
     mountpoint : str
         Path of where to mount 'bucket'. Eg, '.../amlr-gliders-imagery-proc-dev'
-
     ro : boolean
         Indicates if bucket should be mounted as read only
 
@@ -86,9 +84,12 @@ def gcs_mount_bucket(bucket, mountpoint, ro=False):
     # Make mountpoint, if necessary
     if not os.path.exists(mountpoint):
         os.makedirs(mountpoint)
+    elif os.listdir(mountpoint) != []:
+        _log.info("The mountpoint is not empty, exiting")
+        return 0
 
-    # Unmount bucket, just in case
-    gcs_unmount_bucket(mountpoint)
+    # # Unmount bucket, just in case
+    # gcs_unmount_bucket(mountpoint)
 
     # Mount bucket using gcsfuse
     cmd = ["gcsfuse", "--implicit-dirs", bucket, mountpoint]
