@@ -183,4 +183,3 @@ profile_variables:
     units:             degrees_east
     valid_max:         "180.0"
     valid_min:         "-180.0"
-

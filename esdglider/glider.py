@@ -273,20 +273,19 @@ def binary_to_nc(
         prof_summ.to_csv(postproc_info["profile_summary_path"], index=False)
 
         # Write deployment_start and deployment_end to postproc_info
-        postproc_info["deployment_start"] = tsraw.attrs['deployment_start']
-        postproc_info["deployment_end"] = tsraw.attrs['deployment_end']
+        postproc_info["deployment_start"] = tsraw.attrs["deployment_start"]
+        postproc_info["deployment_end"] = tsraw.attrs["deployment_end"]
 
         # Brief profile and depth sanity checks
         _log.info("raw timeseries checks")
         utils.check_profiles(tsraw)
         utils.check_depth(tsraw)
 
-
     else:
         _log.info("Not writing raw nc")
         tsraw = xr.load_dataset(outname_tsraw)
-        postproc_info["deployment_start"] = tsraw.attrs['deployment_start']
-        postproc_info["deployment_end"] = tsraw.attrs['deployment_end']
+        postproc_info["deployment_start"] = tsraw.attrs["deployment_start"]
+        postproc_info["deployment_end"] = tsraw.attrs["deployment_end"]
 
     # --------------------------------------------
     # Timeseries
@@ -413,15 +412,14 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
     #   pp is a 'hack' to be able to use pyglider function
     ds = pgutils.fill_metadata(ds, pp["metadata_dict"], pp["device_dict"])
 
-    # When used within binary_to_nc, this code makes sure the values 
+    # When used within binary_to_nc, this code makes sure the values
     # are only calculated from the raw dataset
     if "deployment_start" in pp.keys():
-        ds.attrs['deployment_start'] = pp["deployment_start"]
-        ds.attrs['deployment_end'] = pp["deployment_end"]
+        ds.attrs["deployment_start"] = pp["deployment_start"]
+        ds.attrs["deployment_end"] = pp["deployment_end"]
     else:
-        
-        ds.attrs['deployment_start'] = str(ds['time'].values[0])
-        ds.attrs['deployment_end'] = str(ds['time'].values[-1])
+        ds.attrs["deployment_start"] = str(ds["time"].values[0])
+        ds.attrs["deployment_end"] = str(ds["time"].values[-1])
 
     # Determine the glider ID using min_dt, and check vs ID from time
     min_dt64 = np.datetime64(pp["min_dt"])
@@ -432,14 +430,14 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
     if min_dt_str != time_str:
         _log.warning(
             "The dataset ID generated from the metadata (%s) "
-            + "is different from that generated from the time (%s)", 
-            min_dt_str, 
-            time_str, 
+            + "is different from that generated from the time (%s)",
+            min_dt_str,
+            time_str,
         )
 
     # Other ESD updates, or fixes, of pyglider attributes
     # ds.attrs["id"] = utils.get_file_id_esd(ds)
-    ds.attrs['title'] = ds.attrs['id']
+    ds.attrs["title"] = ds.attrs["id"]
     ds.attrs["processing_level"] = (
         "Minimal data screening. "
         + "Data provided as is, with no expressed or implied assurance "
@@ -547,7 +545,7 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     ds = xr.load_dataset(ds_file)
     _log.debug(f"begin eng postproc: ds has {len(ds.time)} values")
 
-    # Drop CTD variables required or created by binary_to_timeseries, 
+    # Drop CTD variables required or created by binary_to_timeseries,
     # which are not relevant for the engineering NetCDF
     ds = ds.drop_vars(
         [
@@ -1037,7 +1035,7 @@ def binary_to_raw(
     ds = ds.rename({"depth_measured": "depth"})
 
     # Only keep depth_ctd values where pressure is not nan
-    ds['depth_ctd'] = ds['depth_ctd'].where(~np.isnan(ds['pressure']))
+    ds["depth_ctd"] = ds["depth_ctd"].where(~np.isnan(ds["pressure"]))
 
     # Calculate profiles and distance_over_ground
     ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)

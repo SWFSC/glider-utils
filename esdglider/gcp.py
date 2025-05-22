@@ -56,7 +56,7 @@ def access_secret_version(project_id, secret_id, version_id="latest"):
 #  https://github.com/us-amlr/shaip/blob/main/shaip/utils.py
 def gcs_unmount_bucket(mountpoint):
     """
-    Run the command to unmount a GCS bucket mounted 
+    Run the command to unmount a GCS bucket mounted
     at path 'mountpoint' (a string) using gcsfuse
     https://cloud.google.com/storage/docs/gcs-fuse
     """
@@ -79,7 +79,6 @@ def gcs_mount_bucket(bucket, mountpoint, ro=False):
         Path of where to mount 'bucket'. Eg, '.../amlr-gliders-imagery-proc-dev'
     ro : boolean
         Indicates if bucket should be mounted as read only
-
     """
     # Make mountpoint, if necessary
     if not os.path.exists(mountpoint):

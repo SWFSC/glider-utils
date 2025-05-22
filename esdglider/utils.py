@@ -851,15 +851,15 @@ def check_depth(ds: xr.Dataset) -> xr.Dataset:
 
     Returns
     -------
-    An xarray dataset with variables 
-    da1 ("depth_measured") and da2 ("depth_ctd"), as well as 
-    1) da1 interpolated onto all timestamps of da2 ("depth_measured_interp"), 
+    An xarray dataset with variables
+    da1 ("depth_measured") and da2 ("depth_ctd"), as well as
+    1) da1 interpolated onto all timestamps of da2 ("depth_measured_interp"),
     and 2) the difference between da2 and interpolated da1 ("depth_diff")
     """
 
     _log.info("Starting depth checks (measured vs CTD)")
-    da1 = ds['depth']
-    da2 = ds['depth_ctd']
+    da1 = ds["depth"]
+    da2 = ds["depth_ctd"]
 
     # Interpolate da1 onto the time points of da2, and get the differences
     da1_interp = da1.dropna("time").interp(time=da2.time)
@@ -867,14 +867,18 @@ def check_depth(ds: xr.Dataset) -> xr.Dataset:
 
     _log.debug(depth_diff.to_pandas().describe())
     if depth_diff.max() > 3:
-        _log.warning("The max difference between the glider measured depth and depth calculated from the CTD is greater than 3m")
+        _log.warning(
+            "The max difference between the glider measured depth and depth calculated from the CTD is greater than 3m"
+        )
         _log.warning(depth_diff.to_pandas().describe())
 
-    ds = xr.merge([
-        da1.rename("depth_measured"), 
-        da2.rename("depth_ctd"), 
-        da1_interp.rename("depth_measured_interp"), 
-        depth_diff.rename("depth_diff")
-    ])
+    ds = xr.merge(
+        [
+            da1.rename("depth_measured"),
+            da2.rename("depth_ctd"),
+            da1_interp.rename("depth_measured_interp"),
+            depth_diff.rename("depth_diff"),
+        ]
+    )
 
     return ds
