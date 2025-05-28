@@ -154,7 +154,7 @@ sci_vars = {
     "chlorophyll": cmo.algae,
     "cdom": cmo.matter,
     "backscatter_700": cmo.delta,  # colormaps["terrain"],
-    "bsipar_par": cmo.turbid,
+    "par": cmo.turbid,
     "profile_index": cmo.gray,
 }
 

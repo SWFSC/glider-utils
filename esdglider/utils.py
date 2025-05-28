@@ -647,6 +647,74 @@ def calc_regions(ds: xr.Dataset) -> pd.DataFrame:
     return regions_df
 
 
+# Define helper functions for calc_profile_summary
+def _custom_agg(group, surface_depth=5):
+    """
+    Custom aggregation function for profile_summary.
+    See 'calc_profile_summary' docs for more details
+
+    Parameters
+    ----------
+    'group' is the current pandas series group
+    'surface_depth' is the maximum depth that is considered the surface
+        for 'time at surface' calculations.
+    """
+    # Get start and end depths - drop in case any depths are nan
+    depth_nona = group["depth"].dropna().values
+    if depth_nona.shape[0] == 0:
+        start_depth = np.nan
+        end_depth = np.nan
+        depth_range = np.nan
+    else:
+        start_depth = depth_nona[0]
+        end_depth = depth_nona[-1]
+        depth_range = abs(depth_nona.max() - depth_nona.min())
+
+    # Get series from which to calcualte ranges
+    dog = group["distance_over_ground"]
+
+    # Time at surface
+    surface_pts = group["time"][group["depth"] <= surface_depth]
+    if surface_pts.shape[0] == 0:
+        tas = 0
+    else:
+        tas = int((surface_pts.max() - surface_pts.min()).total_seconds())
+
+    # Profile direction is 0 if between profiles
+    if all(group["profile_index"] % 1 == 0.5):
+        profile_direction = 0
+    else:
+        profile_direction = group["profile_direction"].mode().iloc[0]
+
+    return pd.Series(
+        {
+            "profile_direction": profile_direction,
+            "start_time": group["time"].min(),
+            "end_time": group["time"].max(),
+            "start_depth": start_depth,
+            "end_depth": end_depth,
+            "depth_range": depth_range,
+            "distance_traveled": dog.max() - dog.min(),
+            "num_points": group.shape[0],
+            "time_at_surface_s": tas,
+        },
+    )
+
+def _calc_profile_descriptions(df, surface_depth=10):
+    """Determine if a between profile is at the surface or at depth"""
+    st = df["start_depth"] < surface_depth
+    en = df["end_depth"] < surface_depth
+    prof = df["profile_index"] % 1 == 0
+
+    prof_description = np.where(
+        prof,
+        df["profile_direction"].map(direction_mapping),
+        np.where(st | en, "Surface", "Deep"),
+    )
+
+    return prof_description
+
+
 def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
     """
     For each profile, ie after grouping by profile_index,
@@ -679,72 +747,7 @@ def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
             or 'Surface' (between profiles at surface).
     """
 
-    # Define helper functions
-    def _custom_agg(group, surface_depth=5):
-        """
-        Custom aggregation function for profile_summary.
-        See 'calc_profile_summary' docs for more details
 
-        Parameters
-        ----------
-        'group' is the current pandas series group
-        'surface_depth' is the maximum depth that is considered the surface
-            for 'time at surface' calculations.
-        """
-        # Get start and end depths - drop in case any depths are nan
-        depth_nona = group["depth"].dropna().values
-        if depth_nona.shape[0] == 0:
-            start_depth = np.nan
-            end_depth = np.nan
-            depth_range = np.nan
-        else:
-            start_depth = depth_nona[0]
-            end_depth = depth_nona[-1]
-            depth_range = abs(depth_nona.max() - depth_nona.min())
-
-        # Get series from which to calcualte ranges
-        dog = group["distance_over_ground"]
-
-        # Time at surface
-        surface_pts = group["time"][group["depth"] <= surface_depth]
-        if surface_pts.shape[0] == 0:
-            tas = 0
-        else:
-            tas = int((surface_pts.max() - surface_pts.min()).total_seconds())
-
-        # Profile direction is 0 if between profiles
-        if all(group["profile_index"] % 1 == 0.5):
-            profile_direction = 0
-        else:
-            profile_direction = group["profile_direction"].mode().iloc[0]
-
-        return pd.Series(
-            {
-                "profile_direction": profile_direction,
-                "start_time": group["time"].min(),
-                "end_time": group["time"].max(),
-                "start_depth": start_depth,
-                "end_depth": end_depth,
-                "depth_range": depth_range,
-                "distance_traveled": dog.max() - dog.min(),
-                "num_points": group.shape[0],
-                "time_at_surface_s": tas,
-            },
-        )
-
-    def _calc_profile_descriptions(df, surface_depth=10):
-        """Determine if a between profile is at the surface or at depth"""
-        st = df["start_depth"] < surface_depth
-        en = df["end_depth"] < surface_depth
-        prof = df["profile_index"] % 1 == 0
-
-        prof_description = np.where(
-            prof,
-            df["profile_direction"].map(direction_mapping),
-            np.where(st | en, "Surface", "Deep"),
-        )
-
-        return prof_description
 
     # Calculate the dataframe
     df = (
