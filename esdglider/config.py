@@ -12,7 +12,7 @@ _log = logging.getLogger(__name__)
 
 
 # Names of Components in the ESD Glider Database (table Device_Type)
-# NOTE: if changing a key value, must adjust code below
+# NOTE: if changing a key or value, must adjust code below
 db_components = {
     "ctd": "CTD",
     "flbbcd": "flbbcd Fluorometer",
@@ -20,64 +20,85 @@ db_components = {
     "shadowgraph": "Shadowgraph camera",
     "glidercam": "Glidercam",
     "azfp": "AZFP",
-    "echosounder": "Signature 100 compact echosounder",
-    "bsipar": "PAR sensor",
-    "pam": "PAM sensor",
+    "echosounder": "Sig 100 compact echosounder",
+    "par": "PAR sensor",
+    "dmon": "DMON",
+    "wispr": "WISPR", 
+    "hydrophone": "Hydrophone"
 }
 
 # Calibration type name from Calibration_Type table
 db_factory_cal = ["Factory - Initial", "Factory - Recalibration"]
 
 
-def instrument_attrs(instr_name, devices, x, y):
+def instrument_attrs(key, devices, dev_df, cal_df):
     """
-    instr_name: str
-        Name of instrument name, eg 'ctd' or 'oxygen'.
+    component: str
+        Name of instrument component, eg 'ctd' or 'oxygen'.
         Name must be a key in db_components
-    prof_vars: dict
-        Profile variables dictionary
     devices: dict
         Devices dictionary, read in from yaml file
-    x: DataFrame
+    dev_df: DataFrame
         Pandas dataframe of devices, filtered for Deployment ID
-    y: DataFrame
+    cal_df: DataFrame
         Pandas dataframe of device calibrations, filtered for Deployment ID
     """
 
-    component_name = db_components[instr_name]
-    instrument = devices[instr_name]
+    dev_components = dev_df["Component"]
+    component = db_components[key]
+    instr = devices[key]
 
-    instrument["serial_number"] = x.loc[
-        x["Component"] == component_name,
-        "Serial_Num",
-    ].values[0]
+    # Get instrument serial, make/model, firmware version, etc
+    dev_curr = dev_df[dev_components == component]
+    instr["serial_number"] = dev_curr["Serial_Num"].values[0]
+    instr["make_model"] = (
+        f"{dev_curr["Manufacturer"].values[0]} {dev_curr["Model"].values[0]}"
+    )
 
-    y_curr = y[y["Component"] == component_name]
-    if y_curr.shape[0] > 1:
-        raise ValueError(f"Multiple calibrations for {instr_name}")
-    elif y_curr.shape[0] == 1:
-        instrument["calibration_date"] = str(y_curr["Calibration_Date"].values[0])[:10]
-        # if instr_name in ["ctd", "flbbcd", "oxygen"]:
-        if y_curr["Calibration_Type"].values[0] in db_factory_cal:
-            instrument["factory_calibrated"] = instrument["calibration_date"]
+    # If CTD, add 'pumped' comment
+    if key == "ctd":
+        if instr["make_model"] == "Sea-Bird GPCTD":
+            instr["comment"] = "Pumped"
+        else:
+            _log.warning("Unknown CTD make/model")
+
+    # If hydrophone+wispr, add a comment  
+    if key in ("hydrophone", "wispr"):
+        wispr_plus_hydrophone = (
+            (db_components["wispr"] in dev_components.values)
+            and (db_components["hydrophone"] in dev_components.values)
+        )
+        if wispr_plus_hydrophone:
+            instr["comment"] = (
+                "The WISPR does not have a built-in hydrophone, "
+                + "and thus this glider has both a "
+                + "WISPR instrument and a hydrophone instrument"
+            )
+        else:
+            _log.warning("Hydrophone without paired WISPR3")
+
+    # TODO: firmware version
+
+    # Get calibration date, and factory calibration if applicable
+    cal_curr = cal_df[cal_df["Component"] == component]
+    if cal_curr.shape[0] > 1:
+        raise ValueError(f"Multiple calibrations for {component}")
+    elif cal_curr.shape[0] == 1:
+        instr["calibration_date"] = str(cal_curr["Calibration_Date"].values[0])[:10]
+        if cal_curr["Calibration_Type"].values[0] in db_factory_cal:
+            instr["factory_calibrated"] = instr["calibration_date"]
     else:
-        _log.info(f"No calibration info for component {instr_name}")
+        _log.info(f"No calibration info for component {component}")
 
-    return instrument
+    return instr
 
 
-def make_deployment_config(
-    deployment_info: dict,
-    # deployment: str,
-    # project: str,
-    out_path: str,
-    db_url=None,
-):
+def make_deployment_config(deployment: str, out_path: str, db_url=None):
     """
     deployment : str
-        name of the glider deployment. Eg, amlr01-20200101
-    project : str
-        deployment project name, eg FREEBYRD
+        name of the glider deployment. Eg, amlr01-20200101. 
+        Only need the name of the deployment, 
+        because the database contains the project
     out_path : str
         path to which to write the output yaml file
     db_url : str
@@ -89,8 +110,7 @@ def make_deployment_config(
         Full path of the output (written) yaml file
     """
 
-    deployment = deployment_info["deployment"]
-    project = deployment_info["project"]
+    _log.info("Creating config file for deployment %s", deployment)
     _log.debug("Reading template yaml files")
 
     def esdglider_yaml_read(yaml_name):
@@ -135,9 +155,10 @@ def make_deployment_config(
             )
             raise ValueError("Invalid Glider_Deployment match")
 
-        # Extract the Glider and Glider_Deployment IDs,
+        # Extract various deployment info
         # glider_id = db_depl["Glider_ID"].values[0]
         glider_deployment_id = db_depl["Glider_Deployment_ID"].values[0]
+        project = db_depl["Project"].values[0]
 
         # Get metadata info
         metadata["deployment_id"] = str(glider_deployment_id)
@@ -257,8 +278,7 @@ def make_deployment_config(
     metadata["project"] = project
     metadata["glider_name"] = deployment_split[0]
     metadata["glider_serial"] = db_devices.loc[
-        db_devices["Device_Type"] == "Teledyne Glider Slocum G3",
-        "Serial_Num",
+        db_devices['Device_Type'] == 'Teledyne Glider Slocum G3', 'Serial_Num'
     ].values[0]
 
     if project == "FREEBYRD":

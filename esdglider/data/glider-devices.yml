@@ -1,18 +1,18 @@
 ctd:
   _FillValue: -999
   long_name: 'Conductivity, Temperature, Depth (CTD) Sensor'
-  make_model: 'Sea-Bird GPCTD'
+  make_model: "" #'Sea-Bird GPCTD'
   serial_number: ' '
   factory_calibrated: ' '
   calibration_date: ' '
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
-  comment: "Pumped"
+  comment: "" #"Pumped"
   platform: "platform"
   type: "instrument"
 flbbcd:
   _FillValue: -999
   long_name: 'Optical Backscatter, Chlorophyll, and CDOM Fluorescence Sensor'
-  make_model: 'WET Labs ECO Puck FLBBCD'
+  make_model: "" #'WET Labs ECO Puck FLBBCD'
   serial_number: ' '
   calibration_date: ""
   factory_calibrated: ""
@@ -23,7 +23,7 @@ flbbcd:
 oxygen:
   _FillValue: -999
   long_name: 'Oxygen Optode'
-  make_model: 'Aanderaa Oxygen Optode 4831'
+  make_model: "" #'Aanderaa Oxygen Optode 4831'
   serial_number: ' '
   calibration_date: ""
   factory_calibrated: ""
@@ -31,9 +31,9 @@ oxygen:
   comment: ""
   platform: "platform"
   type: "instrument"
-glidercam: #software? other versiony info?
+glidercam: 
   _FillValue: -999
-  make_model: 'Williamson and Associates Glidercam'
+  make_model: "" #'Williamson and Associates Glidercam'
   serial_number: ""
   calibration_date: ""
   factory_calibrated: ""
@@ -41,9 +41,9 @@ glidercam: #software? other versiony info?
   comment: ""
   platform: "platform"
   type: "instrument"
-shadowgraph: #software? other versiony info?
+shadowgraph: 
   _FillValue: -999
-  make_model: 'Williamson and Associates Shadowgraph Camera (11cm)'
+  make_model: "" #'Williamson and Associates Shadowgraph Camera (11cm)'
   serial_number: ""
   calibration_date: ""
   factory_calibrated: ""
@@ -53,7 +53,7 @@ shadowgraph: #software? other versiony info?
   type: "instrument"
 azfp:
   _FillValue: -999
-  make_model: "ASL Environmental Sciences AZFP 3 Frequency"
+  make_model: "" #"ASL Environmental Sciences AZFP 3 Frequency"
   long_name: 'ASL AZFP'
   serial_number: ""
   calibration_date: ""
@@ -62,9 +62,50 @@ azfp:
   comment: ""
   platform: "platform"
   type: "instrument"
-echosounder: #software? other versiony info?
+echosounder: 
   _FillValue: -999
-  make_model: 'Nortek Signature 100 Compact Echosounder'
+  make_model: "" #'Nortek Signature 100 Compact Echosounder'
+  serial_number: ""
+  calibration_date: ""
+  factory_calibrated: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
+  comment: ""
+  platform: "platform"
+  type: "instrument"
+par: 
+  _FillValue: -999
+  make_model: ""
+  serial_number: ""
+  calibration_date: ""
+  factory_calibrated: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
+  comment: ""
+  platform: "platform"
+  type: "instrument"
+dmon:
+  _FillValue: -999
+  make_model: ""
+  serial_number: ""
+  calibration_date: ""
+  factory_calibrated: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
+  comment: ""
+  references: "https://robots4whales.whoi.edu/"
+  platform: "platform"
+  type: "instrument"
+wispr:
+  _FillValue: -999
+  make_model: ""
+  serial_number: ""
+  calibration_date: ""
+  factory_calibrated: ""
+  calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
+  comment: ""
+  platform: "platform"
+  type: "instrument"
+hydrophone:
+  _FillValue: -999
+  make_model: ""
   serial_number: ""
   calibration_date: ""
   factory_calibrated: ""
