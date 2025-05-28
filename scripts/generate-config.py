@@ -15,11 +15,6 @@ sqlalchemy engine. It should not be committed to GitHub.
 path_config = "C:/Users/sam.woodman/Downloads"
 
 # path_config = "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-configs"
-# deployment_info = {
-#     # "deployment": "unit_1024-20250224",
-#     "deployment": "amlr08-20220513",
-#     "project": "SANDIEGO",
-# }
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -31,4 +26,9 @@ if __name__ == "__main__":
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
 
-    config.make_deployment_config("stenella-20250414", path_config, conn_string)
+    config.make_deployment_config(
+        # "risso-20250414", 
+        "amlr01-20181216", 
+        path_config, 
+        conn_string, 
+    )
