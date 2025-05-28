@@ -6,7 +6,8 @@ ctd:
   factory_calibrated: ' '
   calibration_date: ' '
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
-  comment: "" #"Pumped"
+  comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"
 flbbcd:
@@ -18,6 +19,7 @@ flbbcd:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"
 oxygen:
@@ -29,6 +31,7 @@ oxygen:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"
 glidercam: 
@@ -39,6 +42,7 @@ glidercam:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"
 shadowgraph: 
@@ -49,6 +53,7 @@ shadowgraph:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"
 azfp:
@@ -60,6 +65,7 @@ azfp:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"
 echosounder: 
@@ -70,6 +76,7 @@ echosounder:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"
 par: 
@@ -80,6 +87,7 @@ par:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"
 dmon:
@@ -90,6 +98,7 @@ dmon:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   references: "https://robots4whales.whoi.edu/"
   platform: "platform"
   type: "instrument"
@@ -101,6 +110,7 @@ wispr:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"
 hydrophone:
@@ -111,5 +121,6 @@ hydrophone:
   factory_calibrated: ""
   calibration_report: "https://github.com/SWFSC/glider-lab/tree/main/calibration-docs"
   comment: ""
+  description: ""
   platform: "platform"
   type: "instrument"

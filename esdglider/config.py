@@ -48,9 +48,10 @@ def instrument_attrs(key, devices, dev_df, cal_df):
     component = db_components[key]
     instr = devices[key]
 
-    # Get instrument serial, make/model, firmware version, etc
+    # Get instrument attributes: serial, make/model, etc
     dev_curr = dev_df[dev_components == component]
     instr["serial_number"] = dev_curr["Serial_Num"].values[0]
+    instr["description"] = dev_curr["Device_Description"].fillna("").values[0]
     instr["make_model"] = (
         f"{dev_curr["Manufacturer"].values[0]} {dev_curr["Model"].values[0]}"
     )
@@ -61,21 +62,6 @@ def instrument_attrs(key, devices, dev_df, cal_df):
             instr["comment"] = "Pumped"
         else:
             _log.warning("Unknown CTD make/model")
-
-    # If hydrophone+wispr, add a comment  
-    if key in ("hydrophone", "wispr"):
-        wispr_plus_hydrophone = (
-            (db_components["wispr"] in dev_components.values)
-            and (db_components["hydrophone"] in dev_components.values)
-        )
-        if wispr_plus_hydrophone:
-            instr["comment"] = (
-                "The WISPR does not have a built-in hydrophone, "
-                + "and thus this glider has both a "
-                + "WISPR instrument and a hydrophone instrument"
-            )
-        else:
-            _log.warning("Hydrophone without paired WISPR3")
 
     # TODO: firmware version
 
