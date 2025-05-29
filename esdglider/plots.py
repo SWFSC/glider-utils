@@ -84,9 +84,9 @@ def adj_var_label(ds, var):
 Functionally, this is variables that should be plotted with log10
 """
 adjustments = {
-    "chlorophyll": np.log10,
-    "cdom": np.log10,
-    "backscatter_700": np.log10,
+    # "chlorophyll": np.log10,
+    # "cdom": np.log10,
+    # "backscatter_700": np.log10,
     # "temperature": return_var,
     # "oxygen_concentration": return_var,
     # "salinity": return_var,
