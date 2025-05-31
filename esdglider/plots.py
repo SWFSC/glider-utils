@@ -387,6 +387,10 @@ def sci_timeseries_loop(
             )
             continue
 
+        if var in ["profile_index"]:
+            _log.info(f"Skipping {var}, because it is not relevant for science timeseries plots")
+            continue
+
         sci_timeseries_plot(ds, var, base_path=base_path, show=show)
         sci_gt_plot(ds, var, base_path=base_path, show=show)
     _log.info("Completed science timeseries plots")
@@ -1380,6 +1384,9 @@ def sci_gt_plot(
     ax.set_xlabel("Profile", size=label_size)
     ax.set_ylabel("Depth [m]", size=label_size)
     ax.set_title(f"Deployment {deployment} for project {project}", size=title_size)
+    
+    # Sometimes glidertools won't plot label, so guarantee it
+    ax.cb.set_label(adj_var_label(ds, var), size=label_size)
 
     if base_path is not None:
         fname = os.path.join(
