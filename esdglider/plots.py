@@ -11,6 +11,7 @@ import numpy as np
 import xarray as xr
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Patch
+import glidertools as gt
 
 from esdglider import utils
 
@@ -29,6 +30,7 @@ spatialgrid_path = "spatialGrids-sci"
 tvt_path = "thisVsThat-eng"
 timeseries_eng_path = "timeSeries-eng"
 timeseries_sci_path = "timeSeries-sci"
+gridded_sci_path = "timeSeries-grid-sci"
 ts_path = "TS-sci"
 surfacemap_sci_path = "maps-sci"
 
@@ -219,7 +221,6 @@ def esd_all_plots(
     """
 
     _log.info("Doing all of the plots")
-    # utils.rmtree(base_path) #TODO: move to each loop
 
     # Load datasets
     _log.info("Loading datasets")
@@ -241,6 +242,7 @@ def esd_all_plots(
     eng_timeseries_loop(ds_eng, base_path)
     eng_tvt_loop(ds_eng, base_path)
     sci_ts_loop(ds_sci, base_path)
+
 
     if bar_file is not None:
         _log.info(f"Loading bar file from {bar_file}")
@@ -352,7 +354,7 @@ def sci_timeseries_loop(
     A loop/wrapper function to use a timeseries science dataset to make plots
     of all sci_vars keys.
     Specifically, for each sci_var present in the dataset,
-    create a timeseries plot
+    create both a raw timeseries plot and a gt timeseries plot
 
     Arguments let the user specify if these plots should be saved, and/or shown
 
@@ -375,6 +377,7 @@ def sci_timeseries_loop(
     # If doing the loop, remove past plots
     if base_path is not None:
         utils.rmtree(os.path.join(base_path, timeseries_sci_path))
+        utils.rmtree(os.path.join(base_path, gridded_sci_path))
 
     for var in sci_vars:
         _log.debug(f"var {var}")
@@ -385,6 +388,7 @@ def sci_timeseries_loop(
             continue
 
         sci_timeseries_plot(ds, var, base_path=base_path, show=show)
+        sci_gt_plot(ds, var, base_path=base_path, show=show)
     _log.info("Completed science timeseries plots")
 
 
@@ -1317,6 +1321,72 @@ def ts_plot(
 
     if base_path is not None:
         fname = os.path.join(base_path, ts_path, f"{deployment}_{var}_tsPlot.png")
+        save_plot(fig, fname)
+
+    if show:
+        plt.show()
+    plt.close(fig)
+
+    return fig
+
+
+def sci_gt_plot(
+    ds: xr.Dataset,
+    var: str,
+    base_path: str | None = None,
+    show: bool = False,
+    robust: bool = True
+):
+    """
+    Create timeseries plots of 1m gridded science variables
+    Saves the plot to 'gridded_sci_path' folder within 'base_path'.
+    Note, because GliderTools, gt.plot will always try to show a plot
+
+    Parameters
+    ----------
+    ds : xarray dataset
+        Timeseries glider science dataset.
+        This is intended to be a gridded dataset produced by slocum.binary_to_nc
+    var : str
+        The name of the variable to plot
+    base_path : str
+        The 'base' of the plot path. If None, then the plot will not be saved
+        Intended to be the 'plotdir' output of slocum.get_path_deployments
+    show : bool
+        Boolean indicating if the plots should be shown before being closed
+    robust : bool
+        Default True. Passed to glidertools.plot:
+        "robust - use the 0.5 and 99.5 percentile to set color limits"
+
+    Returns
+    -------
+        matplotlib.Figure.figure object
+    """
+
+    if var not in list(ds.data_vars):
+        _log.info(f"Variable name {var} not present in ds. Skipping plot")
+        return
+
+    _log.info(f"Making sci gridded timeseries plot for variable {var}, using glidertools")
+    deployment = ds.deployment_name
+    project = ds.project
+
+    dat = ds.where(ds['profile_index'] % 1 == 0, drop = True)
+    x = dat.profile_index
+    y = dat.depth
+
+    fig, ax = plt.subplots(figsize=(11, 8.5))
+    ax = gt.plot(x, y, adj_var(dat, var), cmap=sci_vars[var], ax=ax, robust=robust)
+    ax.set_xlabel("Profile", size=label_size)
+    ax.set_ylabel("Depth [m]", size=label_size)
+    ax.set_title(f"Deployment {deployment} for project {project}", size=title_size)
+
+    if base_path is not None:
+        fname = os.path.join(
+            base_path,
+            gridded_sci_path,
+            f"{deployment}_{var}_gt.png",
+        )
         save_plot(fig, fname)
 
     if show:

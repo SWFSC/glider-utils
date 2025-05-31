@@ -6,7 +6,7 @@ acknowledgment: 'This work was supported by funding from NOAA.'
 comment: ' '
 contributor_name: 'Christian Reiss, George Watters, Jennifer Walsh, Anthony Cossio, Tegan Murray, Samuel Woodman'
 contributor_role: 'Principal Investigator, Principal Investigator, Glider Pilot, Glider Pilot, Glider Pilot, Data Manager'
-creator_email: creisssd@gmail.com
+creator_email: nmfs.swfsc.esd-gliders@noaa.gov 
 creator_name: 'Christian Reiss'
 creator_url: https://www.fisheries.noaa.gov/about/southwest-fisheries-science-center
 format_version: IOOS_Glider_NetCDF_v2.0.nc
