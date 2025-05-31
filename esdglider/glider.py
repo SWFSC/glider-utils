@@ -115,7 +115,7 @@ def get_path_deployment(
     rawdir = procl1dir
     tsdir = procl1dir
     griddir = procl1dir
-    profdir = os.path.join(procl1dir, f"ngdac-{mode}")
+    profdir = os.path.join(procl1dir, "ngdac", mode)
 
     plotdir = os.path.join(glider_path, "plots", mode)
 
