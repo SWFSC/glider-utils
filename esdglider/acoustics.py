@@ -21,11 +21,13 @@ def get_path_acoutics(deployment_info: dict, acoustic_path: str):
     ----------
     deployment_info : dict
         A dictionary with the relevant deployment info. Specifically:
-        project : str
-            The project name of the deployment.
-            Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
-        deployment : str
-            The name of the glider deployment. Eg, amlr01-20210101
+        deploymentyaml : str
+            The filepath of the glider deployment yaml. 
+            This file will have relevant info, 
+            including deployment name (eg, amlr01-20210101) and project
+        mode : str
+            Mode of the glider data being processed.
+            Must be either 'rt', for real-time, or 'delayed
     acoustic_path : str
         The path to the top-level folder of the acoustic data.
         This is intended to be the path to the mounted acoustic bucket
@@ -36,25 +38,29 @@ def get_path_acoutics(deployment_info: dict, acoustic_path: str):
         A dictionary with the relevant acoustic paths
     """
 
-    deployment = deployment_info["deployment"]
-    project = deployment_info["project"]
+    # Extract or calculate relevant info
+    deploymentyaml = deployment_info["deploymentyaml"]
+    mode = deployment_info["mode"]
+    deployment = utils.read_deploymentyaml(deploymentyaml)
 
-    if not os.path.isdir(acoustic_path):
-        raise FileNotFoundError(f"{acoustic_path} does not exist")
+    deployment_name = deployment["metadata"]["deployment_name"]
+    project = deployment["metadata"]["project"]
+    year = utils.year_path(project, deployment_name)
 
-    year = utils.year_path(project, deployment)
-
+    # Check that relevant deployment path exists
     acoustic_deployment_path = os.path.join(
         acoustic_path,
         project,
         year,
-        deployment,
+        deployment_name,
     )
     if not os.path.isdir(acoustic_deployment_path):
         raise FileNotFoundError(f"{acoustic_deployment_path} does not exist")
 
+    # Return dictionary of file paths
     return {
-        # "imagedir": os.path.join(acoustic_deployment_path, 'images'),
+        "rawdatadir": os.path.join(acoustic_deployment_path, "data", mode),
+        "configdir": os.path.join(acoustic_deployment_path, "config"),
         "metadir": os.path.join(acoustic_deployment_path, "metadata"),
     }
 

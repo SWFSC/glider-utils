@@ -9,6 +9,7 @@ import gsw
 import numpy as np
 import pandas as pd
 import xarray as xr
+import yaml
 
 _log = logging.getLogger(__name__)
 
@@ -279,7 +280,44 @@ def join_profiles(ds, df, **kwargs):
     return ds
 
 
-def drop_bogus(ds: xr.Dataset, min_dt: str = "1970-01-01") -> xr.Dataset:
+def drop_bogus_times(
+    ds: xr.Dataset, 
+    min_dt: str = "1970-01-01", 
+    max_drop: bool = False, 
+) -> xr.Dataset:
+    """
+    Drop bogus times. 
+    This function is separate to allow users to drop only bogus times.
+    See the function 'drop_bogus' for a description of arguments
+    """
+    
+    # For out of range or nan time/lat/lon, drop rows
+    num_orig = len(ds.time)
+    ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
+    if (num_orig - len(ds.time)) > 0:
+        _log.info(
+            f"Dropped {num_orig - len(ds.time)} times "
+            + f"that were either nan or before {min_dt}",
+        )
+
+    if max_drop:
+        num_orig = len(ds.time)
+        max_dt = np.datetime64(datetime_now_utc("%Y-%m-%dT%H:%M:%S"))
+        ds = ds.where(ds.time <= np.datetime64(max_dt), drop=True)
+        if (num_orig - len(ds.time)) > 0:
+            _log.info(
+                f"Dropped {num_orig - len(ds.time)} times "
+                + f"that were after the current UTC time {max_dt}",
+            )
+
+    return ds
+
+
+def drop_bogus(
+    ds: xr.Dataset, 
+    min_dt: str = "1970-01-01", 
+    max_drop: bool = False, 
+) -> xr.Dataset:
     """
     Remove and/or drop bogus times and values.
     Rows with bogus time or lat/lons are dropped.
@@ -301,15 +339,19 @@ def drop_bogus(ds: xr.Dataset, min_dt: str = "1970-01-01") -> xr.Dataset:
     # if not (ds_type in ['sci', 'eng']):
     #     raise ValueError('ds_type must be either sci or eng')
 
-    # For out of range or nan time/lat/lon, drop rows
-    num_orig = len(ds.time)
-    ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
-    if (num_orig - len(ds.time)) > 0:
-        _log.info(
-            f"Dropped {num_orig - len(ds.time)} times "
-            + f"that were either nan or before {min_dt}",
-        )
+    # # For out of range or nan time/lat/lon, drop rows
+    # num_orig = len(ds.time)
+    # ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
+    # if (num_orig - len(ds.time)) > 0:
+    #     _log.info(
+    #         f"Dropped {num_orig - len(ds.time)} times "
+    #         + f"that were either nan or before {min_dt}",
+    #     )
+    
+    # Drop bogus times, as specified
+    ds = drop_bogus_times(ds, min_dt, max_drop=max_drop)
 
+    # Drop bogus lat/lons
     num_orig = len(ds.time)
     ll_good = (
         (ds.longitude >= -180)
@@ -376,6 +418,18 @@ def get_file_id_esd(ds) -> str:
     return id
 
 
+def read_deploymentyaml(deploymentyaml: str):
+    """
+    Read the yaml file located at deploymentyaml, and return as a dictionary
+    """
+    if not os.path.isfile(deploymentyaml):
+        raise FileNotFoundError(f"Could not find {deploymentyaml}")
+    with open(deploymentyaml) as fin:
+        deployment_ = yaml.safe_load(fin)
+
+    return deployment_
+
+
 def data_var_reorder(ds, new_start):
     """
     Reorder the data variables of a dataset
@@ -438,24 +492,25 @@ def encode_times(ds):
     return ds
 
 
-def split_deployment(deployment):
+def split_deployment(deployment_name):
     """
     Split the deployment string into glider name, and date deployed
     Splits by "-"
     Returns a tuple of the glider name and deployment date
     """
-    deployment_split = deployment.split("-")
+    deployment_split = deployment_name.split("-")
     deployment_date = deployment_split[1]
     if len(deployment_date) != 8:
         _log.error(
-            "The deployment must be the glider name followed by the deployment date",
+            "The deployment must be the glider name, "
+            + "followed by the deployment date",
         )
         raise ValueError(f"Invalid glider deployment date: {deployment_date}")
 
     return deployment_split
 
 
-def year_path(project, deployment):
+def year_path(project, deployment_name):
     """
     From the glider project and deployment name (both strings),
     generate and return the year string to use in file paths
@@ -471,7 +526,7 @@ def year_path(project, deployment):
     and ringo-20190101 would return 2019
     """
 
-    deployment_split = split_deployment(deployment)
+    deployment_split = split_deployment(deployment_name)
     deployment_date = deployment_split[1]
     year = deployment_date[0:4]
 

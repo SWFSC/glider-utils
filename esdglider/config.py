@@ -79,9 +79,9 @@ def instrument_attrs(key, devices, dev_df, cal_df):
     return instr
 
 
-def make_deployment_config(deployment: str, out_path: str, db_url=None):
+def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
     """
-    deployment : str
+    deployment_name : str
         name of the glider deployment. Eg, amlr01-20200101. 
         Only need the name of the deployment, 
         because the database contains the project
@@ -96,7 +96,7 @@ def make_deployment_config(deployment: str, out_path: str, db_url=None):
         Full path of the output (written) yaml file
     """
 
-    _log.info("Creating config file for deployment %s", deployment)
+    _log.info("Creating config file for deployment %s", deployment_name)
     _log.debug("Reading template yaml files")
 
     def esdglider_yaml_read(yaml_name):
@@ -136,7 +136,7 @@ def make_deployment_config(deployment: str, out_path: str, db_url=None):
         if db_depl.shape[0] != 1:
             _log.error(
                 "Exactly one row from the Glider_Deployment table "
-                + f"must match the deployment name {deployment}. "
+                + f"must match the deployment name {deployment_name}. "
                 + f"Currently, {db_depl.shape[0]} rows matched",
             )
             raise ValueError("Invalid Glider_Deployment match")
@@ -190,8 +190,8 @@ def make_deployment_config(deployment: str, out_path: str, db_url=None):
     else:
         _log.info("no database URL provided, and thus no connection attempted")
 
-    deployment_split = utils.split_deployment(deployment)
-    metadata["deployment_name"] = deployment
+    deployment_split = utils.split_deployment(deployment_name)
+    metadata["deployment_name"] = deployment_name
     metadata["project"] = project
     metadata["glider_name"] = deployment_split[0]
     metadata["glider_serial"] = db_devices.loc[
@@ -212,7 +212,7 @@ def make_deployment_config(deployment: str, out_path: str, db_url=None):
         "profile_variables": prof_vars,
     }
 
-    yaml_out = os.path.join(out_path, f"{deployment}.yml")
+    yaml_out = os.path.join(out_path, f"{deployment_name}.yml")
     _log.info(f"writing {yaml_out}")
     with open(yaml_out, "w") as file:
         yaml.dump(deployment_yaml, file, sort_keys=False)

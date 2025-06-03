@@ -13,7 +13,6 @@ import yaml
 
 try:
     import dbdreader
-
     have_dbdreader = True
 except ImportError:
     have_dbdreader = True
@@ -42,7 +41,6 @@ def get_path_engyaml() -> str:
 def get_path_deployment(
     deployment_info: dict,
     deployments_path: str,
-    config_path: str,
 ) -> dict:
     """
     Return a dictionary of paths for use by other esdglider functions.
@@ -55,69 +53,65 @@ def get_path_deployment(
         A dictionary with the relevant deployment info. A dictionary is
         used to make it easier if arguments are added or removed.
         This dictionary must contain at least:
-        deployment : str
-            The name of the glider deployment. Eg, amlr01-20210101
-        project : str
-            The project name of the deployment.
-            Must be one of: 'FREEBYRD', 'REFOCUS', 'SANDIEGO', 'ECOSWIM'
+        deploymentyaml : str
+            The filepath of the glider deployment yaml. 
+            This file will have relevant info, 
+            including deployment name (eg, amlr01-20210101) and project
         mode : str
-            Mode of the glider dat being processed.
+            Mode of the glider data being processed.
             Must be either 'rt', for real-time, or 'delayed
-        min_dt : str
-            string that can be converted to datetime64; see utils.drop_bogus
-            All timestamps from before this value will be dropped
     deployments_path : str
         The path to the top-level folder of the glider data.
         This is inteded to be the path to the mounted glider deployments bucket
-    config_path : str
-        The path to the directory that contains the yaml with the
-        deployment config
 
     Returns
     -------
         A dictionary with the relevant paths
     """
 
-    deployment = deployment_info["deployment"]
+    # Extract or calculate relevant info
+    deploymentyaml = deployment_info["deploymentyaml"]
     mode = deployment_info["mode"]
-    project = deployment_info["project"]
+    deployment = utils.read_deploymentyaml(deploymentyaml)
+    
+    deployment_name = deployment["metadata"]["deployment_name"]
+    project = deployment["metadata"]["project"]
 
-    prj_list = ["FREEBYRD", "REFOCUS", "SANDIEGO", "ECOSWIM"]
-    if not os.path.isdir(deployments_path):
-        _log.error(f"deployments_path ({deployments_path}) does not exist")
-        return
-    else:
-        dir_expected = prj_list + ["cache"]
-        if not all(x in os.listdir(deployments_path) for x in dir_expected):
-            _log.warning(
-                f"The expected folders ({', '.join(dir_expected)}) "
-                + f"were not found in the provided directory ({deployments_path}). "
-                + "Did you provide the right path via deployments_path?",
-            )
+    # prj_list = ["FREEBYRD", "REFOCUS", "SANDIEGO", "ECOSWIM"]
+    # if not os.path.isdir(deployments_path):
+    #     _log.error(f"deployments_path ({deployments_path}) does not exist")
+    #     return
+    # else:
+    #     dir_expected = prj_list + ["cache"]
+    #     if not all(x in os.listdir(deployments_path) for x in dir_expected):
+    #         _log.warning(
+    #             f"The expected folders ({', '.join(dir_expected)}) "
+    #             + f"were not found in the provided directory ({deployments_path}). "
+    #             + "Did you provide the right path via deployments_path?",
+    #         )
 
-    year = utils.year_path(project, deployment)
+    year = utils.year_path(project, deployment_name)
 
-    glider_path = os.path.join(deployments_path, project, year, deployment)
+    # Check that relevant deployment path exists
+    glider_path = os.path.join(deployments_path, project, year, deployment_name)
     if not os.path.isdir(glider_path):
         _log.error(f"glider_path ({glider_path}) does not exist")
         return
 
     cacdir = os.path.join(deployments_path, "cache")
     binarydir = os.path.join(glider_path, "data", "binary", mode)
-    deploymentyaml = os.path.join(config_path, f"{deployment}.yml")
     engyaml = get_path_engyaml()
     logdir = os.path.join(deployments_path, "logs")
 
     procl1dir = os.path.join(glider_path, "data", "processed-L1")
     procl2dir = os.path.join(glider_path, "data", "processed-L2")
+    plotdir = os.path.join(glider_path, "plots", mode)
 
     # Separate, in case in the future they end up in their own directories
     rawdir = procl1dir
     tsdir = procl1dir
     griddir = procl1dir
     profdir = os.path.join(procl1dir, "ngdac", mode)
-
-    plotdir = os.path.join(glider_path, "plots", mode)
 
     return {
         "cacdir": cacdir,
@@ -158,14 +152,13 @@ def binary_to_nc(
         A dictionary with the relevant deployment info. A dictionary is
         used to make it easier if arguments are added or removed.
         This dictionary must contain at least:
-        deployment : str
-            The name of the glider deployment. Eg, amlr01-20210101
+        deploymentyaml : str
+            The filepath of the glider deployment yaml. 
+            This file will have relevant info, 
+            including deployment name (eg, amlr01-20210101) and project
         mode : str
-            Mode of the glider dat being processed.
+            Mode of the glider data being processed.
             Must be either 'rt', for real-time, or 'delayed
-        min_dt : str
-            string that can be converted to datetime64; see utils.drop_bogus
-            All timestamps from before this value will be dropped
     paths : dict
         A dictionary of file/directory paths for various processing steps.
         Intended to be the output of esdglider.glider.get_path_deployment()
@@ -203,35 +196,32 @@ def binary_to_nc(
     and the 1m and 5m gridded files
     """
 
-    deployment = deployment_info["deployment"]
+    deploymentyaml = deployment_info["deploymentyaml"]
     mode = deployment_info["mode"]
+
     # --------------------------------------------
-    # Choices (delayed, rt) specified in arg input
+    # Check files, and get vars + directory paths
+    if paths["deploymentyaml"] != deploymentyaml:
+        raise ValueError(
+            f"Provided yaml path ({deploymentyaml}) is not the same as "
+            + f"the paths yaml path ({paths["deploymentyaml"]})",
+        )
+    
+    deployment = utils.read_deploymentyaml(deploymentyaml) #TODO
+    deployment_name = deployment["metadata"]["deployment_name"]
+
+    deploymentyaml = paths["deploymentyaml"]
+    rawdir = paths["rawdir"]
+    tsdir = paths["tsdir"]
+    griddir = paths["griddir"]    
+
+    # Check mode, set binary_search regex
     if mode == "delayed":
         binary_search = "*.[D|E|d|e][Bb][Dd]"
     elif mode == "rt":
         binary_search = "*.[S|T|s|t][Bb][Dd]"
     else:
         raise ValueError("mode must be either 'rt' or 'delayed'")
-
-    # Check file and directory paths
-    deploymentyaml = paths["deploymentyaml"]
-    rawdir = paths["rawdir"]
-    tsdir = paths["tsdir"]
-    griddir = paths["griddir"]
-
-    # Get deployment and thus file name from yaml file
-    if not os.path.isfile(deploymentyaml):
-        raise FileNotFoundError(f"Could not find {deploymentyaml}")
-    with open(deploymentyaml) as fin:
-        deployment_ = yaml.safe_load(fin)
-        # TODO can we get rid of this, and instead write deployment_name from deployment variable?
-        deployment_name = deployment_["metadata"]["deployment_name"]
-    if deployment_name != deployment:
-        raise ValueError(
-            f"Provided deployment ({deployment}) is not the same as "
-            + f"the deploymentyaml deployment_name ({deployment_name})",
-        )
 
     # Dictionary with info needed by post-processing functions
     postproc_info = deployment_info | {
@@ -240,13 +230,13 @@ def binary_to_nc(
         "device_dict": {},
         "profile_summary_path": os.path.join(
             paths["tsdir"],
-            f"{deployment}-{mode}-profiles.csv",
+            f"{deployment_name}-{mode}-profiles.csv",
         ),
     }
 
     # --------------------------------------------
     # Raw
-    outname_tsraw = os.path.join(tsdir, f"{deployment}-{mode}-raw.nc")
+    outname_tsraw = os.path.join(tsdir, f"{deployment_name}-{mode}-raw.nc")
     if write_raw:
         utils.remove_file(outname_tsraw)
         utils.makedirs_pass(rawdir)
@@ -289,10 +279,10 @@ def binary_to_nc(
 
     # --------------------------------------------
     # Timeseries
-    outname_tseng = os.path.join(tsdir, f"{deployment}-{mode}-eng.nc")
-    outname_tssci = os.path.join(tsdir, f"{deployment}-{mode}-sci.nc")
-    outname_gr1m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-1m.nc")
-    outname_gr5m = os.path.join(paths["griddir"], f"{deployment}_grid-{mode}-5m.nc")
+    outname_tseng = os.path.join(tsdir, f"{deployment_name}-{mode}-eng.nc")
+    outname_tssci = os.path.join(tsdir, f"{deployment_name}-{mode}-sci.nc")
+    outname_gr1m = os.path.join(paths["griddir"], f"{deployment_name}_grid-{mode}-1m.nc")
+    outname_gr5m = os.path.join(paths["griddir"], f"{deployment_name}_grid-{mode}-5m.nc")
     if write_timeseries:
         # Delete previous files before starting run. Can't delete whole directory
         # Since gridded depend on ts, also delete gridded
@@ -418,11 +408,12 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
         ds.attrs["deployment_start"] = pp["deployment_start"]
         ds.attrs["deployment_end"] = pp["deployment_end"]
     else:
-        ds.attrs["deployment_start"] = str(ds["time"].values[0])
-        ds.attrs["deployment_end"] = str(ds["time"].values[-1])
+        ds.attrs["deployment_start"] = str(ds["time"].values[0].astype('datetime64[s]'))
+        ds.attrs["deployment_end"] = str(ds["time"].values[-1].astype('datetime64[s]'))
 
     # Determine the glider ID using min_dt, and check vs ID from time
-    min_dt64 = np.datetime64(pp["min_dt"])
+    # min_dt = ds.deployment_min_dt
+    min_dt64 = np.datetime64(ds.deployment_min_dt)
     min_dt_str = min_dt64.item().strftime("%Y%m%dT%H%M")
     ds.attrs["id"] = f"{ds.attrs['glider_name']}-{min_dt_str}"
 
@@ -450,16 +441,13 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
         file_info = "netCDF files created using"
     ds.attrs["history"] = f"{utils.datetime_now_utc()}: {file_info}: " + "; ".join(
         [
-            f"deployment={ds.deployment_name}",
+            f"deployment_name={ds.deployment_name}",
             f"mode={pp['mode']}",
-            f"min_dt={pp['min_dt']}",
+            # f"min_dt={min_dt}",
             f"pyglider v{importlib.metadata.version('pyglider')}",
             f"esdglider v{importlib.metadata.version('esdglider')}",
         ],
     )
-
-    # if pp["mode"] == "delayed":
-    #     ds.attrs["title"] = ds.attrs["title"] + "-delayed"
 
     return ds
 
@@ -478,7 +466,7 @@ def postproc_general(
 
     # VALUES
     # Remove times that are nan or <min_dt, and drop other bogus values
-    ds = utils.drop_bogus(ds, pp["min_dt"])
+    ds = utils.drop_bogus(ds, min_dt=ds.deployment_min_dt, max_drop=True)
 
     if drop_vars is not None:
         # This functionality is here so it is run after drop_bogus
@@ -890,7 +878,7 @@ def binary_to_raw(
     Extract raw, unprocessed glider data using dbdreader.
     Adaptation of pyglider.slocum.binary_to_timeseries
     dbdreader only deals with flight and science computers,
-    hence only calssifying variables as 'eng' or 'sci'
+    hence only classifying variables as 'eng' or 'sci'
 
     the dbdreader MultiDBD.get() method is used,
     rather than get_sync, to read the parameters specified in
@@ -899,7 +887,9 @@ def binary_to_raw(
     for engineering variables (from m_present_time), and one for science
     variables (from sci_m_present_time). These times are merged,
     and these values are the time index of the output file.
-    No values are interpolated. Times < pp["min_dt"] are still dropped.
+
+    No values are interpolated. 
+    Times less than the yaml fil's 'deployment_min_dt' are still dropped.
 
     pp is the ESD post-process dictionary
     kwargs is passed to utils.findProfiles
@@ -1024,7 +1014,9 @@ def binary_to_raw(
     # screen out-of-range times; these won't convert:
     ds["time"] = ds.time.where((ds.time > 0) & (ds.time < 6.4e9), np.nan)
     ds["time"] = (ds.time * 1e9).astype("datetime64[ns]")
-    ds = ds.where(ds.time >= np.datetime64(pp["min_dt"]), drop=True)
+    min_dt_str = deployment['metadata']["deployment_min_dt"]
+    ds = utils.drop_bogus_times(ds, min_dt=min_dt_str, max_drop=True)
+    # ds = ds.where(ds.time >= np.datetime64(min_dt_str), drop=True)
     ds["time"].attrs = attr
 
     # Drop rows with nan values across all data variables
