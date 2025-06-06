@@ -141,50 +141,50 @@ netcdf_variables:
     standard_name: longitude
     units:        degree_east
 
-  # data parameters - required for pyglider processing
-  # these variables are not included in the -eng NetCDF file
-  conductivity:
-    source:  sci_water_cond
-    long_name:    water conductivity
-    standard_name: sea_water_electrical_conductivity
-    units:        S m-1
-    instrument:    instrument_ctd
-    valid_min:    0.
-    valid_max:    10.
-    observation_type: "measured"
-    accuracy:      0.0003
-    precision:     0.0001
-    resolution:    0.00002
+  # # data parameters - required for pyglider processing
+  # # these variables are not included in the -eng NetCDF file
+  # conductivity:
+  #   source:  sci_water_cond
+  #   long_name:    water conductivity
+  #   standard_name: sea_water_electrical_conductivity
+  #   units:        S m-1
+  #   instrument:    instrument_ctd
+  #   valid_min:    0.
+  #   valid_max:    10.
+  #   observation_type: "measured"
+  #   accuracy:      0.0003
+  #   precision:     0.0001
+  #   resolution:    0.00002
 
-  temperature:
-    source:  sci_water_temp
-    long_name:    water temperature
-    standard_name: sea_water_temperature
-    units:        Celsius
-    instrument:   instrument_ctd
-    valid_min:    -5.
-    valid_max:    50.
-    observation_type: "measured"
-    accuracy:      0.002
-    precision:     0.001
-    resolution:    0.0002
+  # temperature:
+  #   source:  sci_water_temp
+  #   long_name:    water temperature
+  #   standard_name: sea_water_temperature
+  #   units:        Celsius
+  #   instrument:   instrument_ctd
+  #   valid_min:    -5.
+  #   valid_max:    50.
+  #   observation_type: "measured"
+  #   accuracy:      0.002
+  #   precision:     0.001
+  #   resolution:    0.0002
 
-  pressure:
-    source:  sci_water_pressure
-    long_name:    water pressure
-    standard_name:  sea_water_pressure
-    units:        dbar
-    conversion:   bar2dbar
-    valid_min:    0.
-    valid_max:    2000.
-    positive:      "down"
-    reference_datum:  "sea-surface"
-    instrument:     "instrument_ctd"
-    observation_type: "measured"
-    accuracy:         1
-    precision:        2
-    resolution:       0.02
-    comment:          "ctd pressure sensor"
+  # pressure:
+  #   source:  sci_water_pressure
+  #   long_name:    water pressure
+  #   standard_name:  sea_water_pressure
+  #   units:        dbar
+  #   conversion:   bar2dbar
+  #   valid_min:    0.
+  #   valid_max:    2000.
+  #   positive:      "down"
+  #   reference_datum:  "sea-surface"
+  #   instrument:     "instrument_ctd"
+  #   observation_type: "measured"
+  #   accuracy:         1
+  #   precision:        2
+  #   resolution:       0.02
+  #   comment:          "ctd pressure sensor"
 
 
 # c_alt_time

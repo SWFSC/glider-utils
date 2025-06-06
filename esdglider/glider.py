@@ -434,8 +434,6 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
         + "Data provided as is, with no expressed or implied assurance "
         + "of quality assurance or quality control."
     )
-    ds.attrs["standard_name_vocabulary"] = "CF Standard Name Table v72"
-
     file_info = pp["file_info"]
     if file_info is None:
         file_info = "netCDF files created using"
@@ -443,7 +441,6 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
         [
             f"deployment_name={ds.deployment_name}",
             f"mode={pp['mode']}",
-            # f"min_dt={min_dt}",
             f"pyglider v{importlib.metadata.version('pyglider')}",
             f"esdglider v{importlib.metadata.version('esdglider')}",
         ],
@@ -535,18 +532,18 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
 
     # Drop CTD variables required or created by binary_to_timeseries,
     # which are not relevant for the engineering NetCDF
-    ds = ds.drop_vars(
-        [
-            "depth",
-            "conductivity",
-            "temperature",
-            "pressure",
-            "salinity",
-            "potential_density",
-            "density",
-            "potential_temperature",
-        ],
-    )
+    # ds = ds.drop_vars(
+    #     [
+    #         "depth",
+    #         "conductivity",
+    #         "temperature",
+    #         "pressure",
+    #         "salinity",
+    #         "potential_density",
+    #         "density",
+    #         "potential_temperature",
+    #     ],
+    # )
 
     # With depth (CTD) gone, rename depth_measured
     ds = ds.rename({"depth_measured": "depth"})
