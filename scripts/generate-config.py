@@ -12,9 +12,9 @@ sqlalchemy engine. It should not be committed to GitHub.
 """
 
 # For testing
-path_config = "C:/Users/sam.woodman/Downloads"
+# path_config = "C:/Users/sam.woodman/Downloads"
 
-# path_config = "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-configs"
+path_config = "C:/SMW/Gliders_Moorings/Gliders/glider-lab/deployment-configs"
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -27,8 +27,7 @@ if __name__ == "__main__":
         conn_string = f.read()
 
     config.make_deployment_config(
-        # "risso-20250414", 
-        "amlr01-20181216", 
-        path_config, 
-        conn_string, 
+        deployment_name="amlr08-20241120", 
+        out_path=path_config, 
+        db_url=conn_string, 
     )

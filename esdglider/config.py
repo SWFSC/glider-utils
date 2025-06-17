@@ -130,7 +130,7 @@ def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
         )
 
         # Filter for the glider deployment, using the deployment name
-        db_depl = Glider_Deployment[Glider_Deployment["Deployment_Name"] == deployment]
+        db_depl = Glider_Deployment[Glider_Deployment["Deployment_Name"] == deployment_name]
         _log.debug("database connection successful")
         # Confirm that exactly one deployment in the db matched deployment name
         if db_depl.shape[0] != 1:
