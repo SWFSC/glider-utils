@@ -24,6 +24,10 @@ setup(
         "pyglider",
         "netCDF4",
         "SQLAlchemy",
+        "cartopy", 
+        "cmocean", 
+        "matplotlib", 
+        "glidertools", 
     ],
     zip_safe=False,
 )

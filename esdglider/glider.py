@@ -113,6 +113,14 @@ def get_path_deployment(
     griddir = procl1dir
     profdir = os.path.join(procl1dir, "ngdac", mode)
 
+    # Create common file names    
+    path_raw = os.path.join(tsdir, f"{deployment_name}-{mode}-raw.nc")
+    path_sci = os.path.join(tsdir, f"{deployment_name}-{mode}-sci.nc")
+    path_eng = os.path.join(tsdir, f"{deployment_name}-{mode}-eng.nc")
+    path_gr1 = os.path.join(griddir, f"{deployment_name}_grid-{mode}-1m.nc")
+    path_gr5 = os.path.join(griddir, f"{deployment_name}_grid-{mode}-5m.nc")
+    
+
     return {
         "cacdir": cacdir,
         "binarydir": binarydir,
@@ -126,6 +134,11 @@ def get_path_deployment(
         "plotdir": plotdir,
         "procl1dir": procl1dir,
         "procl2dir": procl2dir,
+        "tsrawpath": path_raw, 
+        "tsscipath": path_sci, 
+        "tsengpath": path_eng, 
+        "gr1path": path_gr1, 
+        "gr5path": path_gr5, 
     }
 
 
@@ -234,9 +247,12 @@ def binary_to_nc(
         ),
     }
 
+    # commonly used parameters in timeseries/gridded data
+    maxgap_esd = 60
+
     # --------------------------------------------
     # Raw
-    outname_tsraw = os.path.join(tsdir, f"{deployment_name}-{mode}-raw.nc")
+    outname_tsraw = paths["tsrawpath"]
     if write_raw:
         utils.remove_file(outname_tsraw)
         utils.makedirs_pass(rawdir)
@@ -279,10 +295,10 @@ def binary_to_nc(
 
     # --------------------------------------------
     # Timeseries
-    outname_tseng = os.path.join(tsdir, f"{deployment_name}-{mode}-eng.nc")
-    outname_tssci = os.path.join(tsdir, f"{deployment_name}-{mode}-sci.nc")
-    outname_gr1m = os.path.join(paths["griddir"], f"{deployment_name}_grid-{mode}-1m.nc")
-    outname_gr5m = os.path.join(paths["griddir"], f"{deployment_name}_grid-{mode}-5m.nc")
+    outname_tseng = paths["tsengpath"]
+    outname_tssci = paths["tsscipath"]
+    outname_gr1m = paths["gr1path"]
+    outname_gr5m = paths["gr5path"]
     if write_timeseries:
         # Delete previous files before starting run. Can't delete whole directory
         # Since gridded depend on ts, also delete gridded
@@ -303,7 +319,7 @@ def binary_to_nc(
             fnamesuffix=f"-{mode}-eng",
             time_base="m_depth",
             profile_filt_time=None,
-            maxgap=300,
+            maxgap=maxgap_esd,
         )
 
         _log.info(f"Post-processing engineering timeseries: {outname_tseng}")
@@ -320,7 +336,7 @@ def binary_to_nc(
             fnamesuffix=f"-{mode}-sci",
             time_base="sci_water_temp",
             profile_filt_time=None,
-            maxgap=300,
+            maxgap=maxgap_esd,
         )
 
         _log.info(f"Post-processing science timeseries: {outname_tssci}")
@@ -353,7 +369,6 @@ def binary_to_nc(
 
     # --------------------------------------------
     # Gridded data, 1m and 5m
-    # TODO: filter to match SOCIB?
     if write_gridded:
         utils.remove_file(outname_gr1m)
         utils.remove_file(outname_gr5m)
@@ -365,7 +380,7 @@ def binary_to_nc(
             outname_tssci,
             griddir,
             deploymentyaml,
-            dz=1,
+            depth_bins=np.arange(0, 1200.1, 1), 
             fnamesuffix=f"-{mode}-1m",
         )
 
@@ -374,7 +389,7 @@ def binary_to_nc(
             outname_tssci,
             griddir,
             deploymentyaml,
-            dz=5,
+            depth_bins=np.arange(0, 1200.1, 5), 
             fnamesuffix=f"-{mode}-5m",
         )
 

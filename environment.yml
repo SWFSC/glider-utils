@@ -20,18 +20,14 @@ dependencies:
 
   - GliderTools
   - cmocean
-
   - cartopy
   - folium
 
   - pip:
     - dbdreader
     - git+https://github.com/c-proof/pyglider.git@main
-    # - basemap
-    # - basemap-data
-    # - basemap-data-hires
 
-  # conda deactivate && conda env update -f glider-utils/environment.yml --prune
-  # After creating and activating conda env,
-  # run the following to install esdglider as editable:
-  # `pip install -e ~/glider-utils`
+# conda env create -f glider-utils/environment.yml
+# conda deactivate && conda env update -f glider-utils/environment.yml --prune
+# Within active conda env, run to install esdglider as editable:
+# pip install -e glider-utils
