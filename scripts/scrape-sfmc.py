@@ -28,9 +28,13 @@ def main(args):
         )
 
     # TODO: extract paths call, a la slocum.binary_to_nc
+    deployment_info = {
+        "project": args.project,
+        "deployment": args.deployment
+    }
+
     rt.scrape_sfmc(
-        project=args.project,
-        deployment=args.deployment,
+        deployment_info=deployment_info,
         bucket=args.bucket,
         sfmc_path=args.sfmc_path,
         gcpproject_id=args.gcpproject_id,
