@@ -803,12 +803,19 @@ def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
     """
 
 
+    grouped_columns = [
+        "time", 
+        "depth", 
+        "profile_index", 
+        "distance_over_ground", 
+        "profile_direction", 
+    ]
 
     # Calculate the dataframe
     df = (
         ds.to_pandas()
         .reset_index()
-        .groupby(["profile_index"], as_index=False)
+        .groupby(["profile_index"], as_index=False)[grouped_columns]
         .apply(_custom_agg)
         .assign(
             time_range_s=lambda d: (

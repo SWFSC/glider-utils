@@ -144,7 +144,7 @@ def get_path_deployment(
 
 def binary_to_nc(
     deployment_info: dict,
-    paths: str,
+    paths: dict,
     write_raw: bool = True,
     write_timeseries: bool = True,
     write_gridded: bool = True,
