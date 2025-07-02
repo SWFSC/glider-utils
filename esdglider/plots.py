@@ -500,8 +500,8 @@ def sci_surface_map_loop(
     base_path: str | None = None,
     show: bool = False,
     bar: xr.Dataset | None = None,
-    figsize_x=8.5,
-    figsize_y=11,
+    figsize_x: float = 8.5,
+    figsize_y: float = 11,
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots

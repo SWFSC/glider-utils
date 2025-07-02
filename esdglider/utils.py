@@ -907,19 +907,25 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
     return df
 
 
-def check_depth(ds: xr.Dataset) -> xr.Dataset:
+def check_depth(ds: xr.Dataset, depth_ok=5) -> xr.Dataset:
     """
     Parameters
     ----------
     ds : xarray Dataset
-        Dataset with glider timeseries data. Intended to be raw, but can be any
+        Dataset with glider timeseries data. 
+        Generally should be the raw dataset, but can be any timeseries
+    depth_ok : numeric
+        The maximum acceptable depth difference. If the absolute value of 
+        the difference between the measured depth and CTD-calcualted depth 
+        is greater than this, a warning will be raised
 
     Returns
     -------
     An xarray dataset with variables
     da1 ("depth_measured") and da2 ("depth_ctd"), as well as
     1) da1 interpolated onto all timestamps of da2 ("depth_measured_interp"),
-    and 2) the difference between da2 and interpolated da1 ("depth_diff")
+    2) the difference between da2 and interpolated da1 ("depth_diff"), and
+    3) the absolute difference between da2 and interpolated da1 ("depth_diff_abs")
     """
 
     _log.info("Starting depth checks (measured vs CTD)")
@@ -928,14 +934,21 @@ def check_depth(ds: xr.Dataset) -> xr.Dataset:
 
     # Interpolate da1 onto the time points of da2, and get the differences
     da1_interp = da1.dropna("time").interp(time=da2.time)
-    depth_diff = da1_interp - da2
-
+    depth_diff = abs(da1_interp-da2)
+    depth_diff_abs = abs(depth_diff)
+    depth_diff_max = np.nanmax(depth_diff_abs)
+    _log.info(
+        "The max difference between the glider measured depth and "
+        + "depth calculated from the CTD is %sm", 
+        np.round(depth_diff_max, 2)
+    )
     _log.debug(depth_diff.to_pandas().describe())
-    if depth_diff.max() > 3:
+    if depth_diff_max > depth_ok:
         _log.warning(
-            "The max difference between the glider measured depth and depth calculated from the CTD is greater than 3m"
+            "The max absolute difference between the glider measured depth and "
+            + f"depth calculated from the CTD is greater than {depth_ok}m"
         )
-        _log.warning(depth_diff.to_pandas().describe())
+        _log.warning(depth_diff_abs.to_pandas().describe())
 
     ds = xr.merge(
         [
@@ -943,6 +956,7 @@ def check_depth(ds: xr.Dataset) -> xr.Dataset:
             da2.rename("depth_ctd"),
             da1_interp.rename("depth_measured_interp"),
             depth_diff.rename("depth_diff"),
+            depth_diff_abs.rename("depth_diff_abs"),
         ]
     )
 

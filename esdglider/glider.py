@@ -1,4 +1,4 @@
-import importlib
+from importlib import resources, metadata
 import logging
 import os
 
@@ -15,7 +15,7 @@ try:
     import dbdreader
     have_dbdreader = True
 except ImportError:
-    have_dbdreader = True
+    have_dbdreader = False
 
 from esdglider import plots, utils
 
@@ -33,8 +33,8 @@ def get_path_engyaml() -> str:
         the path of deployment-eng-vars.yml
     """
 
-    ref = importlib.resources.files("esdglider.data") / "deployment-eng-vars.yml"
-    with importlib.resources.as_file(ref) as path:
+    ref = resources.files("esdglider.data") / "deployment-eng-vars.yml"
+    with resources.as_file(ref) as path:
         return str(path)
 
 
@@ -96,7 +96,7 @@ def get_path_deployment(
     glider_path = os.path.join(deployments_path, project, year, deployment_name)
     if not os.path.isdir(glider_path):
         _log.error(f"glider_path ({glider_path}) does not exist")
-        return
+        return {}
 
     cacdir = os.path.join(deployments_path, "cache")
     binarydir = os.path.join(glider_path, "data", "binary", mode)
@@ -154,7 +154,7 @@ def binary_to_nc(
     """
     Process binary ESD slocum glider data to netCDF file(s).
     For more info, see:
-    https://swfsc.github.io/glider-lab-manual/content/dataproc-gliders.html
+    https://swfsc.github.io/glider-lab-manual/content/glider-data.html
 
     The contents of this function used to just be in scripts/binary_to_nc.py.
     They were moved to this structure for easier development and debugging
@@ -318,7 +318,7 @@ def binary_to_nc(
             search=binary_search,
             fnamesuffix=f"-{mode}-eng",
             time_base="m_depth",
-            profile_filt_time=None,
+            profile_filt_time=None, # type: ignore
             maxgap=maxgap_esd,
         )
 
@@ -335,7 +335,7 @@ def binary_to_nc(
             search=binary_search,
             fnamesuffix=f"-{mode}-sci",
             time_base="sci_water_temp",
-            profile_filt_time=None,
+            profile_filt_time=None, # type: ignore
             maxgap=maxgap_esd,
         )
 
@@ -456,8 +456,8 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
         [
             f"deployment_name={ds.deployment_name}",
             f"mode={pp['mode']}",
-            f"pyglider v{importlib.metadata.version('pyglider')}",
-            f"esdglider v{importlib.metadata.version('esdglider')}",
+            f"pyglider v{metadata.version('pyglider')}",
+            f"esdglider v{metadata.version('esdglider')}",
         ],
     )
 
@@ -931,7 +931,7 @@ def binary_to_raw(
 
     # get the dbd object
     _log.info(f"dbdreader pattern: {indir}/{search}")
-    dbd = dbdreader.MultiDBD(pattern=f"{indir}/{search}", cacheDir=cachedir)
+    dbd = dbdreader.MultiDBD(pattern=f"{indir}/{search}", cacheDir=cachedir) # type: ignore
     sci_params = dbd.parameterNames["sci"]
     eng_params = dbd.parameterNames["eng"]
 
@@ -1063,3 +1063,36 @@ def binary_to_raw(
     utils.to_netcdf_esd(ds, outname)
 
     return outname
+
+
+def decompress(binarydir):
+    """
+    A light wrapper around dbdreader function decompress_file
+    Decompress all compressed bianry files in binarydir. Decompressed files
+    will be written within binarydir
+
+    Parameters
+    ----------
+    binarydir : string
+        A string of the directory path for compressed bianry files. 
+        All compressed binary files
+        
+    """
+    
+    if not have_dbdreader:
+        raise ImportError("Cannot import dbdreader")
+    
+    binarydir_files = os.listdir(binarydir)
+    _log.info("There are %s files in %s", len(binarydir_files), binarydir)
+
+    # FileDecompressor.decompress(dcd1)
+    _log.info("decompressing all files in %s", binarydir)
+    for fin in binarydir_files:
+        _log.debug(fin)
+        if dbdreader.decompress.is_compressed(fin): # type: ignore
+            dbdreader.decompress.decompress_file(os.path.join(binarydir, fin)) # type: ignore
+        else:
+            _log.debug("skipping %s", fin)
+
+    binarydir_files = os.listdir(binarydir)
+    _log.info("There are now %s files in %s", len(binarydir_files), binarydir)
