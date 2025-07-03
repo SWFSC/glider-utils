@@ -190,7 +190,7 @@ eng_vars = [
 def esd_all_plots(
     ds_paths: dict,
     crs=None,
-    base_path: str = None,
+    base_path: str | None = None,
     bar_file: str | None = None,
 ):
     """
@@ -1437,8 +1437,8 @@ def sci_surface_map(
     base_path: str | None = None,
     show: bool = False,
     bar: xr.Dataset | None = None,
-    figsize_x=8.5,
-    figsize_y=11,
+    figsize_x: float = 8.5,
+    figsize_y: float = 11,
 ):
     """
     Create surface maps of science variables

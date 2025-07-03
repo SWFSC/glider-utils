@@ -87,7 +87,7 @@ def regions_evr(ds: xr.Dataset, evr_file_pre: str) -> pd.DataFrame:
 
     # Process the dataset to create 'regions' dataframe
     _log.debug("Calculating regions")
-    regions_df = utils.calc_regions(ds).assign(
+    regions_df = utils.calc_profile_summary(ds).assign(
         start_date_str=lambda d: d["start_time"].dt.strftime("%Y%m%d"),
         start_time_str=lambda d: d["start_time"].dt.strftime("%H%M%S0000"),
         end_date_str=lambda d: d["end_time"].dt.strftime("%Y%m%d"),
@@ -99,7 +99,8 @@ def regions_evr(ds: xr.Dataset, evr_file_pre: str) -> pd.DataFrame:
     end_depth = 1000
 
     # For each of the dive and climb regions:
-    for i, r in utils.direction_mapping.items():
+    direction_mapping = {1: "Dive", -1: "Climb"}
+    for i, r in direction_mapping.items():
         _log.info(f"working on region {r}")
         # Filter for dives/climbs, and set associated variables
         df = regions_df[regions_df["profile_direction"] == i].reset_index(drop=True)
@@ -107,7 +108,7 @@ def regions_evr(ds: xr.Dataset, evr_file_pre: str) -> pd.DataFrame:
 
         # Loop through each row and generate the file contents
         for row in df.itertuples():
-            idx = row.Index + 1
+            idx = row.Index + 1 # type: ignore
             line1 = (
                 f"13 4 {idx} 0 3 -1 1 "
                 + f"{row.start_date_str} {row.start_time_str} {start_depth} "
@@ -156,7 +157,7 @@ def echoview_metadata(ds: xr.Dataset, paths: dict) -> str:
     utils.mkdir_pass(paths["metadir"])
     utils.mkdir_pass(path_echoview)
     file_echoview_pre = os.path.join(path_echoview, depl)
-    _log.info(f"Writing echoview metadata files to {path_echoview}")
+    _log.info(f"Will write echoview metadata files to {path_echoview}")
 
     ds_dt = ds.time.values.astype("datetime64[s]").astype(datetime.datetime)
     mdy_str = [i.strftime("%m/%d/%Y") for i in ds_dt]

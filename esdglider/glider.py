@@ -76,20 +76,6 @@ def get_path_deployment(
     
     deployment_name = deployment["metadata"]["deployment_name"]
     project = deployment["metadata"]["project"]
-
-    # prj_list = ["FREEBYRD", "REFOCUS", "SANDIEGO", "ECOSWIM"]
-    # if not os.path.isdir(deployments_path):
-    #     _log.error(f"deployments_path ({deployments_path}) does not exist")
-    #     return
-    # else:
-    #     dir_expected = prj_list + ["cache"]
-    #     if not all(x in os.listdir(deployments_path) for x in dir_expected):
-    #         _log.warning(
-    #             f"The expected folders ({', '.join(dir_expected)}) "
-    #             + f"were not found in the provided directory ({deployments_path}). "
-    #             + "Did you provide the right path via deployments_path?",
-    #         )
-
     year = utils.year_path(project, deployment_name)
 
     # Check that relevant deployment path exists
@@ -119,7 +105,7 @@ def get_path_deployment(
     path_eng = os.path.join(tsdir, f"{deployment_name}-{mode}-eng.nc")
     path_gr1 = os.path.join(griddir, f"{deployment_name}_grid-{mode}-1m.nc")
     path_gr5 = os.path.join(griddir, f"{deployment_name}_grid-{mode}-5m.nc")
-    
+    path_prof_summ = os.path.join(tsdir, f"{deployment_name}-{mode}-profiles.csv")
 
     return {
         "cacdir": cacdir,
@@ -139,6 +125,7 @@ def get_path_deployment(
         "tsengpath": path_eng, 
         "gr1path": path_gr1, 
         "gr5path": path_gr5, 
+        "profsummpath": path_prof_summ, 
     }
 
 
@@ -191,16 +178,7 @@ def binary_to_nc(
         The path of the parent processing script.
         If provided, will be included in the history attribute
     **kwargs
-        Optional arguments passed to utils.findProfiles.
-        See findProfiles for arg descriptions. Default values for binary_to_nc:
-        findprof = {
-            "length": 0,
-            "period": 0,
-            "inversion": 10,
-            "interrupt": 120,
-            "stall": 0.5,
-            "shake": 0,
-        }
+        Optional arguments passed to utils.findProfiles
 
     Returns
     -------
@@ -241,10 +219,7 @@ def binary_to_nc(
         "file_info": file_info,
         "metadata_dict": {"deployment_name": deployment_name},
         "device_dict": {},
-        "profile_summary_path": os.path.join(
-            paths["tsdir"],
-            f"{deployment_name}-{mode}-profiles.csv",
-        ),
+        "profile_summary_path": paths["profsummpath"],
     }
 
     # commonly used parameters in timeseries/gridded data
@@ -271,12 +246,12 @@ def binary_to_nc(
 
         # Save profile summary
         tsraw = xr.load_dataset(outname_tsraw)
-        _log.info(
-            "Writing profile summary CSV to %s",
-            postproc_info["profile_summary_path"],
-        )
+        prof_summ_path = postproc_info["profile_summary_path"]
+        _log.info("Writing profile summary CSV to %s", prof_summ_path)
         prof_summ = utils.calc_profile_summary(tsraw)
-        prof_summ.to_csv(postproc_info["profile_summary_path"], index=False)
+        prof_summ.to_csv(prof_summ_path, index=False)
+        num_dives = np.count_nonzero(prof_summ.profile_direction.values == 1)
+        _log.info("Deployment %s performed %s dives", deployment_name, num_dives)
 
         # Write deployment_start and deployment_end to postproc_info
         postproc_info["deployment_start"] = tsraw.attrs["deployment_start"]
@@ -342,11 +317,11 @@ def binary_to_nc(
         _log.info(f"Post-processing science timeseries: {outname_tssci}")
         tssci = postproc_sci_timeseries(outname_tssci, postproc_info, **kwargs)
 
-        # Brief profile sanity check
-        _log.info("eng profile checks")
-        utils.check_profiles(tseng)
-        _log.info("sci profile checks")
-        utils.check_profiles(tssci)
+        # # Brief profile sanity check - checks done in postproc-general
+        # _log.info("eng profile checks")
+        # utils.check_profiles(tseng)
+        # _log.info("sci profile checks")
+        # utils.check_profiles(tssci)
 
         prof_max_diff = abs(
             (tssci.profile_index.max() - tseng.profile_index.max()).values,
@@ -436,7 +411,8 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
     if min_dt_str != time_str:
         _log.warning(
             "The dataset ID generated from the metadata (%s) "
-            + "is different from that generated from the time (%s)",
+            + "is different from that generated from the time (%s)."
+            + "Using the ID from the metadata",
             min_dt_str,
             time_str,
         )
@@ -501,7 +477,7 @@ def postproc_general(
     ds = pgutils.get_distance_over_ground(ds)
 
     # Calculate profiles using measured depth
-    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
+    ds = utils.get_fill_profiles(ds, "time", "depth", **kwargs)
 
     # If provided, then update the profile indices by joining raw profiles
     if "profile_summary_path" in pp.keys():
@@ -637,22 +613,51 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     return ds
 
 
-def drop_ts_ranges(ds, drop_list, ds_type, plotdir=None):
+def drop_ts_ranges(
+    ds, 
+    drop_list, 
+    ds_type, 
+    plotdir=None, 
+    profsummdir=None, 
+    outname=None, 
+    **kwargs,
+):
     """
-    Drop dataset points that are within given time ranges
+    Drop dataset points that are within given time ranges, 
+    and perform relevant post-processing. 
+
+    This function is used within processing scripts, if a certain time range 
+    has been decided to exclude during review
+
+    Post-processing includes:
+    1) Plotting the points that were dropped, if plotdir is not None
+    2) Rerunning pgutils.get_distance_over_ground
+    3a) Writing new profiles and calculating new profile summary, 
+        if ds_type is "raw", or 
+    3b) Reading in profile summary from profsummdir, and using summary
+        to 'join' profile info to ds using utils.join_profiles
+    4) Running utils.check_profiles
+    5) Writing to netcdf file, if outnname is not None
 
     Paramaters
     ----------
     ds : xarray Dataset
-        Timeseries dataset]
-    drop_list : list of tuples
-        A list of tuples of time ranges to drop from ds
+        Timeseries dataset
+    drop_list : list of string tuples
+        A list of string tuples of time ranges to drop from ds. 
+        These strings will be processed by np.datetime64()
+        If dropping a single time, use this value for both values of the tuple 
     ds_type : str
         String indicating if ds is a raw, eng, or sci timeseries;
         passed to plots.scatter_drop_plot
     plotdir : str | None (default None)
         Path to plot directory; passed to plots.scatter_drop_plot
         If None, then no plots are saved
+    profsummdir : str | None (default None)
+        Path to profile summary CSV. Ignored if ds_type is raw. 
+        If not None and ds_type is eng or sci, will join profiles
+    outname : str | None (default None)
+        If not None, then ds is written to this path using utils.to_netcdf_esd
 
     Returns
     -------
@@ -662,7 +667,7 @@ def drop_ts_ranges(ds, drop_list, ds_type, plotdir=None):
     """
     _log.info(f"There are {len(ds.time)} points in the original {ds_type} dataset")
 
-    # Create the
+    # Create the mask framework
     todrop = np.full(len(ds.time), False)
 
     # For each tuple in drop_list, update todrop array
@@ -678,12 +683,34 @@ def drop_ts_ranges(ds, drop_list, ds_type, plotdir=None):
     if plotdir is not None:
         plots.scatter_drop_plot(ds, todrop, ds_type, plotdir)
 
+    # Drop time(s)
     todrop_mask = xr.DataArray(todrop, dims="time", coords={"time": ds.time})
     ds = ds.where(~todrop_mask, drop=True)
     _log.info(f"There are now {len(ds.time)} points in the dataset")
 
-    _log.info("Calculating new distance over ground")
-    ds = pgutils.get_distance_over_ground(ds)
+    # Distance over ground, if relevant
+    if "distance_over_ground" in ds.keys():
+        _log.info("Calculating new distance over ground")
+        ds = pgutils.get_distance_over_ground(ds)
+
+    # Profiles
+    if ds_type == "raw" and profsummdir is not None:
+        _log.info("Calculating new profiles for raw dataset")
+        tsraw = utils.get_fill_profiles(ds, "time", "depth", **kwargs)
+        prof_summ = utils.calc_profile_summary(tsraw)
+        prof_summ.to_csv(profsummdir, index=False)
+        utils.check_profiles(ds)
+    elif profsummdir is not None:
+        _log.info("Join-calculating new profiles for eng/sci dataset")
+        prof_summ = pd.read_csv(profsummdir, parse_dates=["start_time", "end_time"])
+        utils.join_profiles(ds, prof_summ, **kwargs)
+        utils.check_profiles(ds)
+    else: 
+        _log.info("No profile work")
+
+    # Write to netcdf
+    if outname is not None:
+        utils.to_netcdf_esd(ds, outname)
 
     return ds
 
@@ -1042,7 +1069,7 @@ def binary_to_raw(
     ds["depth_ctd"] = ds["depth_ctd"].where(~np.isnan(ds["pressure"]))
 
     # Calculate profiles and distance_over_ground
-    ds = utils.get_fill_profiles(ds, ds.time.values, ds.depth.values, **kwargs)
+    ds = utils.get_fill_profiles(ds, "time", "depth", **kwargs)
     ds = pgutils.get_distance_over_ground(ds)
 
     new_start = ["latitude", "longitude", "depth", "profile_index"]
