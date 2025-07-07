@@ -101,7 +101,7 @@ def regions_evr(ds: xr.Dataset, evr_file_pre: str) -> pd.DataFrame:
     # For each of the dive and climb regions:
     direction_mapping = {1: "Dive", -1: "Climb"}
     for i, r in direction_mapping.items():
-        _log.info(f"working on region {r}")
+        _log.info(f"Processing region {r}")
         # Filter for dives/climbs, and set associated variables
         df = regions_df[regions_df["profile_direction"] == i].reset_index(drop=True)
         region_vec = ["EVRG 7 10.0.298.38422", str(len(df))]
@@ -164,10 +164,13 @@ def echoview_metadata(ds: xr.Dataset, paths: dict) -> str:
     hms_str = [i.strftime("%H:%M:%S") for i in ds_dt]
 
     # Regions
-    _log.debug("regions")
+    _log.info("Processing regions files")
     regions_df = regions_evr(ds, file_echoview_pre)
-    regions_df.to_csv(f"{file_echoview_pre}-regions.csv", index=False)
+    regions_df_path = f"{file_echoview_pre}-regions.csv"
+    _log.info("Writing regions CSV to %s", regions_df_path)
+    regions_df.to_csv(regions_df_path, index=False)
 
+    _log.info("Other echoview metadata files")
     # Pitch
     _log.debug("pitch")
     pitch_df = pd.DataFrame(
