@@ -27,7 +27,7 @@ if __name__ == "__main__":
         conn_string = f.read()
 
     config.make_deployment_config(
-        deployment_name="amlr04-20231128", 
-        out_path=path_config, 
-        db_url=conn_string, 
+        deployment_name="amlr04-20231128",
+        out_path=path_config,
+        db_url=conn_string,
     )

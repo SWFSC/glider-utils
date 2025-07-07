@@ -36,8 +36,9 @@ def to_netcdf_esd(ds: xr.Dataset, outname: str):
         },
     )
 
+
 """
-default optionsList for findProfiles. 
+default optionsList for findProfiles.
 Pulled outside so it can also be used by get_fill_profiles. Values from:
 https://github.com/socib/glider_toolbox/blob/master/m/processing_tools/processGliderData.m#L113
 """
@@ -50,6 +51,7 @@ profileOptionsList = {
     "shake": 20,
 }
 
+
 def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     """
     -----
@@ -57,7 +59,7 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     https://github.com/OceanGNS/PGPT/blob/main/scripts/gliderfuncs.py#L196
 
     The only edits are a) pre-commit formatting and
-    b) Updating the default kwargs optional argument values. 
+    b) Updating the default kwargs optional argument values.
     These have been updated to match SOCIB:
     https://github.com/socib/glider_toolbox/blob/master/m/processing_tools/processGliderData.m#L113
     -----
@@ -102,8 +104,8 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
     # }
     optionsList.update(kwargs)
     _log.info(
-        "Running findProfiles with the following kwargs: %s", 
-        ", ".join([f"{k}: {v}" for k, v in optionsList.items()])
+        "Running findProfiles with the following kwargs: %s",
+        ", ".join([f"{k}: {v}" for k, v in optionsList.items()]),
     )
 
     validIndex = np.argwhere(
@@ -294,16 +296,16 @@ def join_profiles(ds, df, **kwargs):
 
 
 def drop_bogus_times(
-    ds: xr.Dataset, 
-    min_dt: str = "1970-01-01", 
-    max_drop: bool = False, 
+    ds: xr.Dataset,
+    min_dt: str = "1970-01-01",
+    max_drop: bool = False,
 ) -> xr.Dataset:
     """
-    Drop bogus times. 
+    Drop bogus times.
     This function is separate to allow users to drop only bogus times.
     See the function 'drop_bogus' for a description of arguments
     """
-    
+
     # For out of range or nan time/lat/lon, drop rows
     num_orig = len(ds.time)
     ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
@@ -327,9 +329,9 @@ def drop_bogus_times(
 
 
 def drop_bogus(
-    ds: xr.Dataset, 
-    min_dt: str = "1970-01-01", 
-    max_drop: bool = False, 
+    ds: xr.Dataset,
+    min_dt: str = "1970-01-01",
+    max_drop: bool = False,
 ) -> xr.Dataset:
     """
     Remove and/or drop bogus times and values.
@@ -360,7 +362,7 @@ def drop_bogus(
     #         f"Dropped {num_orig - len(ds.time)} times "
     #         + f"that were either nan or before {min_dt}",
     #     )
-    
+
     # Drop bogus times, as specified
     ds = drop_bogus_times(ds, min_dt, max_drop=max_drop)
 
@@ -685,19 +687,19 @@ def _profile_agg(group, tas_depth=5):
         max_depth = depth_nona.max()
         depth_range = abs(max_depth - min_depth)
 
-    # Get min and max lat/lons    
+    # Get min and max lat/lons
     lat_nona = group["latitude"].dropna().values
-    if lat_nona.shape[0] == 0: 
-        min_lat = np.nan        
-        max_lat = np.nan        
+    if lat_nona.shape[0] == 0:
+        min_lat = np.nan
+        max_lat = np.nan
     else:
         min_lat = lat_nona.min()
         max_lat = lat_nona.max()
 
     lon_nona = group["longitude"].dropna().values
     if lon_nona.shape[0] == 0:
-        min_lon = np.nan        
-        max_lon = np.nan        
+        min_lon = np.nan
+        max_lon = np.nan
     else:
         min_lon = lon_nona.min()
         max_lon = lon_nona.max()
@@ -709,7 +711,7 @@ def _profile_agg(group, tas_depth=5):
     else:
         tas = int((surface_pts.max() - surface_pts.min()).total_seconds())
 
-    # Profile phase and duration calculations can be vectorized, 
+    # Profile phase and duration calculations can be vectorized,
     # and thus they are calculates after the aggregation
     # in calc_profile_summary
 
@@ -733,14 +735,15 @@ def _profile_agg(group, tas_depth=5):
         },
     )
 
+
 def calc_profile_phase(profile_index, profile_direction, min_depth):
     """
-    Determine the phase of the profile. 
+    Determine the phase of the profile.
     Even though this is by profile, rather than the terminology is from
     https://github.com/OceanGlidersCommunity/OG-format-user-manual/blob/main/vocabularyCollection/phase.md
 
-    Note that inflection may be happen after an ascent or descent, 
-    depending on if the glider makes it to the surface. 
+    Note that inflection may be happen after an ascent or descent,
+    depending on if the glider makes it to the surface.
     A surfacing only occurs if profile_direction=0 and proifle min_depth<1
 
     Returns an array of profile phase descriptions
@@ -797,18 +800,18 @@ def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
         - time_at_surface_s: the time at the surface, in integer seconds.
             The amount of time during the profile the glider was at a depth <5m.
             In seconds, not timedelta, for more intuitive writing to CSV files
-        - profile_duration_s: the difference between the time max/min. 
+        - profile_duration_s: the difference between the time max/min.
             In seconds, not timedelta, for more intuitive writing to CSV files
     """
     # Minimum columns needed by aggregation function
     grouped_columns = [
-        "time", 
-        "depth", 
-        "profile_index", 
-        "distance_over_ground", 
-        "profile_direction", 
-        "latitude", 
-        "longitude", 
+        "time",
+        "depth",
+        "profile_index",
+        "distance_over_ground",
+        "profile_direction",
+        "latitude",
+        "longitude",
     ]
 
     # Group by profile_index, and run profile aggregation function
@@ -822,16 +825,15 @@ def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
     # Calculate additional variables, and return
     df["profile_duration_s"] = (df["end_time"] - df["start_time"]).dt.total_seconds()
     df["profile_phase"] = calc_profile_phase(
-        df["profile_index"], 
-        df["profile_direction"], 
-        df["min_depth"]
+        df["profile_index"],
+        df["profile_direction"],
+        df["min_depth"],
     )
 
     new_start = ["profile_index", "profile_direction", "profile_phase"]
     df_cols = new_start + [i for i in df.columns if i not in new_start]
 
     return df[df_cols]
-
 
 
 def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
@@ -856,7 +858,7 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
     # Generate profile summary data frame, other products
     _log.info("Starting profile checks")
     df = calc_profile_summary(ds)
-    diveclimb_df= df[df["profile_index"] % 1 == 0.0]
+    diveclimb_df = df[df["profile_index"] % 1 == 0.0]
     between_df = df[df["profile_index"] % 1 == 0.5]
     between_surf = between_df[between_df.profile_phase == "surfacing"]
     # between_infl = between_df[between_df.profile_phase == "inflection"]
@@ -874,10 +876,10 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
         )
 
     # Check: sequence of as
-    # 1) All ascents/descents are followed by a surfacing/inflection, 
+    # 1) All ascents/descents are followed by a surfacing/inflection,
     # 2) All inflections (including surfacings) are followed by an ascent/descent
-    df1 = df['profile_direction'].iloc[:-1]
-    df1_shift = df['profile_direction'].shift(-1).iloc[:-1]
+    df1 = df["profile_direction"].iloc[:-1]
+    df1_shift = df["profile_direction"].shift(-1).iloc[:-1]
     e1 = df1.isin([1, -1]) & ~df1_shift.isin([0])
     e2 = df1.isin([0]) & ~df1_shift.isin([1, -1])
 
@@ -885,47 +887,47 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
         df_error = df.iloc[:-1].loc[e1, "profile_index"]
         _log.warning(
             " (OPT) The following %s dives/climbs are not followed by an inflection: %s",
-            df_error.shape[0], 
-            ", ".join([str(i) for i in df_error.values])
+            df_error.shape[0],
+            ", ".join([str(i) for i in df_error.values]),
         )
 
     if e2.any():
         df_error = df.iloc[:-1].loc[e2, "profile_index"]
         _log.warning(
             "The following %s inflections are not followed by a dive/climb: %s",
-            df_error.shape[0], 
-            ", ".join([str(i) for i in df_error.values])
+            df_error.shape[0],
+            ", ".join([str(i) for i in df_error.values]),
         )
 
     # 3) All inflections are 2-after followed by an inflection
     # 4) All dives are 2-after followed by a climb
     # 5) All climbs are 2-after followed by a dive
-    df2 = df['profile_direction'].iloc[:-2]
-    df2_shift = df['profile_direction'].shift(-2).iloc[:-2]
-    
+    df2 = df["profile_direction"].iloc[:-2]
+    df2_shift = df["profile_direction"].shift(-2).iloc[:-2]
+
     e3 = (df2 == 0) & (df2_shift != 0)
     e4 = (df2 == 1) & (df2_shift != -1)
     e5 = (df2 == -1) & (df2_shift != 1)
-    if (e3.any()):
+    if e3.any():
         df_error = df.iloc[:-2].loc[e3, "profile_index"]
         _log.warning(
             "(OPT) The following %s inflections are not 2-followed by an inflection: %s",
-            df_error.shape[0], 
-            ", ".join([str(i) for i in df_error.values])
+            df_error.shape[0],
+            ", ".join([str(i) for i in df_error.values]),
         )
-    if (e4.any()):
+    if e4.any():
         df_error = df.iloc[:-2].loc[e4, "profile_index"]
         _log.warning(
             "(OPT) The following %s dives are not 2-followed by a climb: %s",
-            df_error.shape[0], 
-            ", ".join([str(i) for i in df_error.values])
+            df_error.shape[0],
+            ", ".join([str(i) for i in df_error.values]),
         )
-    if (e5.any()):
+    if e5.any():
         df_error = df.iloc[:-2].loc[e5, "profile_index"]
         _log.warning(
             "(OPT) The following %s climbs are not 2-followed by a dive: %s",
-            df_error.shape[0], 
-            ", ".join([str(i) for i in df_error.values])
+            df_error.shape[0],
+            ", ".join([str(i) for i in df_error.values]),
         )
 
     # Check: no surface profiles have both a start or end depth of >3
@@ -941,8 +943,8 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
         _log.warning(
             "There are %s surface profiles "
             + "that have both a start or end depth >3m, and depth range >3m. "
-            + "Profile indices: %s", 
-            depth_start_end_check.shape[0], 
+            + "Profile indices: %s",
+            depth_start_end_check.shape[0],
             ", ".join([str(i) for i in depth_start_end_check.profile_index.values]),
         )
 
@@ -950,9 +952,9 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
     if between_df.depth_range.max() >= 10:
         df_towarn = between_df.profile_index[between_df.depth_range >= 10]
         _log.warning(
-            "The depth difference is >= 10 for %s 'between' profile(s): %s", 
-            df_towarn.shape[0], 
-            ", ".join([str(i) for i in df_towarn.values]), 
+            "The depth difference is >= 10 for %s 'between' profile(s): %s",
+            df_towarn.shape[0],
+            ", ".join([str(i) for i in df_towarn.values]),
         )
 
     # Check: More than 60s at the surface (ie above 5m) during a profile
@@ -962,9 +964,9 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
         _log.warning(
             "There are %s profiles with more "
             + "than %ss at depths less than or equal to 5m. "
-            + "Profile indices: %s", 
-            tas_check.shape[0], 
-            surface_max, 
+            + "Profile indices: %s",
+            tas_check.shape[0],
+            surface_max,
             ", ".join([str(i) for i in tas_check.profile_index.values]),
         )
 
@@ -976,11 +978,11 @@ def check_depth(ds: xr.Dataset, depth_ok=5) -> xr.Dataset:
     Parameters
     ----------
     ds : xarray Dataset
-        Dataset with glider timeseries data. 
+        Dataset with glider timeseries data.
         Generally should be the raw dataset, but can be any timeseries
     depth_ok : numeric
-        The maximum acceptable depth difference. If the absolute value of 
-        the difference between the measured depth and CTD-calcualted depth 
+        The maximum acceptable depth difference. If the absolute value of
+        the difference between the measured depth and CTD-calcualted depth
         is greater than this, a warning will be raised
 
     Returns
@@ -998,20 +1000,20 @@ def check_depth(ds: xr.Dataset, depth_ok=5) -> xr.Dataset:
 
     # Interpolate da1 onto the time points of da2, and get the differences
     da1_interp = da1.dropna("time").interp(time=da2.time)
-    depth_diff = abs(da1_interp-da2)
+    depth_diff = abs(da1_interp - da2)
     depth_diff_abs = abs(depth_diff)
     depth_diff_max = np.nanmax(depth_diff_abs)
     _log.info(
         "The max difference between the glider measured depth and "
-        + "depth calculated from the CTD is %sm", 
-        np.round(depth_diff_max, 2)
+        + "depth calculated from the CTD is %sm",
+        np.round(depth_diff_max, 2),
     )
     _log.debug(depth_diff.to_pandas().describe())
     if depth_diff_max > depth_ok:
         _log.warning(
             "The max absolute difference between the glider measured depth and "
-            + "depth calculated from the CTD is greater than %sm", 
-            depth_ok
+            + "depth calculated from the CTD is greater than %sm",
+            depth_ok,
         )
         _log.warning(depth_diff_abs.to_pandas().describe())
 
@@ -1022,7 +1024,7 @@ def check_depth(ds: xr.Dataset, depth_ok=5) -> xr.Dataset:
             da1_interp.rename("depth_measured_interp"),
             depth_diff.rename("depth_diff"),
             depth_diff_abs.rename("depth_diff_abs"),
-        ]
+        ],
     )
 
     return ds

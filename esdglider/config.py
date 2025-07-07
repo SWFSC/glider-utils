@@ -23,8 +23,8 @@ db_components = {
     "echosounder": "Sig 100 compact echosounder",
     "par": "PAR sensor",
     "dmon": "DMON",
-    "wispr": "WISPR", 
-    "hydrophone": "Hydrophone"
+    "wispr": "WISPR",
+    "hydrophone": "Hydrophone",
 }
 
 # Calibration type name from Calibration_Type table
@@ -53,7 +53,7 @@ def instrument_attrs(key, devices, dev_df, cal_df):
     instr["serial_number"] = dev_curr["Serial_Num"].values[0]
     instr["description"] = dev_curr["Device_Description"].fillna("").values[0]
     instr["make_model"] = (
-        f"{dev_curr["Manufacturer"].values[0]} {dev_curr["Model"].values[0]}"
+        f"{dev_curr['Manufacturer'].values[0]} {dev_curr['Model'].values[0]}"
     )
 
     # If CTD, add 'pumped' comment
@@ -82,8 +82,8 @@ def instrument_attrs(key, devices, dev_df, cal_df):
 def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
     """
     deployment_name : str
-        name of the glider deployment. Eg, amlr01-20200101. 
-        Only need the name of the deployment, 
+        name of the glider deployment. Eg, amlr01-20200101.
+        Only need the name of the deployment,
         because the database contains the project
     out_path : str
         path to which to write the output yaml file
@@ -130,7 +130,9 @@ def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
         )
 
         # Filter for the glider deployment, using the deployment name
-        db_depl = Glider_Deployment[Glider_Deployment["Deployment_Name"] == deployment_name]
+        db_depl = Glider_Deployment[
+            Glider_Deployment["Deployment_Name"] == deployment_name
+        ]
         _log.debug("database connection successful")
         # Confirm that exactly one deployment in the db matched deployment name
         if db_depl.shape[0] != 1:
@@ -161,7 +163,7 @@ def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
 
         # Based on the instruments on the glider:
         # 1. Remove netcdf vars from yamls, if necessary
-        # 2. Add instrument_ metadata 
+        # 2. Add instrument_ metadata
         instruments = {}
         for key, value in db_components.items():
             if value in components:
@@ -195,13 +197,12 @@ def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
     metadata["os_version"] = db_depl["Software_Version"].values[0]
     metadata["project"] = project
     metadata["glider_name"] = deployment_split[0]
-    if not any(db_devices['Device_Type'] == 'Teledyne Glider Slocum G3'):
+    if not any(db_devices["Device_Type"] == "Teledyne Glider Slocum G3"):
         raise ValueError(
-            "No device 'Teledyne Glider Slocum G3'. " 
-            + "Please add it to the build"
+            "No device 'Teledyne Glider Slocum G3'. " + "Please add it to the build"
         )
     metadata["glider_serial"] = db_devices.loc[
-        db_devices['Device_Type'] == 'Teledyne Glider Slocum G3', 'Serial_Num'
+        db_devices["Device_Type"] == "Teledyne Glider Slocum G3", "Serial_Num"
     ].values[0]
 
     if project == "FREEBYRD":

@@ -4,6 +4,7 @@ import os
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import cmocean.cm as cmo
+import glidertools as gt
 import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -11,7 +12,6 @@ import numpy as np
 import xarray as xr
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Patch
-import glidertools as gt
 
 from esdglider import utils
 
@@ -243,7 +243,6 @@ def esd_all_plots(
     eng_tvt_loop(ds_eng, base_path)
     sci_ts_loop(ds_sci, base_path)
 
-
     if bar_file is not None:
         _log.info(f"Loading bar file from {bar_file}")
         bar = xr.load_dataset(bar_file).rename({"latitude": "lat", "longitude": "lon"})
@@ -302,7 +301,9 @@ def sci_gridded_loop(
             continue
 
         if var in ["profile_index"]:
-            _log.info(f"Skipping {var}, because it is not relevant for gridded science timeseries plots")
+            _log.info(
+                f"Skipping {var}, because it is not relevant for gridded science timeseries plots"
+            )
             continue
 
         sci_timesection_plot(ds, var, base_path=base_path, show=show)
@@ -392,7 +393,9 @@ def sci_timeseries_loop(
             continue
 
         if var in ["profile_index"]:
-            _log.info(f"Skipping {var}, because it is not relevant for science timeseries plots")
+            _log.info(
+                f"Skipping {var}, because it is not relevant for science timeseries plots"
+            )
             continue
 
         sci_timeseries_plot(ds, var, base_path=base_path, show=show)
@@ -1269,7 +1272,7 @@ def sci_timesection_gt_plot(
     var: str,
     base_path: str | None = None,
     show: bool = False,
-    robust: bool = True
+    robust: bool = True,
 ):
     """
     Create 'timesection' plots of 1m gridded science variables
@@ -1306,11 +1309,13 @@ def sci_timesection_gt_plot(
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
         return
 
-    _log.info(f"Making sci gridded timeseries plot for variable {var}, using glidertools")
+    _log.info(
+        f"Making sci gridded timeseries plot for variable {var}, using glidertools"
+    )
     deployment = ds.deployment_name
     project = ds.project
 
-    dat = ds.where(ds['profile_index'] % 1 == 0, drop = True)
+    dat = ds.where(ds["profile_index"] % 1 == 0, drop=True)
     x = dat.profile_index
     y = dat.depth
 
@@ -1319,7 +1324,7 @@ def sci_timesection_gt_plot(
     ax.set_xlabel("Profile", size=label_size)
     ax.set_ylabel("Depth [m]", size=label_size)
     ax.set_title(f"Deployment {deployment} for project {project}", size=title_size)
-    
+
     # Sometimes glidertools won't plot label, so guarantee it
     ax.cb.set_label(adj_var_label(ds, var), size=label_size)
 

@@ -22,8 +22,8 @@ def get_path_acoutics(deployment_info: dict, acoustic_path: str):
     deployment_info : dict
         A dictionary with the relevant deployment info. Specifically:
         deploymentyaml : str
-            The filepath of the glider deployment yaml. 
-            This file will have relevant info, 
+            The filepath of the glider deployment yaml.
+            This file will have relevant info,
             including deployment name (eg, amlr01-20210101) and project
         mode : str
             Mode of the glider data being processed.
@@ -108,7 +108,7 @@ def regions_evr(ds: xr.Dataset, evr_file_pre: str) -> pd.DataFrame:
 
         # Loop through each row and generate the file contents
         for row in df.itertuples():
-            idx = row.Index + 1 # type: ignore
+            idx = row.Index + 1  # type: ignore
             line1 = (
                 f"13 4 {idx} 0 3 -1 1 "
                 + f"{row.start_date_str} {row.start_time_str} {start_depth} "

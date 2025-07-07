@@ -1,6 +1,6 @@
-from importlib import resources, metadata
 import logging
 import os
+from importlib import metadata, resources
 
 import netCDF4
 import numpy as np
@@ -13,6 +13,7 @@ import yaml
 
 try:
     import dbdreader
+
     have_dbdreader = True
 except ImportError:
     have_dbdreader = False
@@ -54,8 +55,8 @@ def get_path_deployment(
         used to make it easier if arguments are added or removed.
         This dictionary must contain at least:
         deploymentyaml : str
-            The filepath of the glider deployment yaml. 
-            This file will have relevant info, 
+            The filepath of the glider deployment yaml.
+            This file will have relevant info,
             including deployment name (eg, amlr01-20210101) and project
         mode : str
             Mode of the glider data being processed.
@@ -73,7 +74,7 @@ def get_path_deployment(
     deploymentyaml = deployment_info["deploymentyaml"]
     mode = deployment_info["mode"]
     deployment = utils.read_deploymentyaml(deploymentyaml)
-    
+
     deployment_name = deployment["metadata"]["deployment_name"]
     project = deployment["metadata"]["project"]
     year = utils.year_path(project, deployment_name)
@@ -99,7 +100,7 @@ def get_path_deployment(
     griddir = procl1dir
     profdir = os.path.join(procl1dir, "ngdac", mode)
 
-    # Create common file names    
+    # Create common file names
     path_raw = os.path.join(tsdir, f"{deployment_name}-{mode}-raw.nc")
     path_sci = os.path.join(tsdir, f"{deployment_name}-{mode}-sci.nc")
     path_eng = os.path.join(tsdir, f"{deployment_name}-{mode}-eng.nc")
@@ -120,12 +121,12 @@ def get_path_deployment(
         "plotdir": plotdir,
         "procl1dir": procl1dir,
         "procl2dir": procl2dir,
-        "tsrawpath": path_raw, 
-        "tsscipath": path_sci, 
-        "tsengpath": path_eng, 
-        "gr1path": path_gr1, 
-        "gr5path": path_gr5, 
-        "profsummpath": path_prof_summ, 
+        "tsrawpath": path_raw,
+        "tsscipath": path_sci,
+        "tsengpath": path_eng,
+        "gr1path": path_gr1,
+        "gr5path": path_gr5,
+        "profsummpath": path_prof_summ,
     }
 
 
@@ -153,8 +154,8 @@ def binary_to_nc(
         used to make it easier if arguments are added or removed.
         This dictionary must contain at least:
         deploymentyaml : str
-            The filepath of the glider deployment yaml. 
-            This file will have relevant info, 
+            The filepath of the glider deployment yaml.
+            This file will have relevant info,
             including deployment name (eg, amlr01-20210101) and project
         mode : str
             Mode of the glider data being processed.
@@ -195,16 +196,16 @@ def binary_to_nc(
     if paths["deploymentyaml"] != deploymentyaml:
         raise ValueError(
             f"Provided yaml path ({deploymentyaml}) is not the same as "
-            + f"the paths yaml path ({paths["deploymentyaml"]})",
+            + f"the paths yaml path ({paths['deploymentyaml']})",
         )
-    
-    deployment = utils.read_deploymentyaml(deploymentyaml) #TODO
+
+    deployment = utils.read_deploymentyaml(deploymentyaml)  # TODO
     deployment_name = deployment["metadata"]["deployment_name"]
 
     deploymentyaml = paths["deploymentyaml"]
     rawdir = paths["rawdir"]
     tsdir = paths["tsdir"]
-    griddir = paths["griddir"]    
+    griddir = paths["griddir"]
 
     # Check mode, set binary_search regex
     if mode == "delayed":
@@ -293,7 +294,7 @@ def binary_to_nc(
             search=binary_search,
             fnamesuffix=f"-{mode}-eng",
             time_base="m_depth",
-            profile_filt_time=None, # type: ignore
+            profile_filt_time=None,  # type: ignore
             maxgap=maxgap_esd,
         )
 
@@ -310,7 +311,7 @@ def binary_to_nc(
             search=binary_search,
             fnamesuffix=f"-{mode}-sci",
             time_base="sci_water_temp",
-            profile_filt_time=None, # type: ignore
+            profile_filt_time=None,  # type: ignore
             maxgap=maxgap_esd,
         )
 
@@ -355,7 +356,7 @@ def binary_to_nc(
             outname_tssci,
             griddir,
             deploymentyaml,
-            depth_bins=np.arange(0, 1200.1, 1), 
+            depth_bins=np.arange(0, 1200.1, 1),
             fnamesuffix=f"-{mode}-1m",
         )
 
@@ -364,7 +365,7 @@ def binary_to_nc(
             outname_tssci,
             griddir,
             deploymentyaml,
-            depth_bins=np.arange(0, 1200.1, 5), 
+            depth_bins=np.arange(0, 1200.1, 5),
             fnamesuffix=f"-{mode}-5m",
         )
 
@@ -398,8 +399,8 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
         ds.attrs["deployment_start"] = pp["deployment_start"]
         ds.attrs["deployment_end"] = pp["deployment_end"]
     else:
-        ds.attrs["deployment_start"] = str(ds["time"].values[0].astype('datetime64[s]'))
-        ds.attrs["deployment_end"] = str(ds["time"].values[-1].astype('datetime64[s]'))
+        ds.attrs["deployment_start"] = str(ds["time"].values[0].astype("datetime64[s]"))
+        ds.attrs["deployment_end"] = str(ds["time"].values[-1].astype("datetime64[s]"))
 
     # Determine the glider ID using min_dt, and check vs ID from time
     # min_dt = ds.deployment_min_dt
@@ -614,26 +615,26 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
 
 
 def drop_ts_ranges(
-    ds, 
-    drop_list, 
-    ds_type, 
-    plotdir=None, 
-    profsummdir=None, 
-    outname=None, 
+    ds,
+    drop_list,
+    ds_type,
+    plotdir=None,
+    profsummdir=None,
+    outname=None,
     **kwargs,
 ):
     """
-    Drop dataset points that are within given time ranges, 
-    and perform relevant post-processing. 
+    Drop dataset points that are within given time ranges,
+    and perform relevant post-processing.
 
-    This function is used within processing scripts, if a certain time range 
+    This function is used within processing scripts, if a certain time range
     has been decided to exclude during review
 
     Post-processing includes:
     1) Plotting the points that were dropped, if plotdir is not None
     2) Rerunning pgutils.get_distance_over_ground
-    3a) Writing new profiles and calculating new profile summary, 
-        if ds_type is "raw", or 
+    3a) Writing new profiles and calculating new profile summary,
+        if ds_type is "raw", or
     3b) Reading in profile summary from profsummdir, and using summary
         to 'join' profile info to ds using utils.join_profiles
     4) Running utils.check_profiles
@@ -644,9 +645,9 @@ def drop_ts_ranges(
     ds : xarray Dataset
         Timeseries dataset
     drop_list : list of string tuples
-        A list of string tuples of time ranges to drop from ds. 
+        A list of string tuples of time ranges to drop from ds.
         These strings will be processed by np.datetime64()
-        If dropping a single time, use this value for both values of the tuple 
+        If dropping a single time, use this value for both values of the tuple
     ds_type : str
         String indicating if ds is a raw, eng, or sci timeseries;
         passed to plots.scatter_drop_plot
@@ -654,7 +655,7 @@ def drop_ts_ranges(
         Path to plot directory; passed to plots.scatter_drop_plot
         If None, then no plots are saved
     profsummdir : str | None (default None)
-        Path to profile summary CSV. Ignored if ds_type is raw. 
+        Path to profile summary CSV. Ignored if ds_type is raw.
         If not None and ds_type is eng or sci, will join profiles
     outname : str | None (default None)
         If not None, then ds is written to this path using utils.to_netcdf_esd
@@ -705,7 +706,7 @@ def drop_ts_ranges(
         prof_summ = pd.read_csv(profsummdir, parse_dates=["start_time", "end_time"])
         utils.join_profiles(ds, prof_summ, **kwargs)
         utils.check_profiles(ds)
-    else: 
+    else:
         _log.info("No profile work")
 
     # Write to netcdf
@@ -927,7 +928,7 @@ def binary_to_raw(
     variables (from sci_m_present_time). These times are merged,
     and these values are the time index of the output file.
 
-    No values are interpolated. 
+    No values are interpolated.
     Times less than the yaml fil's 'deployment_min_dt' are still dropped.
 
     pp is the ESD post-process dictionary
@@ -958,7 +959,7 @@ def binary_to_raw(
 
     # get the dbd object
     _log.info(f"dbdreader pattern: {indir}/{search}")
-    dbd = dbdreader.MultiDBD(pattern=f"{indir}/{search}", cacheDir=cachedir) # type: ignore
+    dbd = dbdreader.MultiDBD(pattern=f"{indir}/{search}", cacheDir=cachedir)  # type: ignore
     sci_params = dbd.parameterNames["sci"]
     eng_params = dbd.parameterNames["eng"]
 
@@ -1053,7 +1054,7 @@ def binary_to_raw(
     # screen out-of-range times; these won't convert:
     ds["time"] = ds.time.where((ds.time > 0) & (ds.time < 6.4e9), np.nan)
     ds["time"] = (ds.time * 1e9).astype("datetime64[ns]")
-    min_dt_str = deployment['metadata']["deployment_min_dt"]
+    min_dt_str = deployment["metadata"]["deployment_min_dt"]
     ds = utils.drop_bogus_times(ds, min_dt=min_dt_str, max_drop=True)
     # ds = ds.where(ds.time >= np.datetime64(min_dt_str), drop=True)
     ds["time"].attrs = attr
@@ -1101,14 +1102,14 @@ def decompress(binarydir):
     Parameters
     ----------
     binarydir : string
-        A string of the directory path for compressed bianry files. 
+        A string of the directory path for compressed bianry files.
         All compressed binary files
-        
+
     """
-    
+
     if not have_dbdreader:
         raise ImportError("Cannot import dbdreader")
-    
+
     binarydir_files = os.listdir(binarydir)
     _log.info("There are %s files in %s", len(binarydir_files), binarydir)
 
@@ -1116,8 +1117,8 @@ def decompress(binarydir):
     _log.info("decompressing all files in %s", binarydir)
     for fin in binarydir_files:
         _log.debug(fin)
-        if dbdreader.decompress.is_compressed(fin): # type: ignore
-            dbdreader.decompress.decompress_file(os.path.join(binarydir, fin)) # type: ignore
+        if dbdreader.decompress.is_compressed(fin):  # type: ignore
+            dbdreader.decompress.decompress_file(os.path.join(binarydir, fin))  # type: ignore
         else:
             _log.debug("skipping %s", fin)
 

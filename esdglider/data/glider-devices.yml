@@ -34,7 +34,7 @@ oxygen:
   description: ""
   platform: "platform"
   type: "instrument"
-glidercam: 
+glidercam:
   _FillValue: -999
   make_model: "" #'Williamson and Associates Glidercam'
   serial_number: ""
@@ -45,7 +45,7 @@ glidercam:
   description: ""
   platform: "platform"
   type: "instrument"
-shadowgraph: 
+shadowgraph:
   _FillValue: -999
   make_model: "" #'Williamson and Associates Shadowgraph Camera (11cm)'
   serial_number: ""
@@ -68,7 +68,7 @@ azfp:
   description: ""
   platform: "platform"
   type: "instrument"
-echosounder: 
+echosounder:
   _FillValue: -999
   make_model: "" #'Nortek Signature 100 Compact Echosounder'
   serial_number: ""
@@ -79,7 +79,7 @@ echosounder:
   description: ""
   platform: "platform"
   type: "instrument"
-par: 
+par:
   _FillValue: -999
   make_model: ""
   serial_number: ""

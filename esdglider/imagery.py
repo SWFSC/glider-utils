@@ -29,7 +29,7 @@ def solocam_filename_dt(filename, dt_idx_start, format="%Y%m%d-%H%M%S"):
 
     Returns
     -------
-        The datetime extracted from the imagery filename, 
+        The datetime extracted from the imagery filename,
         returned as a 'datetime64[s]' object
     """
 
@@ -52,8 +52,8 @@ def get_path_imagery(deployment_info: dict, imagery_path):
     deployment_info : dict
         A dictionary with the relevant deployment info. Specifically:
         deploymentyaml : str
-            The filepath of the glider deployment yaml. 
-            This file will have relevant info, 
+            The filepath of the glider deployment yaml.
+            This file will have relevant info,
             including deployment name (eg, amlr01-20210101) and project
         mode : str
             Mode of the glider data being processed.
@@ -112,7 +112,7 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
         Imagery file extension. Default is 'jpg'.
     dt_idx_start : int | None
         The index of the beginning of the timestamp in the image file name.
-        If None, then the index is determined as the index after the 
+        If None, then the index is determined as the index after the
         space in the file name
 
     Returns
@@ -177,11 +177,13 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
 
     # TODO: filter for dates after deployment_min_dt?
 
-    df = pd.DataFrame(data={
-        "img_file": imagery_files,
-        "img_dir": imagery_dirs,
-        "time": imagery_files_dt,
-    }).sort_values(by="img_file", ignore_index=True)
+    df = pd.DataFrame(
+        data={
+            "img_file": imagery_files,
+            "img_dir": imagery_dirs,
+            "time": imagery_files_dt,
+        },
+    ).sort_values(by="img_file", ignore_index=True)
 
     # --------------------------------------------
     # Create metadata file
@@ -196,7 +198,7 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
     # For each variable that exists, extract interpolated values to df
     ds_interp = ds.interp(time=df.time.values)
     # NOTE: ds.interp 'account for' nans, meaning if nans are the previous
-    # timestamp they are interpolated through. This is what we want, 
+    # timestamp they are interpolated through. This is what we want,
     # because the timeseries has had max_gap applied
 
     vars_toignore = [
