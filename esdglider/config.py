@@ -74,7 +74,7 @@ def instrument_attrs(key, devices, dev_df, cal_df):
         if cal_curr["Calibration_Type"].values[0] in db_factory_cal:
             instr["factory_calibrated"] = instr["calibration_date"]
     else:
-        _log.info(f"No calibration info for component {component}")
+        _log.warning(f"No calibration info for component {component}")
 
     return instr
 
@@ -194,6 +194,11 @@ def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
     metadata["deployment_name"] = deployment_name
     metadata["project"] = project
     metadata["glider_name"] = deployment_split[0]
+    if not any(db_devices['Device_Type'] == 'Teledyne Glider Slocum G3'):
+        raise ValueError(
+            "No device 'Teledyne Glider Slocum G3'. " 
+            + "Please add it to the build"
+        )
     metadata["glider_serial"] = db_devices.loc[
         db_devices['Device_Type'] == 'Teledyne Glider Slocum G3', 'Serial_Num'
     ].values[0]
