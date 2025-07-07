@@ -11,29 +11,29 @@ import esdglider.utils as utils
 _log = logging.getLogger(__name__)
 
 
-def solocam_filename_dt(filename, index_dt, format="%Y%m%d-%H%M%S"):
+def solocam_filename_dt(filename, dt_idx_start, format="%Y%m%d-%H%M%S"):
     """
     Parse solocam (imagery) filename to return associated datetime
     Requires index of start of datetime part of string
 
-    -----
     Parameters
-
+    ----------
     filename : str
         Full filename
-    index_start : int
+    dt_idx_start : int
         The index of the start of the datetime string.
-        The datetime runs from this index to this index plus 15 characters
+        The datetime inlcudes this index, plus the next 15 characters
+        Sepcifically: filename[dt_idx_start : (dt_idx_start + 15)]
     format : str
-        format passed to strptime
+        format passed to datetime.strptime
 
-    -----
-    Returns:
-        The datetime extracted from the imagery filename.
-        The datetime is returned as a 'datetime64[s]' object
+    Returns
+    -------
+        The datetime extracted from the imagery filename, 
+        returned as a 'datetime64[s]' object
     """
 
-    solocam_substr = filename[index_dt : (index_dt + 15)]
+    solocam_substr = filename[dt_idx_start : (dt_idx_start + 15)]
     _log.debug(f"datetime substring: {solocam_substr}")
     solocam_dt = datetime.strptime(solocam_substr, format)
     solocam_dt64s = np.datetime64(solocam_dt).astype("datetime64[s]")
@@ -96,24 +96,27 @@ def get_path_imagery(deployment_info: dict, imagery_path):
     }
 
 
-def imagery_timeseries(ds, paths, ext="jpg"):
+def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
     """
     Matches up imagery files with data from pyglider by imagery filename
     Uses interpolated variables (hardcoded in function)
     Returns data frame with imagery+timeseries information
 
-    -----
     Parameters
-
+    ----------
     ds : xarray Dataset
         from science timeseries NetCDF
     imagery_dir : str
         path to folder with images, specifically the 'Dir####' folders
     ext : str, optional
         Imagery file extension. Default is 'jpg'.
+    dt_idx_start : int | None
+        The index of the beginning of the timestamp in the image file name.
+        If None, then the index is determined as the index after the 
+        space in the file name
 
-    -----
-    Returns:
+    Returns
+    -------
         DataFrame: pd.DataFrame of imagery timeseries
     """
 
@@ -156,26 +159,29 @@ def imagery_timeseries(ds, paths, ext="jpg"):
             + "and thus shuld be checked carefully",
         )
 
-    space_idx = str.index(imagery_files[0], " ")
-    if space_idx == -1:
-        _log.error(
-            "The imagery file name year index could not be found, "
-            + "and thus the imagery metadata file cannot be generated",
-        )
-        raise ValueError("Incompatible file name spaces")
-    yr_idx = space_idx + 1
+    if dt_idx_start is None:
+        _log.info("Calculating the datetime index as the index after the space")
+        space_idx = str.index(imagery_files[0], " ")
+        if space_idx == -1:
+            _log.error(
+                "The imagery file name year index could not be found, "
+                + "and thus the imagery metadata file cannot be generated",
+            )
+            raise ValueError("Incompatible file name spaces")
+        dt_idx_start = space_idx + 1
+    _log.debug("dt_idx_start %s", dt_idx_start)
 
     imagery_files_dt = np.array(
-        [solocam_filename_dt(i, yr_idx) for i in imagery_files],
+        [solocam_filename_dt(i, dt_idx_start) for i in imagery_files],
     )
 
-    df_data = {
+    # TODO: filter for dates after deployment_min_dt?
+
+    df = pd.DataFrame(data={
         "img_file": imagery_files,
         "img_dir": imagery_dirs,
         "time": imagery_files_dt,
-    }
-    df = pd.DataFrame(data=df_data).sort_values(by="img_file", ignore_index=True)
-    # df.to_csv("/home/sam_woodman_noaa_gov/test.csv", index_label="time")
+    }).sort_values(by="img_file", ignore_index=True)
 
     # --------------------------------------------
     # Create metadata file
@@ -189,12 +195,15 @@ def imagery_timeseries(ds, paths, ext="jpg"):
 
     # For each variable that exists, extract interpolated values to df
     ds_interp = ds.interp(time=df.time.values)
+    # NOTE: ds.interp 'account for' nans, meaning if nans are the previous
+    # timestamp they are interpolated through. This is what we want, 
+    # because the timeseries has had max_gap applied
 
     vars_toignore = [
         # handled above
         "profile_index",
         "profile_direction",
-        # in standard datasets, but not necessary here
+        # in standard ESD datasets, but not necessary here
         "distance_over_ground",
         "waypoint_latitude",
         "waypoint_longitude",
@@ -204,6 +213,7 @@ def imagery_timeseries(ds, paths, ext="jpg"):
     vars_list = [var for var in list(ds.data_vars) if var not in vars_toignore]
 
     for var in vars_list:
+        _log.debug(f"Interpolating var {var}")
         if var not in list(ds_interp.keys()):
             _log.debug(f"{var} not present in ds - skipping interp")
             continue
