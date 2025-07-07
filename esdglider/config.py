@@ -114,16 +114,16 @@ def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
 
         engine = sqlalchemy.create_engine(db_url)
         Glider_Deployment = pd.read_sql_table(
-            "Glider_Deployment",
+            "vGlider_Deployment",
             con=engine,
             schema="dbo",
         )
-        vDeployment_Device = pd.read_sql_table(
+        Deployment_Device = pd.read_sql_table(
             "vDeployment_Device",
             con=engine,
             schema="dbo",
         )
-        vDeployment_Device_Calibration = pd.read_sql_table(
+        Deployment_Device_Calibration = pd.read_sql_table(
             "vDeployment_Device_Calibration",
             con=engine,
             schema="dbo",
@@ -150,11 +150,11 @@ def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
         metadata["deployment_id"] = str(glider_deployment_id)
 
         # Filter the Devices table for this deployment
-        db_devices = vDeployment_Device[
-            vDeployment_Device["Glider_Deployment_ID"] == glider_deployment_id
+        db_devices = Deployment_Device[
+            Deployment_Device["Glider_Deployment_ID"] == glider_deployment_id
         ]
-        db_cals = vDeployment_Device_Calibration[
-            vDeployment_Device_Calibration["Glider_Deployment_ID"]
+        db_cals = Deployment_Device_Calibration[
+            Deployment_Device_Calibration["Glider_Deployment_ID"]
             == glider_deployment_id
         ]
         components = db_devices["Component"].values
@@ -192,6 +192,7 @@ def make_deployment_config(deployment_name: str, out_path: str, db_url=None):
 
     deployment_split = utils.split_deployment(deployment_name)
     metadata["deployment_name"] = deployment_name
+    metadata["os_version"] = db_depl["Software_Version"].values[0]
     metadata["project"] = project
     metadata["glider_name"] = deployment_split[0]
     if not any(db_devices['Device_Type'] == 'Teledyne Glider Slocum G3'):
