@@ -240,6 +240,7 @@ def binary_to_nc(
             rawdir,
             [deploymentyaml, paths["engyaml"]],
             search=binary_search,
+            include_source=True, 
             fnamesuffix=f"-{mode}-raw",
             pp=postproc_info,
             **kwargs,
@@ -910,6 +911,7 @@ def binary_to_raw(
     deploymentyaml,
     *,
     search="*.[D|E]BD",
+    include_source=False, 
     fnamesuffix="",
     pp={},
     **kwargs,
@@ -957,12 +959,6 @@ def binary_to_raw(
     thenames = list(ncvar.keys())
     thenames.remove("time")
 
-    # get the dbd object
-    _log.info(f"dbdreader pattern: {indir}/{search}")
-    dbd = dbdreader.MultiDBD(pattern=f"{indir}/{search}", cacheDir=cachedir)  # type: ignore
-    sci_params = dbd.parameterNames["sci"]
-    eng_params = dbd.parameterNames["eng"]
-
     # build a new data set based on info in `deployment.`
     ds = xr.Dataset()
     attr = {}
@@ -982,9 +978,30 @@ def binary_to_raw(
         _log.error(f"sensors: {sensors}")
         raise ValueError("The sensor list has duplicate sensors")
 
+    # get the dbd object
+    _log.info(f"dbdreader pattern: {indir}/{search}")
+    dbd = dbdreader.MultiDBD(pattern=f"{indir}/{search}", cacheDir=cachedir)  # type: ignore
+    sci_params = dbd.parameterNames["sci"]
+    eng_params = dbd.parameterNames["eng"]
+    first_eng = np.where([i in eng_params for i in sensors])[0][0]
+    first_sci = np.where([i in sci_params for i in sensors])[0][0]
+    
     # get the data, across all eng/sci timestamps
     # return_nans=True so data arrays are of exactly two lengths (eng/sci)
-    data_list = [(t, v) for (t, v) in dbd.get(*sensors, return_nans=True)]
+    source_data = dbd.get(
+        *sensors, 
+        return_nans=True, 
+        include_source=include_source
+    )
+
+    # If include_source is true, then parsing is a bit different
+    if include_source:
+        data_list, s = zip(*source_data)
+        _log.debug("Parsing source filenames")
+        eng_files = [os.path.basename(i.filename) for i in s[first_eng]]
+        sci_files = [os.path.basename(i.filename) for i in s[first_sci]]
+    else:
+        data_list = source_data
     data_time, data = zip(*data_list)
 
     # Sanity check: only two sets of times
@@ -999,10 +1016,7 @@ def binary_to_raw(
     #     _log.error(f'sensors: {sensors}')
     #     raise ValueError("Not all sensors are recognized by dbdreader as sci or eng")
 
-    # get and union the times
-    # assumes exactly 2 unique sets of times: eng and sci
-    first_eng = np.where([i in eng_params for i in sensors])[0][0]
-    first_sci = np.where([i in sci_params for i in sensors])[0][0]
+    # get and union the exactly 2 unique sets of times: eng and sci
     # eng_time = np.int64(pgutils._time_to_datetime64(data_time[eng1])) #second
     eng_time = data_time[first_eng]
     sci_time = data_time[first_sci]
@@ -1051,6 +1065,24 @@ def binary_to_raw(
         attrs = pgutils.fill_required_attrs(attrs)
         ds[name] = (("time"), val, attrs)
 
+    # For ordering of data columns
+    ds["distance_over_ground"] = (("time"), np.zeros(len(time)))
+
+    # If specified, add the source filename
+    if include_source:
+        name = "source_filename"
+        _log.info("working on %s", name)
+        val = np.full(len(time), "nan", dtype='<U16')
+        val[eng_indices] = eng_files # type: ignore
+        val[sci_indices] = sci_files # type: ignore
+        if np.any(np.count_nonzero(val == "nan")):
+            _log.warning("Some datapoints have a nan 'source_filename' value")
+        attrs = {
+            "comment": "The source file where the datapoint originated from", 
+            "source": "os.path.basename(dbd.filename)", 
+        }
+        ds[name] = (("time"), val, attrs)
+
     # screen out-of-range times; these won't convert:
     ds["time"] = ds.time.where((ds.time > 0) & (ds.time < 6.4e9), np.nan)
     ds["time"] = (ds.time * 1e9).astype("datetime64[ns]")
@@ -1073,7 +1105,14 @@ def binary_to_raw(
     ds = utils.get_fill_profiles(ds, "time", "depth", **kwargs)
     ds = pgutils.get_distance_over_ground(ds)
 
-    new_start = ["latitude", "longitude", "depth", "profile_index"]
+    new_start = [
+        "latitude", 
+        "longitude", 
+        "depth", 
+        "depth_ctd", 
+        "profile_index", 
+        "profile_direction", 
+    ]
     ds = utils.data_var_reorder(ds, new_start)
 
     # Add metadata - using postproc_attrs for consistency
@@ -1081,7 +1120,7 @@ def binary_to_raw(
     pp["device_dict"] = deployment["glider_devices"]
     ds = postproc_attrs(ds, pp)
     ds.attrs["processing_level"] = (
-        "No data screening - raw data read using dbdreader's MultiDBD.get(). "
+        "Minimal data screening - raw data read using dbdreader's MultiDBD.get(). "
         + "Data provided as is, with no expressed or implied assurance "
         + "of quality assurance or quality control."
     )
