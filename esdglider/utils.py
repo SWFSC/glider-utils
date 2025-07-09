@@ -93,15 +93,14 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
         stamp = (stamp - stamp[0]).astype("timedelta64[s]").astype(float)
 
     # Set default parameter values (did not set type np.timedelta64(0, 'ns') )
-    optionsList = profileOptionsList
-    # optionsList = {
-    #     "length": 10,
-    #     "period": 0,
-    #     "inversion": 3,
-    #     "interrupt": 180,
-    #     "stall": 3,
-    #     "shake": 20,
-    # }
+    optionsList = {
+        "length": 10,
+        "period": 0,
+        "inversion": 3,
+        "interrupt": 180,
+        "stall": 3,
+        "shake": 20,
+    }
     optionsList.update(kwargs)
     _log.info(
         "Running findProfiles with the following kwargs: %s",
@@ -178,7 +177,7 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
         iEnd = validIndex[i + 1]
         profileDirection[iStart:iEnd] = sdy[i]
 
-    return profileIndex, profileDirection
+    return profileIndex, profileDirection, optionsList
 
 
 def get_fill_profiles(ds, time_var, depth_var, **kwargs) -> xr.Dataset:
@@ -198,9 +197,7 @@ def get_fill_profiles(ds, time_var, depth_var, **kwargs) -> xr.Dataset:
 
     time_vals = ds[time_var].values
     depth_vals = ds[depth_var].values
-    prof_idx, prof_dir = findProfiles(time_vals, depth_vals, **kwargs)
-
-    profileOptionsList.update(kwargs)
+    prof_idx, prof_dir, prof_opt = findProfiles(time_vals, depth_vals, **kwargs)
 
     idx_comment = (
         "N = inside profile N, N + 0.5 = between profiles N and N + 1. "
@@ -214,7 +211,7 @@ def get_fill_profiles(ds, time_var, depth_var, **kwargs) -> xr.Dataset:
             ("sources", f"{time_var} {depth_var}"),
             ("method", "esdglider.utils.findProfiles"),
         ]
-        + [(key, val) for key, val in profileOptionsList.items()],
+        + [(key, val) for key, val in prof_opt.items()],
     )
     ds["profile_index"] = (time_var, prof_idx, attrs)
 
