@@ -198,7 +198,7 @@ def esd_all_plots(
     crs=None,
     base_path: str | None = None,
     bar_file: str | None = None,
-    max_workers: int | None = None, 
+    max_workers: int | None = 1, 
 ):
     """
     Wrapper to run all of the plotting loop functions
@@ -278,7 +278,6 @@ def sci_gridded_loop_helper(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
-    max_workers=None, 
 ):
     """
     See sci_gridded_loop for variables
@@ -296,7 +295,7 @@ def sci_gridded_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
-    max_workers=None, 
+    max_workers: int | None = 1, 
 ):
     """
     A loop/wrapper function to use a gridded science dataset to make plots
@@ -361,7 +360,7 @@ def eng_tvt_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
-    max_workers=None, 
+    max_workers: int | None = 1, 
 ):
     """
     A loop/wrapper function to:
@@ -439,7 +438,7 @@ def sci_timeseries_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
-    max_workers=None, 
+    max_workers: int | None = 1, 
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
@@ -505,7 +504,7 @@ def eng_timeseries_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
-    max_workers=None, 
+    max_workers: int | None = 1, 
 ):
     """
     A loop/wrapper function to use a timeseries engineering dataset to make plots
@@ -631,7 +630,7 @@ def sci_surface_map_loop(
     bar: xr.Dataset | None = None,
     figsize_x: float = 8.5,
     figsize_y: float = 11,
-    max_workers=None, 
+    max_workers: int | None = 1, 
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
@@ -1475,7 +1474,7 @@ def sci_timesection_gt_plot(
         return
 
     _log.info(
-        f"Making sci gridded timeseries plot for variable {var}, using glidertools"
+        f"Making sci timesection plot for variable {var}, using glidertools"
     )
     deployment = ds.deployment_name
     project = ds.project
