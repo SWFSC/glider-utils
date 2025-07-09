@@ -13,6 +13,9 @@ import xarray as xr
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Patch
 
+import concurrent.futures
+import functools
+
 from esdglider import utils
 
 _log = logging.getLogger(__name__)
@@ -54,9 +57,12 @@ def adj_var(ds, var):
     """Get the adjusted var values for the plot. Eg, take the log"""
     if var not in adjustments.keys():
         return ds[var]
-    elif adjustments[var] == np.log10:
+    if adjustments[var] == np.log10:
         return adjustments[var](ds[var])
-
+    else:
+        _log.warning("Unknown adjustments option")
+        return ds[var]
+    
 
 def adj_var_label(ds, var):
     """Get the formatted label for the plot"""
@@ -192,6 +198,7 @@ def esd_all_plots(
     crs=None,
     base_path: str | None = None,
     bar_file: str | None = None,
+    max_workers: int | None = None, 
 ):
     """
     Wrapper to run all of the plotting loop functions
@@ -214,6 +221,11 @@ def esd_all_plots(
     bar_file : str or None (default None)
         Path to the ETOPO nc file to use for contour lines.
         If None (default), then contour lines will not be drawn
+    max_workers : int | None
+        Number of workers with which to make the plots. 
+        If 1, a normal for loop is used. 
+        If None, all cores are used, as determiend by os.cpu_count()
+        Else, max_workers is the number of cores used 
 
     Returns
     -------
@@ -230,6 +242,8 @@ def esd_all_plots(
     ds_raw = xr.load_dataset(ds_paths["outname_tsraw"])
 
     # Scatter plots
+    if base_path is not None:
+        utils.rmtree(os.path.join(base_path, scatter_path))
     scatter_plot(ds_eng, "eng", base_path)
     scatter_plot(ds_sci, "sci", base_path)
     ll_good = ~(np.isnan(ds_raw.longitude) | np.isnan(ds_raw.latitude))
@@ -237,11 +251,11 @@ def esd_all_plots(
     scatter_plot(ds_raw, "raw", base_path)
 
     # Sci/eng loops
-    sci_gridded_loop(ds_gr5m, base_path)
-    sci_timeseries_loop(ds_sci, base_path)
-    eng_timeseries_loop(ds_eng, base_path)
-    eng_tvt_loop(ds_eng, base_path)
-    sci_ts_loop(ds_sci, base_path)
+    sci_gridded_loop(ds_gr5m, base_path, max_workers=max_workers)
+    sci_timeseries_loop(ds_sci, base_path, max_workers=max_workers)
+    eng_timeseries_loop(ds_eng, base_path, max_workers=max_workers)
+    eng_tvt_loop(ds_eng, base_path, max_workers=max_workers)
+    # sci_ts_loop(ds_sci, base_path, max_workers=max_workers)
 
     if bar_file is not None:
         _log.info(f"Loading bar file from {bar_file}")
@@ -252,15 +266,37 @@ def esd_all_plots(
         bar = None
 
     if crs is not None:
-        sci_surface_map_loop(ds_gr5m, crs=crs, base_path=base_path, bar=bar)
+        sci_surface_map_loop(
+            ds_gr5m, crs=crs, base_path=base_path, bar=bar, 
+            max_workers=max_workers
+        )
     else:
         _log.info("No crs provided, and thus skipping surface maps")
+
+def sci_gridded_loop_helper(
+    var, 
+    ds: xr.Dataset,
+    base_path: str | None = None,
+    show: bool = False,
+    max_workers=None, 
+):
+    """
+    See sci_gridded_loop for variables
+    In short, a small wrapper function that can be passed to 
+    concurrent.futures.ProcessPoolExecutor 
+    """
+    _log.debug(f"var {var}")
+    sci_timesection_plot(var, ds, base_path=base_path, show=show)
+    sci_spatialsection_plot(var, ds, base_path=base_path, show=show)
+    sci_spatialgrid_plot(var, ds, base_path=base_path, show=show)
+
 
 
 def sci_gridded_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
+    max_workers=None, 
 ):
     """
     A loop/wrapper function to use a gridded science dataset to make plots
@@ -279,6 +315,11 @@ def sci_gridded_loop(
         Intended to be the 'plotdir' output of slocum.get_path_deployments
     show : bool
         Boolean indicating if the plots should be shown before being closed
+    max_workers : int | None
+        Number of workers with which to make the plots. 
+        If 1, a normal for loop is used. 
+        If None, all cores are used, as determiend by os.cpu_count()
+        Else, max_workers is the number of cores used 
 
     Returns
     -------
@@ -292,23 +333,27 @@ def sci_gridded_loop(
         utils.rmtree(os.path.join(base_path, spatialsection_path))
         utils.rmtree(os.path.join(base_path, spatialgrid_path))
 
-    for var in sci_vars:
-        _log.debug(f"var {var}")
-        if var not in list(ds.data_vars):
-            _log.info(
-                f"Variable {var} not present in gridded science ds. Skipping plots",
-            )
-            continue
+    vars_toloop = sci_vars
+    if max_workers == 1:
+        _log.info("Plotting with one worker, not in parallel")
+        for var in vars_toloop:
+            _log.debug(f"var {var}")
+            sci_timesection_plot(var, ds, base_path=base_path, show=show)
+            sci_spatialsection_plot(var, ds, base_path=base_path, show=show)
+            sci_spatialgrid_plot(var, ds, base_path=base_path, show=show)
+    else:
+        if max_workers is None:
+            max_workers = max(1, os.cpu_count()) # type: ignore
+        _log.info("Starting parallel plotting with %s workers", max_workers)
+        task_function = functools.partial(
+            sci_gridded_loop_helper,
+            ds=ds,
+            base_path=base_path,
+            show=show,
+        )
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            executor.map(task_function, vars_toloop)
 
-        if var in ["profile_index"]:
-            _log.info(
-                f"Skipping {var}, because it is not relevant for gridded science timeseries plots"
-            )
-            continue
-
-        sci_timesection_plot(ds, var, base_path=base_path, show=show)
-        sci_spatialsection_plot(ds, var, base_path=base_path, show=show)
-        sci_spatialgrid_plot(ds, var, base_path=base_path, show=show)
     _log.info("Completed gridded science plots")
 
 
@@ -316,6 +361,7 @@ def eng_tvt_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
+    max_workers=None, 
 ):
     """
     A loop/wrapper function to:
@@ -333,6 +379,11 @@ def eng_tvt_loop(
         Intended to be the 'plotdir' output of slocum.get_path_deployments
     show : bool
         Boolean indicating if the plots should be shown before being closed
+    max_workers : int | None
+        Number of workers with which to make the plots. 
+        If 1, a normal for loop is used. 
+        If None, all cores are used, as determiend by os.cpu_count()
+        Else, max_workers is the number of cores used 
 
     Returns
     -------
@@ -345,21 +396,57 @@ def eng_tvt_loop(
         utils.rmtree(os.path.join(base_path, tvt_path))
 
     eng_dict = eng_plots_to_make(ds)
-    for key in eng_dict.keys():
-        eng_tvt_plot(ds, eng_dict, key, base_path=base_path, show=show)
+    vars_toloop = eng_dict.keys()
+    if max_workers == 1:
+        _log.info("Plotting with one worker, not in parallel")
+        for key in vars_toloop:
+            eng_tvt_plot(key, ds, eng_dict, base_path=base_path, show=show)
+    else:
+        if max_workers is None:
+            max_workers = max(1, os.cpu_count()) # type: ignore
+        _log.info("Starting parallel plotting with %s workers", max_workers)
+        task_function = functools.partial(
+            eng_tvt_plot,
+            ds=ds,
+            eng_dict=eng_dict, 
+            base_path=base_path,
+            show=show,
+        )
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            executor.map(task_function, vars_toloop)
+
     _log.info("Completed engineering tvt plots")
+
+
+def sci_timeseries_loop_helper(
+    var: str, 
+    ds: xr.Dataset,
+    base_path: str | None = None,
+    show: bool = False,
+):
+    """
+    See sci_timeseries_loop for variables
+    In short, a small wrapper function that can be passed to 
+    concurrent.futures.ProcessPoolExecutor 
+    """            
+    _log.debug(f"var {var}")
+    sci_timeseries_plot(var, ds, base_path=base_path, show=show)
+    sci_timesection_gt_plot(var, ds, base_path=base_path, show=show)
+    ts_plot(var, ds, base_path=base_path, show=show)
 
 
 def sci_timeseries_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
+    max_workers=None, 
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
     of all sci_vars keys.
-    Specifically, for each sci_var present in the dataset,
-    create both a raw timeseries plot, and timesection plot using glidertools
+    Specifically, for each sci_var present in the dataset, create: 
+    a raw timeseries plot, a timesection plot using glidertools, 
+    and a ts plot
 
     Arguments let the user specify if these plots should be saved, and/or shown
 
@@ -372,6 +459,11 @@ def sci_timeseries_loop(
         Intended to be the 'plotdir' output of slocum.get_path_deployments
     show : bool
         Boolean indicating if the plots should be shown before being closed
+    max_workers : int | None
+        Number of workers with which to make the plots. 
+        If 1, a normal for loop is used. 
+        If None, all cores are used, as determiend by os.cpu_count()
+        Else, max_workers is the number of cores used 
 
     Returns
     -------
@@ -383,23 +475,29 @@ def sci_timeseries_loop(
     if base_path is not None:
         utils.rmtree(os.path.join(base_path, timeseries_sci_path))
         utils.rmtree(os.path.join(base_path, timesection_gt_path))
+        utils.rmtree(os.path.join(base_path, ts_path))
 
-    for var in sci_vars:
-        _log.debug(f"var {var}")
-        if var not in list(ds.data_vars):
-            _log.info(
-                f"Variable {var} not present in timeseries science ds. Skipping plots",
-            )
-            continue
+    vars_toloop = sci_vars
+    if max_workers == 1:
+        _log.info("Plotting with one worker, not in parallel")
+        for var in vars_toloop:
+            _log.debug(f"var {var}")
+            sci_timeseries_plot(var, ds, base_path=base_path, show=show)
+            sci_timesection_gt_plot(var, ds, base_path=base_path, show=show)
+            ts_plot(var, ds, base_path=base_path, show=show)
+    else:
+        if max_workers is None:
+            max_workers = max(1, os.cpu_count()) # type: ignore
+        _log.info("Starting parallel plotting with %s workers", max_workers)
+        task_function = functools.partial(
+            sci_timeseries_loop_helper,
+            ds=ds,
+            base_path=base_path,
+            show=show,
+        )
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            executor.map(task_function, vars_toloop)
 
-        if var in ["profile_index"]:
-            _log.info(
-                f"Skipping {var}, because it is not relevant for science timeseries plots"
-            )
-            continue
-
-        sci_timeseries_plot(ds, var, base_path=base_path, show=show)
-        sci_timesection_gt_plot(ds, var, base_path=base_path, show=show)
     _log.info("Completed science timeseries plots")
 
 
@@ -407,6 +505,7 @@ def eng_timeseries_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
+    max_workers=None, 
 ):
     """
     A loop/wrapper function to use a timeseries engineering dataset to make plots
@@ -425,6 +524,11 @@ def eng_timeseries_loop(
         Intended to be the 'plotdir' output of slocum.get_path_deployments
     show : bool
         Boolean indicating if the plots should be shown before being closed
+    max_workers : int | None
+        Number of workers with which to make the plots. 
+        If 1, a normal for loop is used. 
+        If None, all cores are used, as determiend by os.cpu_count()
+        Else, max_workers is the number of cores used 
 
     Returns
     -------
@@ -435,66 +539,88 @@ def eng_timeseries_loop(
     # If doing the loop, remove past plots
     if base_path is not None:
         utils.rmtree(os.path.join(base_path, timeseries_eng_path))
+    
+    vars_toloop = eng_vars
+    if max_workers == 1:
+        _log.info("Plotting with one worker, not in parallel")
+        for var in vars_toloop:
+            _log.debug(f"var {var}")
+            eng_timeseries_plot(var, ds, base_path=base_path, show=show)
+    else:
+        if max_workers is None:
+            max_workers = max(1, os.cpu_count()) # type: ignore
+        _log.info("Starting parallel plotting with %s workers", max_workers)
+        task_function = functools.partial(
+            eng_timeseries_plot,
+            ds=ds,
+            base_path=base_path,
+            show=show,
+        )
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            executor.map(task_function, vars_toloop)
 
-    for var in eng_vars:
-        _log.debug(f"var {var}")
-        if var not in list(ds.data_vars):
-            _log.info(
-                f"Variable {var} not present in timeseries eng ds. Skipping plots",
-            )
-            continue
-
-        eng_timeseries_plot(ds, var, base_path=base_path, show=show)
     _log.info("Completed engineering timeseries plots")
 
 
-def sci_ts_loop(
-    ds: xr.Dataset,
-    base_path: str | None = None,
-    show: bool = False,
-):
-    """
-    A loop/wrapper function to use a timeseries science dataset to make plots
-    of all sci_vars kyes.
-    Specifically, for each sci_vars key present in the dataset,
-    create a ts plot
+# def sci_ts_loop(
+#     ds: xr.Dataset,
+#     base_path: str | None = None,
+#     show: bool = False,
+#     max_workers=None, 
+# ):
+#     """
+#     A loop/wrapper function to use a timeseries science dataset to make plots
+#     of all sci_vars kyes.
+#     Specifically, for each sci_vars key present in the dataset,
+#     create a ts plot
 
-    Arguments let the user specify if these plots should be saved, and/or shown
+#     Arguments let the user specify if these plots should be saved, and/or shown
 
-    Parameters
-    ----------
-    ds : xarray Dataset
-        Timeseries science dataset
-    base_path : str
-        The 'base' of the plot path. If None, then the plot will not be saved
-        Intended to be the 'plotdir' output of slocum.get_path_deployments
-    show : bool
-        Boolean indicating if the plots should be shown before being closed
+#     Parameters
+#     ----------
+#     ds : xarray Dataset
+#         Timeseries science dataset
+#     base_path : str
+#         The 'base' of the plot path. If None, then the plot will not be saved
+#         Intended to be the 'plotdir' output of slocum.get_path_deployments
+#     show : bool
+#         Boolean indicating if the plots should be shown before being closed
+#     max_workers : int | None
+#         Number of workers with which to make the plots. 
+#         If 1, a normal for loop is used. 
+#         If None, all cores are used, as determiend by os.cpu_count()
+#         Else, max_workers is the number of cores used 
 
-    Returns
-    -------
-        Nothing
-    """
+#     Returns
+#     -------
+#         Nothing
+#     """
 
-    _log.info("LOOP: making ts plots")
-    # If doing the loop, remove past plots
-    if base_path is not None:
-        utils.rmtree(os.path.join(base_path, ts_path))
+#     _log.info("LOOP: making ts plots")
+#     # If doing the loop, remove past plots
+#     if base_path is not None:
+#         utils.rmtree(os.path.join(base_path, ts_path))
 
-    for var in sci_vars:
-        _log.debug(f"var {var}")
-        # if var not in list(ds.data_vars):
-        #     _log.info(
-        #         f"Variable {var} not present in timeseries sci ds. Skipping plots",
-        #     )
-        #     continue
+#     vars_toloop = sci_vars
+#     if max_workers == 1:
+#         _log.info("Plotting with one worker, not in parallel")
+#         for var in vars_toloop:
+#             _log.debug(f"var {var}")
+#             ts_plot(var, ds, base_path=base_path, show=show)
+#     else:
+#         if max_workers is None:
+#             max_workers = max(1, os.cpu_count()) # type: ignore
+#         _log.info("Starting parallel plotting with %s workers", max_workers)
+#         task_function = functools.partial(
+#             ts_plot,
+#             ds=ds,
+#             base_path=base_path,
+#             show=show,
+#         )
+#         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+#             executor.map(task_function, vars_toloop)
 
-        if var in ["potential_temperature", "profile_index"]:
-            _log.info(f"Skipping {var}, because it is not relevant for TS plots")
-            continue
-
-        ts_plot(ds, var, base_path=base_path, show=show)
-    _log.info("Completed ts plots")
+#     _log.info("Completed ts plots")
 
 
 def sci_surface_map_loop(
@@ -505,6 +631,7 @@ def sci_surface_map_loop(
     bar: xr.Dataset | None = None,
     figsize_x: float = 8.5,
     figsize_y: float = 11,
+    max_workers=None, 
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
@@ -527,6 +654,11 @@ def sci_surface_map_loop(
         Boolean indicating if the plots should be shown before being closed
     bar : xarray Dataset
         ETOPO dataset with which to make contour lines
+    max_workers : int | None
+        Number of workers with which to make the plots. 
+        If 1, a normal for loop is used. 
+        If None, all cores are used, as determiend by os.cpu_count()
+        Else, max_workers is the number of cores used 
 
     Returns
     -------
@@ -537,18 +669,29 @@ def sci_surface_map_loop(
     # If doing the loop, remove past plots
     if base_path is not None:
         utils.rmtree(os.path.join(base_path, surfacemap_sci_path))
-
-    for var in sci_vars:
-        _log.debug(f"var {var}")
-        if var not in list(ds.data_vars):
-            _log.info(
-                f"Variable {var} not present in timeseries sci ds. Skipping plots",
+    
+    vars_toloop = sci_vars
+    if max_workers == 1:
+        _log.info("Plotting with one worker, not in parallel")
+        for var in vars_toloop:
+            _log.debug(f"var {var}")
+            sci_surface_map(
+                var=var,
+                ds=ds,
+                crs=crs,
+                base_path=base_path,
+                show=show,
+                bar=bar,
+                figsize_x=figsize_x,
+                figsize_y=figsize_y,
             )
-            continue
-
-        sci_surface_map(
-            ds,
-            var=var,
+    else:
+        if max_workers is None:
+            max_workers = max(1, os.cpu_count()) # type: ignore
+        _log.info("Starting parallel plotting with %s workers", max_workers)
+        task_function = functools.partial(
+            sci_surface_map,
+            ds=ds,
             crs=crs,
             base_path=base_path,
             show=show,
@@ -556,6 +699,9 @@ def sci_surface_map_loop(
             figsize_x=figsize_x,
             figsize_y=figsize_y,
         )
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            executor.map(task_function, vars_toloop)
+
     _log.info("Completed surface maps")
 
 
@@ -716,8 +862,8 @@ def scatter_drop_plot(
 
 
 def sci_timesection_plot(
-    ds: xr.Dataset,
     var: str,
+    ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
 ):
@@ -744,7 +890,10 @@ def sci_timesection_plot(
     """
 
     if var not in list(ds.data_vars):
-        _log.info(f"Variable name {var} not present in ds. Skipping plot")
+        _log.info("Variable name %s not present in ds. Skipping plot", var)
+        return
+    if var in ["profile_index"]:
+        _log.info("Skipping %s because it is not relevant", var)
         return
 
     _log.info(f"Making timesection plot for variable {var}")
@@ -789,8 +938,8 @@ def sci_timesection_plot(
 
 
 def sci_spatialsection_plot(
-    ds: xr.Dataset,
     var: str,
+    ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
 ):
@@ -816,7 +965,10 @@ def sci_spatialsection_plot(
     """
 
     if var not in list(ds.data_vars):
-        _log.info(f"Variable name {var} not present in ds. Skipping plot")
+        _log.info("Variable name %s not present in ds. Skipping plot", var)
+        return
+    if var in ["profile_index"]:
+        _log.info("Skipping %s because it is not relevant", var)
         return
 
     _log.info(f"Making spatialsection plot for variable {var}")
@@ -903,8 +1055,8 @@ def sci_spatialsection_plot(
 
 
 def sci_spatialgrid_plot(
-    ds: xr.Dataset,
     var: str,
+    ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
 ):
@@ -929,6 +1081,13 @@ def sci_spatialgrid_plot(
     -------
         matplotlib.Figure.figure object
     """
+
+    if var not in list(ds.data_vars):
+        _log.info("Variable name %s not present in ds. Skipping plot", var)
+        return
+    if var in ["profile_index"]:
+        _log.info("Skipping %s because it is not relevant", var)
+        return
 
     _log.info(f"Making spatialgrid plot for variable {var}")
     gs = GridSpec(
@@ -1068,9 +1227,9 @@ def eng_plots_to_make(ds: xr.Dataset):
 
 
 def eng_tvt_plot(
+    key: str,
     ds: xr.Dataset,
     eng_dict: dict,
-    key: str,
     base_path: str | None = None,
     show: bool = False,
 ):
@@ -1142,8 +1301,8 @@ def eng_tvt_plot(
 
 
 def eng_timeseries_plot(
-    ds: xr.Dataset,
     var: str,
+    ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
 ):
@@ -1205,8 +1364,8 @@ def eng_timeseries_plot(
 
 
 def sci_timeseries_plot(
-    ds: xr.Dataset,
     var: str,
+    ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
 ):
@@ -1233,7 +1392,10 @@ def sci_timeseries_plot(
     """
 
     if var not in list(ds.data_vars):
-        _log.info(f"Variable name {var} not present in ds. Skipping plot")
+        _log.info("Variable name %s not present in ds. Skipping plot", var)
+        return
+    if var in ["profile_index"]:
+        _log.info("Skipping %s because it is not relevant", var)
         return
 
     _log.info(f"Making sci timeseries plot for variable {var}")
@@ -1268,8 +1430,8 @@ def sci_timeseries_plot(
 
 
 def sci_timesection_gt_plot(
-    ds: xr.Dataset,
     var: str,
+    ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
     robust: bool = True,
@@ -1306,7 +1468,10 @@ def sci_timesection_gt_plot(
     """
 
     if var not in list(ds.data_vars):
-        _log.info(f"Variable name {var} not present in ds. Skipping plot")
+        _log.info("Variable name %s not present in ds. Skipping plot", var)
+        return
+    if var in ["profile_index"]:
+        _log.info("Skipping %s because it is not relevant", var)
         return
 
     _log.info(
@@ -1344,8 +1509,8 @@ def sci_timesection_gt_plot(
 
 
 def ts_plot(
-    ds: xr.Dataset,
     var: str,
+    ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
 ):
@@ -1373,6 +1538,10 @@ def ts_plot(
 
     if var not in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
+        return    
+    
+    if var in ["potential_temperature", "profile_index"]:
+        _log.info(f"Skipping {var} because it is not relevant for TS plots")
         return
 
     _log.info(f"Making ts plot for variable {var}")
@@ -1436,8 +1605,8 @@ def crs_map(crs_str: str):
 
 
 def sci_surface_map(
-    ds: xr.Dataset,
     var: str,
+    ds: xr.Dataset,
     crs,
     base_path: str | None = None,
     show: bool = False,
@@ -1476,7 +1645,7 @@ def sci_surface_map(
     """
 
     if var not in list(ds.data_vars):
-        _log.info(f"Variable name {var} not present in ds. Skipping plot")
+        _log.info("Variable name %s not present in ds. Skipping plot", var)
         return
 
     _log.info(f"Making surface map for variable {var}")
