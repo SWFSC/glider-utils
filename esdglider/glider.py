@@ -262,7 +262,7 @@ def binary_to_nc(
         # Brief profile and depth sanity checks
         _log.info("raw timeseries checks")
         utils.check_profiles(tsraw)
-        utils.check_depth(tsraw)
+        utils.check_depth(tsraw["depth"], tsraw["depth_ctd"])
 
     else:
         _log.info("Not writing raw nc")
@@ -319,12 +319,8 @@ def binary_to_nc(
         _log.info(f"Post-processing science timeseries: {outname_tssci}")
         tssci = postproc_sci_timeseries(outname_tssci, postproc_info, **kwargs)
 
-        # # Brief profile sanity check - checks done in postproc-general
-        # _log.info("eng profile checks")
-        # utils.check_profiles(tseng)
-        # _log.info("sci profile checks")
-        # utils.check_profiles(tssci)
-
+        _log.info("final eng/sci timeseries checks")
+        # Brief profile sanity check - check_profiles done in postproc-general
         prof_max_diff = abs(
             (tssci.profile_index.max() - tseng.profile_index.max()).values,
         )
@@ -341,6 +337,9 @@ def binary_to_nc(
         else:
             _log.info("The eng and sci timeseries have the same functional profiles")
 
+        # Depth check, across the eng/sci datasets
+        utils.check_depth(tseng["depth"], tssci["depth"])
+
     else:
         _log.info("Not writing timeseries nc")
 
@@ -352,6 +351,19 @@ def binary_to_nc(
         if not os.path.isfile(outname_tssci):
             raise FileNotFoundError(f"Could not find {outname_tssci}")
 
+        # ESD-specific variables to exclude when gridding the science timeseries
+        # If other eg engineering variables are added to the timeseries/yaml, 
+        # then this list will need to be updated
+        # exclude_vars = [
+        #     "distance_over_ground", 
+        #     "heading", 
+        #     "pitch", 
+        #     "roll", 
+        #     "waypoint_latitude", 
+        #     "waypoint_longitude"
+        # ]
+        # _log.debug("Excluded vars: %s", ", ".join(exclude_vars))
+
         _log.info("Generating 1m gridded data")
         outname_gr1m = pgncprocess.make_gridfiles(
             outname_tssci,
@@ -359,6 +371,7 @@ def binary_to_nc(
             deploymentyaml,
             depth_bins=np.arange(0, 1200.1, 1),
             fnamesuffix=f"-{mode}-1m",
+            # exclude_vars=exclude_vars, 
         )
 
         _log.info("Generating 5m gridded data")
@@ -368,6 +381,7 @@ def binary_to_nc(
             deploymentyaml,
             depth_bins=np.arange(0, 1200.1, 5),
             fnamesuffix=f"-{mode}-5m",
+            # exclude_vars=exclude_vars, 
         )
 
     else:
@@ -458,6 +472,20 @@ def postproc_general(
     # Remove times that are nan or <min_dt, and drop other bogus values
     ds = utils.drop_bogus(ds, min_dt=ds.deployment_min_dt, max_drop=True)
 
+    # Check for and verbosely remove any duplicated timestamps
+    ds_index = ds.get_index('time')
+    if ds_index.duplicated().any():
+        df_dup = ds_index.duplicated()
+        _log.warning(
+            "There are %s duplicated timestamps in the current dataset. "
+            + "The second of the duplicated timestamps will be dropped. "
+            + "Indexes, of the original dataset: %s", 
+            df_dup.sum(), 
+            ", ".join([str(i[0]) for i in np.argwhere(df_dup)]) # type: ignore
+        )
+        ds = ds.sel(time=~df_dup)
+
+    # Drop nan values for any other specified parameters
     if drop_vars is not None:
         # This functionality is here so it is run after drop_bogus
         for var in drop_vars:
@@ -475,10 +503,11 @@ def postproc_general(
                 if (num_orig - len(ds.time)) > 0:
                     _log.info(f"Dropped {num_orig - len(ds.time)} nan {var} values")
 
-    # After dropping, recalculate distance over ground
+    # After dropping timestamps, recalculate distance over ground
     ds = pgutils.get_distance_over_ground(ds)
 
     # Calculate profiles using measured depth
+    # This is required because we need profile_direction for sci/eng
     ds = utils.get_fill_profiles(ds, "time", "depth", **kwargs)
 
     # If provided, then update the profile indices by joining raw profiles

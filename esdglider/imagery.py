@@ -2,6 +2,7 @@ import glob
 import logging
 import os
 from datetime import datetime
+import statistics
 
 import numpy as np
 import pandas as pd
@@ -153,10 +154,18 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
     _log.debug("Processing imagery file names")
 
     # Check that all filenames have the same number of characters
-    if not len(set([len(i) for i in imagery_files])) == 1:
+    imagery_files_nchar = [len(i) for i in imagery_files]
+    if not len(set(imagery_files_nchar)) == 1:
         _log.warning(
             "The imagery file names are not all the same length, "
             + "and thus shuld be checked carefully",
+        )
+        nchar_mode = statistics.mode(imagery_files_nchar)
+        diff_idx = [i for i, f in enumerate(imagery_files) if len(f) != nchar_mode]
+        diff_files = [f"{imagery_dirs[i]}/{imagery_files[i]}" for i in diff_idx]
+        _log.warning(
+            "The following filenames are of a different length: %s",
+            ", ".join(diff_files)
         )
 
     if dt_idx_start is None:
