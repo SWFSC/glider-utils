@@ -260,15 +260,17 @@ def make_website_yaml(engine, out_path):
         "Project"
     ]
     df_deployments = make_deployment_table(engine)
-    df_foryaml = df_deployments[depl_columns].copy()
+    df_foryaml = df_deployments[depl_columns].copy()    
+    # df_foryaml["Start"] = df_foryaml["Start"].dt.strftime('%Y-%m-%d')
+    # df_foryaml["End"] = df_foryaml["End"].dt.strftime('%Y-%m-%d')
 
     # Make new columns for data URLs
     df_foryaml["report_link"] = ""
     df_foryaml["ERDDAP_link"] = ""
-    df_foryaml["gcp_glider_link"] = ""
-    df_foryaml["gcp_plot_link"] = ""
-    df_foryaml["gcp_acoustics_link"] = ""
-    df_foryaml["gcp_imagery_link"] = ""
+    df_foryaml["gcp_link_glider"] = ""
+    df_foryaml["gcp_link_plots"] = ""
+    df_foryaml["gcp_link_acoustics"] = ""
+    df_foryaml["gcp_link_imagery"] = ""
 
     _log.info("Get info about what files exist in GCP")    
     glider_bucket_name = "amlr-gliders-deployments-dev"
@@ -297,23 +299,23 @@ def make_website_yaml(engine, out_path):
         plots_path = f"{url_pre}/plots/delayed"
         if gcp.check_gcs_directory_exists(glider_bucket, plots_path):
             url = f"<a href='{console_url}/{glider_bucket_name}/{plots_path}'>plots</a>"
-            df_foryaml.loc[i, "gcp_plot_link"] = url # type: ignore
+            df_foryaml.loc[i, "gcp_link_plots"] = url # type: ignore
 
         # Check for NetCDF files timeseries
         procl1_path = f"{url_pre}/data/processed-L1"
         if gcp.check_gcs_directory_exists(glider_bucket, procl1_path):
             url = f"<a href='{console_url}/{glider_bucket_name}/{procl1_path}'>glider</a>"
-            df_foryaml.loc[i, "gcp_glider_link"] = url # type: ignore
+            df_foryaml.loc[i, "gcp_link_glider"] = url # type: ignore
 
         # Check for acoustics
         if gcp.check_gcs_directory_exists(acoustics_bucket, url_pre):
             url = f"<a href='{console_url}/{acoustics_bucket_name}/{url_pre}'>acoustics</a>"
-            df_foryaml.loc[i, "gcp_acoustics_link"] = url # type: ignore
+            df_foryaml.loc[i, "gcp_link_acoustics"] = url # type: ignore
         
         # Check for imagery
         if gcp.check_gcs_directory_exists(imagery_bucket, url_pre):
             html = f"<a href='{console_url}/{imagery_bucket_name}/{url_pre}'>imagery</a>"
-            df_foryaml.loc[i, "gcp_imagery_link"] = html # type: ignore
+            df_foryaml.loc[i, "gcp_link_imagery"] = html # type: ignore
 
     # Write to a yaml file
     yaml_data = df_foryaml.to_dict(orient='records')
@@ -464,11 +466,12 @@ def make_deployment_table(engine):
     # TODO: add location and notes to the database
     df_depl["Location"] = ""
     df_depl["Notes"] = ""
-    df_depl["Start"] = df_depl["Start"]
-    df_depl["End"] = df_depl["End"]
-    df_depl["Dates"] = (
-        df_depl["Start"].dt.strftime('%Y-%m-%d') 
-        + " - " + df_depl["End"].dt.strftime('%Y-%m-%d'))
+    df_depl["Start"] = df_depl["Start"].dt.strftime('%Y-%m-%d') 
+    df_depl["End"] = df_depl["End"].dt.strftime('%Y-%m-%d') 
+    df_depl["Dates"] = df_depl["Start"] + " - " + df_depl["End"]
+    # df_depl["Dates"] = (
+    #     df_depl["Start"].dt.strftime('%Y-%m-%d') 
+    #     + " - " + df_depl["End"].dt.strftime('%Y-%m-%d'))
 
     _log.info("Get and summarize device info, for each deployment")
     Deployment_Device = pd.read_sql_table(
