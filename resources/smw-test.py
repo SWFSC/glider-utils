@@ -49,7 +49,7 @@ config_path = f"{base_path}/glider-lab/deployment-configs"
 def yaml():
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
-    return config.make_deployment_config(
+    return config.make_deployment_yaml(
         deployment_info,
         "C:/Users/sam.woodman/Downloads",
         conn_string,

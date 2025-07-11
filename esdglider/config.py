@@ -87,7 +87,7 @@ def instrument_attrs(key, devices, dev_df, cal_df):
     return instr
 
 
-def make_deployment_config(
+def make_deployment_yaml(
         deployment_name: str, 
         out_path: str, 
         db_url: str | sqlalchemy.URL
@@ -421,12 +421,19 @@ def make_deployment_table(engine):
         """
         sensors = []
         for i in ['CTD', 'Ecopuck', 'Optode', 'PAR']:
-            if row[i]: 
+            if row[i] == "Yes": 
                 sensors.append(i)
         for i in ['Acoustics', 'Camera', 'PAM']:
             if row[i] != 'None':
                 sensors.append(row[i])
         return ', '.join(sensors)
+    
+    def _tf_type(val, component):
+        """ 
+        Returns Yes/No, depending on if a specific component is present
+        val must be a key in db_components
+        """
+        return str(np.where(db_components[val] in component, "Yes", "No"))
 
 
     ### Main function code
@@ -441,13 +448,13 @@ def make_deployment_table(engine):
         "Glider_Name" : "Glider", 
         "Deployment_Start": "Start", 
         "Deployment_End": "End", 
+        "Deployment_Name": "Deployment_Name", 
         "Deployment_Dives": "Dives", 
         "Deployment_Days": "Days", 
-        "Glider_Deployment_ID": "Deployment_ID", 
-        "Glider_ID": "Glider_ID", 
-        "Deployment_Name": "Deployment_Name", 
         "Project": "Project", 
-        "Software_Version": "Software_Version", 
+        "Software_Version": "OS_Version", 
+        "Glider_Deployment_ID": "Glider_Deployment_ID", 
+        "Glider_ID": "Glider_ID", 
     }
 
     df_depl = vGlider_Deployment[columns_tokeep.keys()].rename(
@@ -457,9 +464,11 @@ def make_deployment_table(engine):
     # TODO: add location and notes to the database
     df_depl["Location"] = ""
     df_depl["Notes"] = ""
-    df_depl["Start"] = df_depl["Start"].dt.strftime('%Y-%m-%d')
-    df_depl["End"] = df_depl["End"].dt.strftime('%Y-%m-%d')
-    df_depl["Dates"] = (df_depl["Start"] + " - " + df_depl["End"])
+    df_depl["Start"] = df_depl["Start"]
+    df_depl["End"] = df_depl["End"]
+    df_depl["Dates"] = (
+        df_depl["Start"].dt.strftime('%Y-%m-%d') 
+        + " - " + df_depl["End"].dt.strftime('%Y-%m-%d'))
 
     _log.info("Get and summarize device info, for each deployment")
     Deployment_Device = pd.read_sql_table(
@@ -468,12 +477,12 @@ def make_deployment_table(engine):
         schema="dbo",
     )
 
-    device_summ = Deployment_Device.groupby('Glider_ID').agg(
+    device_summ = Deployment_Device.groupby('Glider_Deployment_ID').agg(
         Batteries=('Component', lambda x: _battery_type(x)), 
-        CTD=('Component', lambda x: db_components["ctd"] in x.values),
-        Ecopuck=('Component', lambda x: db_components["flbbcd"] in x.values),
-        Optode=('Component', lambda x: db_components["oxygen"] in x.values),
-        PAR=('Component', lambda x: db_components["par"] in x.values),
+        CTD=('Component', lambda x: _tf_type("ctd", x.values)),
+        Ecopuck=('Component', lambda x: _tf_type("flbbcd", x.values)),
+        Optode=('Component', lambda x: _tf_type("oxygen", x.values)),
+        PAR=('Component', lambda x: _tf_type("par", x.values)),
         Acoustics=('Component', lambda x: _acoustics_type(x)), 
         Camera=('Model', lambda x: _camera_type(x)), 
         PAM=('Component', lambda x: _pam_type(x)), 
@@ -490,7 +499,7 @@ def make_deployment_table(engine):
     )
 
     _log.info("Mergining deployment and summarized device tables")
-    out_table = pd.merge(df_depl, device_summ, on="Glider_ID", how="left")
-    out_table = out_table[column_order]
+    out_table = pd.merge(df_depl, device_summ, on="Glider_Deployment_ID", how="left")
+    out_table = out_table[column_order].sort_values(by=['Start', 'Glider'])
 
     return out_table

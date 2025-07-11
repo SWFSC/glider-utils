@@ -26,7 +26,7 @@ if __name__ == "__main__":
     with open("db/glider-db-prod.txt", "r") as f:
         conn_string = f.read()
 
-    config.make_deployment_config(
+    config.make_deployment_yaml(
         deployment_name="amlr04-20231128",
         out_path=path_config,
         db_url=conn_string,

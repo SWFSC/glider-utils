@@ -1,5 +1,7 @@
 import logging
 import sqlalchemy
+import gspread
+from gspread.utils import ValidationConditionType
 
 import esdglider.config as config
 
@@ -27,10 +29,30 @@ if __name__ == "__main__":
     # Generate deployment table
     df_depl = config.make_deployment_table(engine)
     df_depl = df_depl.drop(["Dates", "Sensors"], axis=1)
+    df_depl["Start"] = df_depl["Start"].dt.strftime('%Y-%m-%d')
+    df_depl["End"] = df_depl["End"].dt.strftime('%Y-%m-%d')
+
     df_depl.to_csv(
         "C:/Users/sam.woodman/Downloads/fleet-status-deployments.csv", 
         index=False
     )
+
+    # Write Deployments table to fleet status
+    wk_name = "Deployments-Database"
+    logging.info("Updating the Fleet Status %s sheet", wk_name)
+    df_depl = df_depl.fillna('').rename({"Glider_Deployment_ID": "Deployment_ID"})
+    gc = gspread.oauth()    
+    sh = gc.open("Fleet Status")
+    wk = sh.worksheet(wk_name)
+    wk.update([df_depl.columns.values.tolist()] + df_depl.values.tolist())
+
+    # # Update data validation formatting automatically..
+    # wk.add_validation(
+    #     f'F2:L{1+df_depl.shape[0]}',
+    #     ValidationConditionType.one_of_list,
+    #     ['TRUE', 'FALSE'], 
+    #     showCustomUi=True
+    # )
 
     # Website yaml
     config.make_website_yaml(engine, out_path)

@@ -9,6 +9,7 @@ dependencies:
   - google-crc32c
   - google-cloud-secret-manager
   - google-cloud-storage
+  - 
 
   - SQLAlchemy
   - pyodbc
@@ -26,6 +27,7 @@ dependencies:
 
   - pip:
     - dbdreader
+    - gspread #conda-forge version is not the latest
     - git+https://github.com/c-proof/pyglider.git@main
 
 # conda env create -f glider-utils/environment.yml
