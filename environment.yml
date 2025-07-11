@@ -8,6 +8,7 @@ dependencies:
   - notebook #For exporting notebooks as html
   - google-crc32c
   - google-cloud-secret-manager
+  - google-cloud-storage
 
   - SQLAlchemy
   - pyodbc

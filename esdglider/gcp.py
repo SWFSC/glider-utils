@@ -8,6 +8,7 @@ import subprocess
 
 import google_crc32c
 from google.cloud import secretmanager
+from google.cloud import storage
 
 _log = logging.getLogger(__name__)
 
@@ -97,3 +98,62 @@ def gcs_mount_bucket(bucket, mountpoint, ro=False):
     subprocess.run(cmd)
 
     return 0
+
+
+def check_gcs_file_exists(bucket, file_path):
+    """
+    Checks if a file exists in GCS. Function adapted from Gemini
+
+    Parameters
+    ----------
+    bucket : Bucket
+        An object of class Bucket, created via eg storage_client.bucket(bucket_name)
+    file_path : str
+        Path to the object/file in the bucket. 
+        Path does not include the bucket name
+
+    Returns
+    -------
+    bool
+        True if object exists, and False otherwise
+    """
+    # # This can be initialized once outside the function in your actual script
+    # storage_client = storage.Client()
+    # bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(file_path)
+    return blob.exists()
+
+
+def check_gcs_directory_exists(bucket, directory_path):
+    """
+    Checks if a 'directory' exists in a GCS bucket by checking for objects
+    with that prefix. Function adapted from Gemini
+
+    Parameters
+    ----------
+    bucket : Bucket
+        An object of class Bucket, created via eg storage_client.bucket(bucket_name)
+    directory_path : str
+        Path to the GCS 'directory' within the bucket. 
+        Path does not include the bucket name. 
+        This path must end with a forward slash
+
+    Returns
+    -------
+    bool
+        True if the directory path contains at least object, and False otherwise
+    """
+    
+    if not directory_path.endswith('/'):
+        directory_path += '/'
+        
+    # storage_client = storage.Client()
+    # bucket = storage_client.bucket(bucket_name)
+
+    # list_blobs returns an iterator.
+    # We only need to see if it has at least one item.
+    blobs = bucket.list_blobs(prefix=directory_path, max_results=1)
+    
+    # next(iterator, default_value) is a memory-efficient way to check
+    # if the iterator has any items.
+    return next(blobs, None) is not None
