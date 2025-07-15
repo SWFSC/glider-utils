@@ -264,14 +264,14 @@ def join_profiles(ds, df, **kwargs):
         abs_idx_diff = abs(ds.profile_index.values - idx_values).max()
         if abs_idx_diff > 1:
             _log.info(
-                "The absolute value of the old minus new index values is %s", 
+                "The absolute value of the old minus new index values is %s",
                 abs_idx_diff,
             )
 
     if any(np.isnan(idx_values)):
         _log.warning(
             "There are %s nan profile index values",
-            np.count_nonzero(np.isnan(idx_values)), 
+            np.count_nonzero(np.isnan(idx_values)),
         )
 
     # Attributes and add to dataset
@@ -978,11 +978,11 @@ def check_depth(x: xr.DataArray, y: xr.DataArray, depth_ok=5) -> xr.Dataset:
     ----------
     x : xarray DataArray
         DataArray of the glider measured depth (i.e., m_depth)
-        Must have dimension 'time'. 
+        Must have dimension 'time'.
         For ESD, this argument will often be dseng["depth"] or dsraw["depth"]
     y : xarray DataArray
-        DataArray of the CTD depth (i.e., depth calculated from sci_water_pressure). 
-        Must have dimension 'time'. 
+        DataArray of the CTD depth (i.e., depth calculated from sci_water_pressure).
+        Must have dimension 'time'.
         For ESD, this argument will often be dssci["depth"] or dsraw["depth_ctd"]
     depth_ok : numeric
         The maximum acceptable depth difference. If the absolute value of
@@ -1017,7 +1017,7 @@ def check_depth(x: xr.DataArray, y: xr.DataArray, depth_ok=5) -> xr.Dataset:
         _log.warning(
             "The max, absolute difference between the glider measured depth "
             + "and depth calculated from the CTD of %sm is greater than %sm",
-            depth_diff_max, 
+            depth_diff_max,
             depth_ok,
         )
         _log.warning(depth_diff_abs.to_pandas().describe())

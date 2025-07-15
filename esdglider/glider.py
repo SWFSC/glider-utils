@@ -240,7 +240,7 @@ def binary_to_nc(
             rawdir,
             [deploymentyaml, paths["engyaml"]],
             search=binary_search,
-            include_source=True, 
+            include_source=True,
             fnamesuffix=f"-{mode}-raw",
             pp=postproc_info,
             **kwargs,
@@ -352,14 +352,14 @@ def binary_to_nc(
             raise FileNotFoundError(f"Could not find {outname_tssci}")
 
         # ESD-specific variables to exclude when gridding the science timeseries
-        # If other eg engineering variables are added to the timeseries/yaml, 
+        # If other eg engineering variables are added to the timeseries/yaml,
         # then this list will need to be updated
         # exclude_vars = [
-        #     "distance_over_ground", 
-        #     "heading", 
-        #     "pitch", 
-        #     "roll", 
-        #     "waypoint_latitude", 
+        #     "distance_over_ground",
+        #     "heading",
+        #     "pitch",
+        #     "roll",
+        #     "waypoint_latitude",
         #     "waypoint_longitude"
         # ]
         # _log.debug("Excluded vars: %s", ", ".join(exclude_vars))
@@ -371,7 +371,7 @@ def binary_to_nc(
             deploymentyaml,
             depth_bins=np.arange(0, 1200.1, 1),
             fnamesuffix=f"-{mode}-1m",
-            # exclude_vars=exclude_vars, 
+            # exclude_vars=exclude_vars,
         )
 
         _log.info("Generating 5m gridded data")
@@ -381,7 +381,7 @@ def binary_to_nc(
             deploymentyaml,
             depth_bins=np.arange(0, 1200.1, 5),
             fnamesuffix=f"-{mode}-5m",
-            # exclude_vars=exclude_vars, 
+            # exclude_vars=exclude_vars,
         )
 
     else:
@@ -473,15 +473,15 @@ def postproc_general(
     ds = utils.drop_bogus(ds, min_dt=ds.deployment_min_dt, max_drop=True)
 
     # Check for and verbosely remove any duplicated timestamps
-    ds_index = ds.get_index('time')
+    ds_index = ds.get_index("time")
     if ds_index.duplicated().any():
         df_dup = ds_index.duplicated()
         _log.warning(
             "There are %s duplicated timestamps in the current dataset. "
             + "The second of the duplicated timestamps will be dropped. "
-            + "Indexes, of the original dataset: %s", 
-            df_dup.sum(), 
-            ", ".join([str(i[0]) for i in np.argwhere(df_dup)]) # type: ignore
+            + "Indexes, of the original dataset: %s",
+            df_dup.sum(),
+            ", ".join([str(i[0]) for i in np.argwhere(df_dup)]),  # type: ignore
         )
         ds = ds.sel(time=~df_dup)
 
@@ -940,7 +940,7 @@ def binary_to_raw(
     deploymentyaml,
     *,
     search="*.[D|E]BD",
-    include_source=False, 
+    include_source=False,
     fnamesuffix="",
     pp={},
     **kwargs,
@@ -1014,13 +1014,13 @@ def binary_to_raw(
     eng_params = dbd.parameterNames["eng"]
     first_eng = np.where([i in eng_params for i in sensors])[0][0]
     first_sci = np.where([i in sci_params for i in sensors])[0][0]
-    
+
     # get the data, across all eng/sci timestamps
     # return_nans=True so data arrays are of exactly two lengths (eng/sci)
     source_data = dbd.get(
-        *sensors, 
-        return_nans=True, 
-        include_source=include_source
+        *sensors,
+        return_nans=True,
+        include_source=include_source,
     )
 
     # If include_source is true, then parsing is a bit different
@@ -1101,14 +1101,14 @@ def binary_to_raw(
     if include_source:
         name = "source_filename"
         _log.info("working on %s", name)
-        val = np.full(len(time), "nan", dtype='<U16')
-        val[eng_indices] = eng_files # type: ignore
-        val[sci_indices] = sci_files # type: ignore
+        val = np.full(len(time), "nan", dtype="<U16")
+        val[eng_indices] = eng_files  # type: ignore
+        val[sci_indices] = sci_files  # type: ignore
         if np.any(np.count_nonzero(val == "nan")):
             _log.warning("Some datapoints have a nan 'source_filename' value")
         attrs = {
-            "comment": "The source file where the datapoint originated from", 
-            "source": "os.path.basename(dbd.filename)", 
+            "comment": "The source file where the datapoint originated from",
+            "source": "os.path.basename(dbd.filename)",
         }
         ds[name] = (("time"), val, attrs)
 
@@ -1135,12 +1135,12 @@ def binary_to_raw(
     ds = pgutils.get_distance_over_ground(ds)
 
     new_start = [
-        "latitude", 
-        "longitude", 
-        "depth", 
-        "depth_ctd", 
-        "profile_index", 
-        "profile_direction", 
+        "latitude",
+        "longitude",
+        "depth",
+        "depth_ctd",
+        "profile_index",
+        "profile_direction",
     ]
     ds = utils.data_var_reorder(ds, new_start)
 

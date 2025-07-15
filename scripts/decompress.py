@@ -16,7 +16,7 @@ config_path = "/home/sam_woodman_noaa_gov/glider-lab/deployment-configs"
 
 deployment_info = {
     "deployment_name": deployment_name,
-    "deploymentyaml": os.path.join(config_path, f"{deployment_name}.yml"), 
+    "deploymentyaml": os.path.join(config_path, f"{deployment_name}.yml"),
     "mode": "delayed",
 }
 log_file_name = f"{deployment_name}-delayed-decompress.log"
@@ -40,8 +40,8 @@ if __name__ == "__main__":
     binarydir_files = os.listdir(binarydir)
     logging.info("There are %s total files in %s", len(binarydir_files), binarydir)
 
-    dcd_files = list(pathlib.Path(binarydir).glob('*.dcd'))
-    ecd_files = list(pathlib.Path(binarydir).glob('*.ecd'))
+    dcd_files = list(pathlib.Path(binarydir).glob("*.dcd"))
+    ecd_files = list(pathlib.Path(binarydir).glob("*.ecd"))
     logging.info("There are %s dcd files", len(dcd_files))
     logging.info("There are %s ecd files", len(ecd_files))
 

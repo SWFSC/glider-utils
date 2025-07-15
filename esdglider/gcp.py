@@ -8,7 +8,7 @@ import subprocess
 
 import google_crc32c
 from google.cloud import secretmanager
-from google.cloud import storage
+# from google.cloud import storage
 
 _log = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ def check_gcs_file_exists(bucket, file_path):
     bucket : Bucket
         An object of class Bucket, created via eg storage_client.bucket(bucket_name)
     file_path : str
-        Path to the object/file in the bucket. 
+        Path to the object/file in the bucket.
         Path does not include the bucket name
 
     Returns
@@ -134,8 +134,8 @@ def check_gcs_directory_exists(bucket, directory_path):
     bucket : Bucket
         An object of class Bucket, created via eg storage_client.bucket(bucket_name)
     directory_path : str
-        Path to the GCS 'directory' within the bucket. 
-        Path does not include the bucket name. 
+        Path to the GCS 'directory' within the bucket.
+        Path does not include the bucket name.
         This path must end with a forward slash
 
     Returns
@@ -143,17 +143,17 @@ def check_gcs_directory_exists(bucket, directory_path):
     bool
         True if the directory path contains at least object, and False otherwise
     """
-    
-    if not directory_path.endswith('/'):
-        directory_path += '/'
-        
+
+    if not directory_path.endswith("/"):
+        directory_path += "/"
+
     # storage_client = storage.Client()
     # bucket = storage_client.bucket(bucket_name)
 
     # list_blobs returns an iterator.
     # We only need to see if it has at least one item.
     blobs = bucket.list_blobs(prefix=directory_path, max_results=1)
-    
+
     # next(iterator, default_value) is a memory-efficient way to check
     # if the iterator has any items.
     return next(blobs, None) is not None

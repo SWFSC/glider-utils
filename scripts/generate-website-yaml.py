@@ -1,7 +1,7 @@
 import logging
-import sqlalchemy
+
 import gspread
-from gspread.utils import ValidationConditionType
+import sqlalchemy
 
 import esdglider.config as config
 
@@ -31,15 +31,15 @@ if __name__ == "__main__":
     df_depl = df_depl.drop(["Dates", "Sensors"], axis=1)
 
     # df_depl.to_csv(
-    #     "C:/Users/sam.woodman/Downloads/fleet-status-deployments.csv", 
+    #     "C:/Users/sam.woodman/Downloads/fleet-status-deployments.csv",
     #     index=False
     # )
 
     # Write Deployments table to fleet status
     wk_name = "Deployments-Database"
     logging.info("Updating the Fleet Status %s sheet", wk_name)
-    df_depl = df_depl.fillna('').rename({"Glider_Deployment_ID": "Deployment_ID"})
-    gc = gspread.oauth()    
+    df_depl = df_depl.fillna("").rename({"Glider_Deployment_ID": "Deployment_ID"})
+    gc = gspread.oauth()
     sh = gc.open("Fleet Status")
     wk = sh.worksheet(wk_name)
     wk.update([df_depl.columns.values.tolist()] + df_depl.values.tolist())
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # wk.add_validation(
     #     f'F2:L{1+df_depl.shape[0]}',
     #     ValidationConditionType.one_of_list,
-    #     ['TRUE', 'FALSE'], 
+    #     ['TRUE', 'FALSE'],
     #     showCustomUi=True
     # )
 

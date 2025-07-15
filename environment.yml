@@ -9,7 +9,7 @@ dependencies:
   - google-crc32c
   - google-cloud-secret-manager
   - google-cloud-storage
-  - 
+  -
 
   - SQLAlchemy
   - pyodbc

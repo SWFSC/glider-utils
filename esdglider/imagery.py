@@ -1,8 +1,8 @@
 import glob
 import logging
 import os
-from datetime import datetime
 import statistics
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -165,7 +165,7 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
         diff_files = [f"{imagery_dirs[i]}/{imagery_files[i]}" for i in diff_idx]
         _log.warning(
             "The following filenames are of a different length: %s",
-            ", ".join(diff_files)
+            ", ".join(diff_files),
         )
 
     if dt_idx_start is None:

@@ -30,9 +30,9 @@ db_components = {
 }
 
 camera_models = {
-    "glidercam": "Glidercam", 
-    "shadowgraph-narrow": "Shadowgraph camera wa-solo-sg-11cm", 
-    "shadowgraph-wide": "Shadowgraph camera wa-solo-sg-14cm"
+    "glidercam": "Glidercam",
+    "shadowgraph-narrow": "Shadowgraph camera wa-solo-sg-11cm",
+    "shadowgraph-wide": "Shadowgraph camera wa-solo-sg-14cm",
 }
 
 # Calibration type name from Calibration_Type table
@@ -88,10 +88,10 @@ def instrument_attrs(key, devices, dev_df, cal_df):
 
 
 def make_deployment_yaml(
-        deployment_name: str, 
-        out_path: str, 
-        db_url: str | sqlalchemy.URL
-        ):
+    deployment_name: str,
+    out_path: str,
+    db_url: str | sqlalchemy.URL,
+):
     """
     Parameters
     ----------
@@ -145,9 +145,7 @@ def make_deployment_yaml(
     )
 
     # Filter for the glider deployment, using the deployment name
-    db_depl = Glider_Deployment[
-        Glider_Deployment["Deployment_Name"] == deployment_name
-    ]
+    db_depl = Glider_Deployment[Glider_Deployment["Deployment_Name"] == deployment_name]
     _log.debug("database connection successful")
     # Confirm that exactly one deployment in the db matched deployment name
     if db_depl.shape[0] != 1:
@@ -171,8 +169,7 @@ def make_deployment_yaml(
         Deployment_Device["Glider_Deployment_ID"] == glider_deployment_id
     ]
     db_cals = Deployment_Device_Calibration[
-        Deployment_Device_Calibration["Glider_Deployment_ID"]
-        == glider_deployment_id
+        Deployment_Device_Calibration["Glider_Deployment_ID"] == glider_deployment_id
     ]
     components = db_devices["Component"].values
 
@@ -211,10 +208,11 @@ def make_deployment_yaml(
     metadata["glider_name"] = deployment_split[0]
     if not any(db_devices["Device_Type"] == "Teledyne Glider Slocum G3"):
         raise ValueError(
-            "No device 'Teledyne Glider Slocum G3'. " + "Please add it to the build"
+            "No device 'Teledyne Glider Slocum G3'. " + "Please add it to the build",
         )
     metadata["glider_serial"] = db_devices.loc[
-        db_devices["Device_Type"] == "Teledyne Glider Slocum G3", "Serial_Num"
+        db_devices["Device_Type"] == "Teledyne Glider Slocum G3",
+        "Serial_Num",
     ].values[0]
 
     if project == "FREEBYRD":
@@ -241,7 +239,7 @@ def make_deployment_yaml(
 
 def make_website_yaml(engine, out_path):
     """
-    Scrape deployment data from the database, 
+    Scrape deployment data from the database,
     and write to a yaml file that will be parsed by the quarto website
     """
 
@@ -251,16 +249,16 @@ def make_website_yaml(engine, out_path):
 
     _log.info("Get the info for each deployment from the glider database")
     depl_columns = [
-        "Glider", 
-        "Start", 
-        "End", 
-        "Location", 
-        "Sensors", 
-        "Deployment_Name", 
-        "Project"
+        "Glider",
+        "Start",
+        "End",
+        "Location",
+        "Sensors",
+        "Deployment_Name",
+        "Project",
     ]
     df_deployments = make_deployment_table(engine)
-    df_foryaml = df_deployments[depl_columns].copy()    
+    df_foryaml = df_deployments[depl_columns].copy()
     # df_foryaml["Start"] = df_foryaml["Start"].dt.strftime('%Y-%m-%d')
     # df_foryaml["End"] = df_foryaml["End"].dt.strftime('%Y-%m-%d')
 
@@ -272,7 +270,7 @@ def make_website_yaml(engine, out_path):
     df_foryaml["gcp_link_acoustics"] = ""
     df_foryaml["gcp_link_imagery"] = ""
 
-    _log.info("Get info about what files exist in GCP")    
+    _log.info("Get info about what files exist in GCP")
     glider_bucket_name = "amlr-gliders-deployments-dev"
     acoustics_bucket_name = "amlr-gliders-acoustics-dev"
     imagery_bucket_name = "amlr-gliders-imagery-raw-dev"
@@ -299,26 +297,30 @@ def make_website_yaml(engine, out_path):
         plots_path = f"{url_pre}/plots/delayed"
         if gcp.check_gcs_directory_exists(glider_bucket, plots_path):
             url = f"<a href='{console_url}/{glider_bucket_name}/{plots_path}'>plots</a>"
-            df_foryaml.loc[i, "gcp_link_plots"] = url # type: ignore
+            df_foryaml.loc[i, "gcp_link_plots"] = url  # type: ignore
 
         # Check for NetCDF files timeseries
         procl1_path = f"{url_pre}/data/processed-L1"
         if gcp.check_gcs_directory_exists(glider_bucket, procl1_path):
-            url = f"<a href='{console_url}/{glider_bucket_name}/{procl1_path}'>glider</a>"
-            df_foryaml.loc[i, "gcp_link_glider"] = url # type: ignore
+            url = (
+                f"<a href='{console_url}/{glider_bucket_name}/{procl1_path}'>glider</a>"
+            )
+            df_foryaml.loc[i, "gcp_link_glider"] = url  # type: ignore
 
         # Check for acoustics
         if gcp.check_gcs_directory_exists(acoustics_bucket, url_pre):
             url = f"<a href='{console_url}/{acoustics_bucket_name}/{url_pre}'>acoustics</a>"
-            df_foryaml.loc[i, "gcp_link_acoustics"] = url # type: ignore
-        
+            df_foryaml.loc[i, "gcp_link_acoustics"] = url  # type: ignore
+
         # Check for imagery
         if gcp.check_gcs_directory_exists(imagery_bucket, url_pre):
-            html = f"<a href='{console_url}/{imagery_bucket_name}/{url_pre}'>imagery</a>"
-            df_foryaml.loc[i, "gcp_link_imagery"] = html # type: ignore
+            html = (
+                f"<a href='{console_url}/{imagery_bucket_name}/{url_pre}'>imagery</a>"
+            )
+            df_foryaml.loc[i, "gcp_link_imagery"] = html  # type: ignore
 
     # Write to a yaml file
-    yaml_data = df_foryaml.to_dict(orient='records')
+    yaml_data = df_foryaml.to_dict(orient="records")
     yaml_file = os.path.join(out_path, "esd-gliders.yml")
     _log.info(f"writing {yaml_file}")
     with open(yaml_file, "w") as file:
@@ -331,10 +333,7 @@ def make_website_yaml(engine, out_path):
     return yaml_file
 
 
-
-
-
-def make_deployment_table(engine): 
+def make_deployment_table(engine):
     """
     Generate a deployment summary table, to publish on the Fleet Status page
     """
@@ -343,10 +342,10 @@ def make_deployment_table(engine):
     def _battery_type(components):
         """
         Given a Series of the components on a glider, report the type of batteries
-        This function is intended to be used in an groupby('Glider_ID').agg() call 
+        This function is intended to be used in an groupby('Glider_ID').agg() call
         """
         primary_count = components.str.contains("Lithium Metal battery").sum()
-        rechargeable_count = components.str.contains("Rechargeable Battery").sum()          
+        rechargeable_count = components.str.contains("Rechargeable Battery").sum()
         if primary_count == 3 and rechargeable_count == 0:
             batt_str = "Primaries - Extended"
         elif primary_count == 2 and rechargeable_count == 0:
@@ -356,22 +355,21 @@ def make_deployment_table(engine):
         elif rechargeable_count == 2 and primary_count == 0:
             batt_str = "Rechargeables"
         else:
-            batt_str = "Unknown"        
+            batt_str = "Unknown"
         return batt_str
-
 
     def _acoustics_type(components):
         """
         Given a Series of the components on a glider, report the type of acoustics
-        This function is intended to be used in an groupby('Glider_ID').agg() call 
+        This function is intended to be used in an groupby('Glider_ID').agg() call
         """
         azfp_count = components.str.contains(db_components["azfp"]).sum()
-        nortek_count = components.str.contains(db_components["echosounder"]).sum()           
+        nortek_count = components.str.contains(db_components["echosounder"]).sum()
         if azfp_count == 1 and nortek_count == 0:
             acoustics_str = "AZFP"
         elif nortek_count == 1 and azfp_count == 0:
             acoustics_str = "Nortek"
-        elif (nortek_count+azfp_count) > 1:
+        elif (nortek_count + azfp_count) > 1:
             acoustics_str = "MULTIPLE"
         else:
             acoustics_str = "None"
@@ -380,7 +378,7 @@ def make_deployment_table(engine):
     def _camera_type(model):
         """
         Given a Series of the model on a glider, report the type of camera
-        This function is intended to be used in an groupby('Glider_ID').agg() call 
+        This function is intended to be used in an groupby('Glider_ID').agg() call
         """
         gc_count = model.str.contains(camera_models["glidercam"]).sum()
         sg_n_count = model.str.contains(camera_models["shadowgraph-narrow"]).sum()
@@ -391,7 +389,7 @@ def make_deployment_table(engine):
             camera_str = "Shadowgraph-narrow"
         elif gc_count == 0 and sg_n_count == 0 and sg_w_count == 1:
             camera_str = "Shadowgraph-wide"
-        elif (gc_count+sg_n_count+sg_w_count) > 1:
+        elif (gc_count + sg_n_count + sg_w_count) > 1:
             camera_str = "MULTIPLE"
         else:
             camera_str = "None"
@@ -400,7 +398,7 @@ def make_deployment_table(engine):
     def _pam_type(component):
         """
         Given a Series of the components on a glider, report the type of PAM sensor
-        This function is intended to be used in an groupby('Glider_ID').agg() call 
+        This function is intended to be used in an groupby('Glider_ID').agg() call
         """
         dmon_count = component.str.contains(db_components["dmon"]).sum()
         wispr_count = component.str.contains(db_components["wispr"]).sum()
@@ -408,7 +406,7 @@ def make_deployment_table(engine):
             pam_str = "DMON"
         elif dmon_count == 0 and wispr_count == 1:
             pam_str = "WISPR"
-        elif (dmon_count+wispr_count) > 1:
+        elif (dmon_count + wispr_count) > 1:
             pam_str = "MULTIPLE"
         else:
             pam_str = "None"
@@ -417,26 +415,25 @@ def make_deployment_table(engine):
     def _concatenate_sensors(row):
         """
         Given a Series of summarized devices table, concatenate the sensors
-        into a single column. 
+        into a single column.
         This function is intended to be used in an .apply call, after grouping
 
         """
         sensors = []
-        for i in ['CTD', 'Ecopuck', 'Optode', 'PAR']:
-            if row[i] == "Yes": 
+        for i in ["CTD", "Ecopuck", "Optode", "PAR"]:
+            if row[i] == "Yes":
                 sensors.append(i)
-        for i in ['Acoustics', 'Camera', 'PAM']:
-            if row[i] != 'None':
+        for i in ["Acoustics", "Camera", "PAM"]:
+            if row[i] != "None":
                 sensors.append(row[i])
-        return ', '.join(sensors)
-    
+        return ", ".join(sensors)
+
     def _tf_type(val, component):
-        """ 
+        """
         Returns Yes/No, depending on if a specific component is present
         val must be a key in db_components
         """
         return str(np.where(db_components[val] in component, "Yes", "No"))
-
 
     ### Main function code
     _log.info("Get info from the deployment view")
@@ -447,30 +444,34 @@ def make_deployment_table(engine):
     )
 
     columns_tokeep = {
-        "Glider_Name" : "Glider", 
-        "Deployment_Start": "Start", 
-        "Deployment_End": "End", 
-        "Deployment_Name": "Deployment_Name", 
-        "Deployment_Dives": "Dives", 
-        "Deployment_Days": "Days", 
-        "Project": "Project", 
-        "Software_Version": "OS_Version", 
-        "Glider_Deployment_ID": "Glider_Deployment_ID", 
-        "Glider_ID": "Glider_ID", 
+        "Glider_Name": "Glider",
+        "Deployment_Start": "Start",
+        "Deployment_End": "End",
+        "Deployment_Name": "Deployment_Name",
+        "Deployment_Dives": "Dives",
+        "Deployment_Days": "Days",
+        "Project": "Project",
+        "Software_Version": "OS_Version",
+        "Glider_Deployment_ID": "Glider_Deployment_ID",
+        "Glider_ID": "Glider_ID",
     }
 
-    df_depl = vGlider_Deployment[columns_tokeep.keys()].rename(
-        columns=columns_tokeep
-    ).copy()
+    df_depl = (
+        vGlider_Deployment[columns_tokeep.keys()]
+        .rename(
+            columns=columns_tokeep,
+        )
+        .copy()
+    )
 
     # TODO: add location and notes to the database
     df_depl["Location"] = ""
     df_depl["Notes"] = ""
-    df_depl["Start"] = df_depl["Start"].dt.strftime('%Y-%m-%d') 
-    df_depl["End"] = df_depl["End"].dt.strftime('%Y-%m-%d') 
+    df_depl["Start"] = df_depl["Start"].dt.strftime("%Y-%m-%d")
+    df_depl["End"] = df_depl["End"].dt.strftime("%Y-%m-%d")
     df_depl["Dates"] = df_depl["Start"] + " - " + df_depl["End"]
     # df_depl["Dates"] = (
-    #     df_depl["Start"].dt.strftime('%Y-%m-%d') 
+    #     df_depl["Start"].dt.strftime('%Y-%m-%d')
     #     + " - " + df_depl["End"].dt.strftime('%Y-%m-%d'))
 
     _log.info("Get and summarize device info, for each deployment")
@@ -480,21 +481,26 @@ def make_deployment_table(engine):
         schema="dbo",
     )
 
-    device_summ = Deployment_Device.groupby('Glider_Deployment_ID').agg(
-        Batteries=('Component', lambda x: _battery_type(x)), 
-        CTD=('Component', lambda x: _tf_type("ctd", x.values)),
-        Ecopuck=('Component', lambda x: _tf_type("flbbcd", x.values)),
-        Optode=('Component', lambda x: _tf_type("oxygen", x.values)),
-        PAR=('Component', lambda x: _tf_type("par", x.values)),
-        Acoustics=('Component', lambda x: _acoustics_type(x)), 
-        Camera=('Model', lambda x: _camera_type(x)), 
-        PAM=('Component', lambda x: _pam_type(x)), 
-    ).reset_index()
+    device_summ = (
+        Deployment_Device.groupby("Glider_Deployment_ID")
+        .agg(
+            Batteries=("Component", lambda x: _battery_type(x)),
+            CTD=("Component", lambda x: _tf_type("ctd", x.values)),
+            Ecopuck=("Component", lambda x: _tf_type("flbbcd", x.values)),
+            Optode=("Component", lambda x: _tf_type("oxygen", x.values)),
+            PAR=("Component", lambda x: _tf_type("par", x.values)),
+            Acoustics=("Component", lambda x: _acoustics_type(x)),
+            Camera=("Model", lambda x: _camera_type(x)),
+            PAM=("Component", lambda x: _pam_type(x)),
+        )
+        .reset_index()
+    )
     device_summ["Sensors"] = device_summ.apply(
-        lambda row: _concatenate_sensors(row), axis=1
+        lambda row: _concatenate_sensors(row),
+        axis=1,
     )
 
-    column_order_pre = ['Glider', 'Start', 'End', 'Dates', 'Location'] 
+    column_order_pre = ["Glider", "Start", "End", "Dates", "Location"]
     column_order = (
         column_order_pre
         + list(device_summ.columns)[1:]
@@ -503,6 +509,6 @@ def make_deployment_table(engine):
 
     _log.info("Mergining deployment and summarized device tables")
     out_table = pd.merge(df_depl, device_summ, on="Glider_Deployment_ID", how="left")
-    out_table = out_table[column_order].sort_values(by=['Start', 'Glider'])
+    out_table = out_table[column_order].sort_values(by=["Start", "Glider"])
 
     return out_table

@@ -1,3 +1,5 @@
+import concurrent.futures
+import functools
 import logging
 import os
 
@@ -12,9 +14,6 @@ import numpy as np
 import xarray as xr
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Patch
-
-import concurrent.futures
-import functools
 
 from esdglider import utils
 
@@ -62,7 +61,7 @@ def adj_var(ds, var):
     else:
         _log.warning("Unknown adjustments option")
         return ds[var]
-    
+
 
 def adj_var_label(ds, var):
     """Get the formatted label for the plot"""
@@ -198,7 +197,7 @@ def esd_all_plots(
     crs=None,
     base_path: str | None = None,
     bar_file: str | None = None,
-    max_workers: int | None = 1, 
+    max_workers: int | None = 1,
 ):
     """
     Wrapper to run all of the plotting loop functions
@@ -222,10 +221,10 @@ def esd_all_plots(
         Path to the ETOPO nc file to use for contour lines.
         If None (default), then contour lines will not be drawn
     max_workers : int | None
-        Number of workers with which to make the plots. 
-        If 1, a normal for loop is used. 
+        Number of workers with which to make the plots.
+        If 1, a normal for loop is used.
         If None, all cores are used, as determiend by os.cpu_count()
-        Else, max_workers is the number of cores used 
+        Else, max_workers is the number of cores used
 
     Returns
     -------
@@ -267,22 +266,26 @@ def esd_all_plots(
 
     if crs is not None:
         sci_surface_map_loop(
-            ds_gr5m, crs=crs, base_path=base_path, bar=bar, 
-            max_workers=max_workers
+            ds_gr5m,
+            crs=crs,
+            base_path=base_path,
+            bar=bar,
+            max_workers=max_workers,
         )
     else:
         _log.info("No crs provided, and thus skipping surface maps")
 
+
 def sci_gridded_loop_helper(
-    var, 
+    var,
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
 ):
     """
     See sci_gridded_loop for variables
-    In short, a small wrapper function that can be passed to 
-    concurrent.futures.ProcessPoolExecutor 
+    In short, a small wrapper function that can be passed to
+    concurrent.futures.ProcessPoolExecutor
     """
     _log.debug(f"var {var}")
     sci_timesection_plot(var, ds, base_path=base_path, show=show)
@@ -290,12 +293,11 @@ def sci_gridded_loop_helper(
     sci_spatialgrid_plot(var, ds, base_path=base_path, show=show)
 
 
-
 def sci_gridded_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
-    max_workers: int | None = 1, 
+    max_workers: int | None = 1,
 ):
     """
     A loop/wrapper function to use a gridded science dataset to make plots
@@ -315,10 +317,10 @@ def sci_gridded_loop(
     show : bool
         Boolean indicating if the plots should be shown before being closed
     max_workers : int | None
-        Number of workers with which to make the plots. 
-        If 1, a normal for loop is used. 
+        Number of workers with which to make the plots.
+        If 1, a normal for loop is used.
         If None, all cores are used, as determiend by os.cpu_count()
-        Else, max_workers is the number of cores used 
+        Else, max_workers is the number of cores used
 
     Returns
     -------
@@ -342,7 +344,7 @@ def sci_gridded_loop(
             sci_spatialgrid_plot(var, ds, base_path=base_path, show=show)
     else:
         if max_workers is None:
-            max_workers = max(1, os.cpu_count()) # type: ignore
+            max_workers = max(1, os.cpu_count())  # type: ignore
         _log.info("Starting parallel plotting with %s workers", max_workers)
         task_function = functools.partial(
             sci_gridded_loop_helper,
@@ -350,7 +352,9 @@ def sci_gridded_loop(
             base_path=base_path,
             show=show,
         )
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
             executor.map(task_function, vars_toloop)
 
     _log.info("Completed gridded science plots")
@@ -360,7 +364,7 @@ def eng_tvt_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
-    max_workers: int | None = 1, 
+    max_workers: int | None = 1,
 ):
     """
     A loop/wrapper function to:
@@ -379,10 +383,10 @@ def eng_tvt_loop(
     show : bool
         Boolean indicating if the plots should be shown before being closed
     max_workers : int | None
-        Number of workers with which to make the plots. 
-        If 1, a normal for loop is used. 
+        Number of workers with which to make the plots.
+        If 1, a normal for loop is used.
         If None, all cores are used, as determiend by os.cpu_count()
-        Else, max_workers is the number of cores used 
+        Else, max_workers is the number of cores used
 
     Returns
     -------
@@ -402,32 +406,34 @@ def eng_tvt_loop(
             eng_tvt_plot(key, ds, eng_dict, base_path=base_path, show=show)
     else:
         if max_workers is None:
-            max_workers = max(1, os.cpu_count()) # type: ignore
+            max_workers = max(1, os.cpu_count())  # type: ignore
         _log.info("Starting parallel plotting with %s workers", max_workers)
         task_function = functools.partial(
             eng_tvt_plot,
             ds=ds,
-            eng_dict=eng_dict, 
+            eng_dict=eng_dict,
             base_path=base_path,
             show=show,
         )
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
             executor.map(task_function, vars_toloop)
 
     _log.info("Completed engineering tvt plots")
 
 
 def sci_timeseries_loop_helper(
-    var: str, 
+    var: str,
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
 ):
     """
     See sci_timeseries_loop for variables
-    In short, a small wrapper function that can be passed to 
-    concurrent.futures.ProcessPoolExecutor 
-    """            
+    In short, a small wrapper function that can be passed to
+    concurrent.futures.ProcessPoolExecutor
+    """
     _log.debug(f"var {var}")
     sci_timeseries_plot(var, ds, base_path=base_path, show=show)
     sci_timesection_gt_plot(var, ds, base_path=base_path, show=show)
@@ -438,13 +444,13 @@ def sci_timeseries_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
-    max_workers: int | None = 1, 
+    max_workers: int | None = 1,
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
     of all sci_vars keys.
-    Specifically, for each sci_var present in the dataset, create: 
-    a raw timeseries plot, a timesection plot using glidertools, 
+    Specifically, for each sci_var present in the dataset, create:
+    a raw timeseries plot, a timesection plot using glidertools,
     and a ts plot
 
     Arguments let the user specify if these plots should be saved, and/or shown
@@ -459,10 +465,10 @@ def sci_timeseries_loop(
     show : bool
         Boolean indicating if the plots should be shown before being closed
     max_workers : int | None
-        Number of workers with which to make the plots. 
-        If 1, a normal for loop is used. 
+        Number of workers with which to make the plots.
+        If 1, a normal for loop is used.
         If None, all cores are used, as determiend by os.cpu_count()
-        Else, max_workers is the number of cores used 
+        Else, max_workers is the number of cores used
 
     Returns
     -------
@@ -486,7 +492,7 @@ def sci_timeseries_loop(
             ts_plot(var, ds, base_path=base_path, show=show)
     else:
         if max_workers is None:
-            max_workers = max(1, os.cpu_count()) # type: ignore
+            max_workers = max(1, os.cpu_count())  # type: ignore
         _log.info("Starting parallel plotting with %s workers", max_workers)
         task_function = functools.partial(
             sci_timeseries_loop_helper,
@@ -494,7 +500,9 @@ def sci_timeseries_loop(
             base_path=base_path,
             show=show,
         )
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
             executor.map(task_function, vars_toloop)
 
     _log.info("Completed science timeseries plots")
@@ -504,7 +512,7 @@ def eng_timeseries_loop(
     ds: xr.Dataset,
     base_path: str | None = None,
     show: bool = False,
-    max_workers: int | None = 1, 
+    max_workers: int | None = 1,
 ):
     """
     A loop/wrapper function to use a timeseries engineering dataset to make plots
@@ -524,10 +532,10 @@ def eng_timeseries_loop(
     show : bool
         Boolean indicating if the plots should be shown before being closed
     max_workers : int | None
-        Number of workers with which to make the plots. 
-        If 1, a normal for loop is used. 
+        Number of workers with which to make the plots.
+        If 1, a normal for loop is used.
         If None, all cores are used, as determiend by os.cpu_count()
-        Else, max_workers is the number of cores used 
+        Else, max_workers is the number of cores used
 
     Returns
     -------
@@ -538,7 +546,7 @@ def eng_timeseries_loop(
     # If doing the loop, remove past plots
     if base_path is not None:
         utils.rmtree(os.path.join(base_path, timeseries_eng_path))
-    
+
     vars_toloop = eng_vars
     if max_workers == 1:
         _log.info("Plotting with one worker, not in parallel")
@@ -547,7 +555,7 @@ def eng_timeseries_loop(
             eng_timeseries_plot(var, ds, base_path=base_path, show=show)
     else:
         if max_workers is None:
-            max_workers = max(1, os.cpu_count()) # type: ignore
+            max_workers = max(1, os.cpu_count())  # type: ignore
         _log.info("Starting parallel plotting with %s workers", max_workers)
         task_function = functools.partial(
             eng_timeseries_plot,
@@ -555,7 +563,9 @@ def eng_timeseries_loop(
             base_path=base_path,
             show=show,
         )
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
             executor.map(task_function, vars_toloop)
 
     _log.info("Completed engineering timeseries plots")
@@ -565,7 +575,7 @@ def eng_timeseries_loop(
 #     ds: xr.Dataset,
 #     base_path: str | None = None,
 #     show: bool = False,
-#     max_workers=None, 
+#     max_workers=None,
 # ):
 #     """
 #     A loop/wrapper function to use a timeseries science dataset to make plots
@@ -585,10 +595,10 @@ def eng_timeseries_loop(
 #     show : bool
 #         Boolean indicating if the plots should be shown before being closed
 #     max_workers : int | None
-#         Number of workers with which to make the plots. 
-#         If 1, a normal for loop is used. 
+#         Number of workers with which to make the plots.
+#         If 1, a normal for loop is used.
 #         If None, all cores are used, as determiend by os.cpu_count()
-#         Else, max_workers is the number of cores used 
+#         Else, max_workers is the number of cores used
 
 #     Returns
 #     -------
@@ -630,7 +640,7 @@ def sci_surface_map_loop(
     bar: xr.Dataset | None = None,
     figsize_x: float = 8.5,
     figsize_y: float = 11,
-    max_workers: int | None = 1, 
+    max_workers: int | None = 1,
 ):
     """
     A loop/wrapper function to use a timeseries science dataset to make plots
@@ -654,10 +664,10 @@ def sci_surface_map_loop(
     bar : xarray Dataset
         ETOPO dataset with which to make contour lines
     max_workers : int | None
-        Number of workers with which to make the plots. 
-        If 1, a normal for loop is used. 
+        Number of workers with which to make the plots.
+        If 1, a normal for loop is used.
         If None, all cores are used, as determiend by os.cpu_count()
-        Else, max_workers is the number of cores used 
+        Else, max_workers is the number of cores used
 
     Returns
     -------
@@ -668,7 +678,7 @@ def sci_surface_map_loop(
     # If doing the loop, remove past plots
     if base_path is not None:
         utils.rmtree(os.path.join(base_path, surfacemap_sci_path))
-    
+
     vars_toloop = sci_vars
     if max_workers == 1:
         _log.info("Plotting with one worker, not in parallel")
@@ -686,7 +696,7 @@ def sci_surface_map_loop(
             )
     else:
         if max_workers is None:
-            max_workers = max(1, os.cpu_count()) # type: ignore
+            max_workers = max(1, os.cpu_count())  # type: ignore
         _log.info("Starting parallel plotting with %s workers", max_workers)
         task_function = functools.partial(
             sci_surface_map,
@@ -698,7 +708,9 @@ def sci_surface_map_loop(
             figsize_x=figsize_x,
             figsize_y=figsize_y,
         )
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers
+        ) as executor:
             executor.map(task_function, vars_toloop)
 
     _log.info("Completed surface maps")
@@ -1474,7 +1486,7 @@ def sci_timesection_gt_plot(
         return
 
     _log.info(
-        f"Making sci timesection plot for variable {var}, using glidertools"
+        f"Making sci timesection plot for variable {var}, using glidertools",
     )
     deployment = ds.deployment_name
     project = ds.project
@@ -1537,8 +1549,8 @@ def ts_plot(
 
     if var not in list(ds.data_vars):
         _log.info(f"Variable name {var} not present in ds. Skipping plot")
-        return    
-    
+        return
+
     if var in ["potential_temperature", "profile_index"]:
         _log.info(f"Skipping {var} because it is not relevant for TS plots")
         return
