@@ -2,8 +2,11 @@ import collections
 import logging
 import os
 import shutil
+import pytz
 from datetime import datetime, timezone
 from pathlib import Path
+from skyfield import api, almanac
+from timezonefinder import TimezoneFinder
 
 import gsw
 import numpy as np
@@ -15,8 +18,7 @@ _log = logging.getLogger(__name__)
 
 
 """
-ESD-specific utilities
-Mostly helpers for post-processing time series files created using pyglider
+Utilities, mostly specific to ESD needs and ways of processing
 """
 
 
@@ -1033,3 +1035,158 @@ def check_depth(x: xr.DataArray, y: xr.DataArray, depth_ok=5) -> xr.Dataset:
     )
 
     return ds
+
+
+def get_utc_offset_integer(timezone_name, dt_object, is_dst=None):
+    """
+    Returns the integer UTC offset in hours for a given Olsen (IANA) timezone
+    and a specific datetime object.
+    Adapted from Gemini
+
+    Parameters
+    ----------
+    timezone_name: str
+        The Olsen (IANA) time zone name (e.g., 'America/New_York').
+    dt_object : datetime.datetime
+        A datetime object representing the point in time for which to calculate the offset
+    is_dst : boolean | None (default None)
+        Passed to pytz's localize. 'None' allows pytz to determine DST
+
+    Returns
+    -------
+    int
+        The UTC offset, in hours as an integer, for the given timezone and date
+    """
+
+    try:
+        tz = pytz.timezone(timezone_name)
+        localized_dt = tz.localize(dt_object, is_dst=is_dst)
+        offset_timedelta = localized_dt.utcoffset()
+        # Convert timedelta to total seconds and then to hours
+        offset_hours = int(offset_timedelta.total_seconds() / 3600) # type: ignore
+        return offset_hours
+    except pytz.UnknownTimeZoneError:
+        print(f"Error: Unknown time zone '{timezone_name}'.")
+        return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+    
+
+def get_sunrise_sunset(time, lat, lon):
+    """
+    Heavily based on GliderTools.optics.sunset_sunrise. 
+    The glidertools function calculates the local sunrise/sunset of the 
+    glider location using the Skyfield package. 
+    However, it does not account for the local time, and thus the 
+    joined sunrise/sunset times are often not right for the given local day
+
+    Steps:
+    1) Calculate local timezone string using timezonefinder, lat, and lon
+    2) Determine mean lat/lon for each local day
+
+    Parameters
+    ----------
+    time: numpy.ndarray or pandas.Series
+        The date & time array in a numpy.datetime64 format, in UTC.
+    lat: numpy.ndarray or pandas.Series
+        The latitude of the glider position.
+    lon: numpy.ndarray or pandas.Series
+        The longitude of the glider position.
+
+    Returns
+    -------
+    sunrise: numpy.ndarray
+        An array of the sunrise times, in UTC.
+    sunset: numpy.ndarray
+        An array of the sunset times, in UTC.
+    """
+
+    ts = api.load.timescale()
+    eph = api.load("de421.bsp")
+    sun = eph['Sun']
+
+    # Determine local timezones
+    _log.info("Calculating local timezone string")
+    tf = TimezoneFinder()
+    tz_all = np.array([tf.timezone_at(lat=i, lng=j) for i, j in zip(lat, lon)])
+
+    # Establish working dataframe, and convert times to local
+    df = pd.DataFrame.from_dict(
+        dict([("time", time), ("lat", lat), ("lon", lon)])
+    )
+    df['time'] = df['time'].dt.tz_localize("UTC")
+
+    uq, counts = np.unique(tz_all, return_counts=True)
+    if uq.shape[0] == 1:
+        tz = uq[0]
+        df['time_local'] = df['time'].dt.tz_convert(tz.item())
+    else:
+        _log.warning("The points span multiple timezones. Using the mode tz")
+        tz = uq[np.argmax(counts)]
+    _log.info("Timezone '%s'", tz)
+
+    # Calculate a column for local day
+    df['day_local'] = df.time_local.dt.tz_localize(None).values.astype("datetime64[D]")
+
+    # Group by local day
+    grp_avg = (
+        df.groupby(pd.Grouper(key='time_local', freq='D'))
+        .mean(numeric_only=False)
+        .reset_index(drop=False)
+    )
+    grp_avg["time_utc"] = grp_avg["time_local"].dt.tz_convert("UTC")
+
+    # Caluclate and save relevant sunrises and sunsets
+    sunrise_list = []
+    sunset_list = []
+    for n, row in grp_avg.iterrows():
+        _log.debug("n %s", n)
+        _log.debug("row %s", row)
+        observer = eph['Earth'] + api.wgs84.latlon(row["lat"], row["lon"])
+        date = row["time_utc"]
+
+        t0 = ts.utc(date.year, date.month, date.day, date.hour)
+        t1 = ts.utc(date.year, date.month, date.day+1, date.hour)
+
+        tu, yu = almanac.find_risings(observer, sun, t0, t1)
+        td, yd = almanac.find_settings(observer, sun, t0, t1)
+
+        # Since the times span exactly 24hrs, we assume there will be exactly 
+        # one each sunrise/sunset. But might as well check
+        if (len(tu) != 1) or (len(td) != 1):
+            _log.warning("An almanac output has a length of not one")
+            _log.warning("row %s", row)
+        
+        # Sunrise
+        if yu:            
+            su_local = pd.to_datetime(tu.utc_iso(' ')).tz_convert(tz)
+        else:
+            # TODO polar
+            _log.debug("polar sunrise")
+            su_local= np.nan
+        sunrise_list.append(su_local)
+
+        # Sunset
+        if yd:            
+            sd_local = pd.to_datetime(td.utc_iso(' ')).tz_convert(tz)
+        else:
+            # TODO polar
+            _log.debug("polar sunset")
+            sd_local= np.nan
+        sunset_list.append(sd_local)
+    
+    # Join local sunrise/sunset with data by local day
+    sunrise_local = np.array(sunrise_list).squeeze()
+    sunset_local = np.array(sunset_list).squeeze()
+    grp_avg["sunrise_local"] = sunrise_local
+    grp_avg["sunset_local"] = sunset_local
+    grp_avg_tojoin = grp_avg[["day_local", "sunrise_local", "sunset_local"]]
+
+    # Coerce to np.datetime64, while maintaining local timezone
+    df_out = pd.merge(df, grp_avg_tojoin, how="left", on="day_local")
+    sunrise_local = df_out["sunrise_local"].dt.tz_localize(None).to_numpy().astype('datetime64[s]')
+    sunset_local = df_out["sunset_local"].dt.tz_localize(None).to_numpy().astype('datetime64[s]')
+    time_local = df_out["time_local"].dt.tz_localize(None).to_numpy().astype('datetime64[s]')
+
+    return sunrise_local, sunset_local, time_local

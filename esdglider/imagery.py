@@ -2,7 +2,9 @@ import glob
 import logging
 import os
 import statistics
-from datetime import datetime
+import datetime
+# from glidertools.optics import sunset_sunrise
+# from timezonefinder import TimezoneFinder
 
 import numpy as np
 import pandas as pd
@@ -36,7 +38,7 @@ def solocam_filename_dt(filename, dt_idx_start, format="%Y%m%d-%H%M%S"):
 
     solocam_substr = filename[dt_idx_start : (dt_idx_start + 15)]
     _log.debug(f"datetime substring: {solocam_substr}")
-    solocam_dt = datetime.strptime(solocam_substr, format)
+    solocam_dt = datetime.datetime.strptime(solocam_substr, format)
     solocam_dt64s = np.datetime64(solocam_dt).astype("datetime64[s]")
 
     return solocam_dt64s
@@ -229,6 +231,68 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
             _log.debug(f"{var} not present in ds - skipping interp")
             continue
         df[var] = ds_interp[var].values
+
+    _log.info("Determining mask for time things")
+    time_mask = (
+        ~np.isnan(ds_interp["time"]) 
+        & ~np.isnan(ds_interp["latitude"]) 
+        & ~np.isnan(ds_interp["longitude"])
+    )
+    ds_interp_ll = ds_interp.where(time_mask, drop=True)
+
+    # su, sd = sunset_sunrise(
+    #     ds_interp_ll.time.values, 
+    #     ds_interp_ll.latitude.values, 
+    #     ds_interp_ll.longitude.values, 
+    # )
+    # su_full = np.full(ds_interp.time.shape[0], np.nan, dtype='datetime64[us]')
+    # su_full[ll_mask] = su
+    # df["sunrise_utc"] = su_full
+    # sd_full = np.full(ds_interp.time.shape[0], np.nan, dtype='datetime64[us]')
+    # sd_full[ll_mask] = sd
+    # df["sunset_utc"] = sd_full
+
+    # # Calculate local timezone, based on lat/lon
+    # _log.info("Calculating local timezone string")
+    # tf = TimezoneFinder()
+    # tz = [
+    #     tf.timezone_at(lat=i.item(), lng=j.item()) 
+    #     for i, j in zip(ds_interp_ll['latitude'], ds_interp_ll['longitude'])
+    # ]
+
+    # tz_full = np.full(ds_interp.time.shape[0], np.nan, dtype='object')
+    # tz_full[time_mask] = tz
+    # df["tz"] = tz_full
+
+    # # Calculate utc offset as an integer, based on date and local tz
+    # _log.info("Calculating local utc offset as an integer")
+    # utc_offset = np.array([
+    #     utils.get_utc_offset_integer(i, j.astype(datetime.datetime)) 
+    #     for i, j in zip(tz, ds_interp_ll['time'].values)
+    # ])
+
+    # utc_offset_full = np.full(ds_interp.time.shape[0], np.nan, dtype='object')
+    # utc_offset_full[time_mask] = utc_offset
+    # df["tz_utc_offset"] = utc_offset_full
+
+    # Calculate sunrise and sunset
+    su, sd, tl = utils.get_sunrise_sunset(
+        time = ds_interp_ll["time"].values, 
+        lat = ds_interp_ll["latitude"].values, 
+        lon = ds_interp_ll["longitude"].values, 
+    )
+
+    su_full = np.full(ds_interp.time.shape[0], np.nan, dtype='datetime64[us]')
+    sd_full = np.full(ds_interp.time.shape[0], np.nan, dtype='datetime64[us]')
+    tl_full = np.full(ds_interp.time.shape[0], np.nan, dtype='datetime64[us]')
+    
+    su_full[time_mask] = su
+    sd_full[time_mask] = sd
+    tl_full[time_mask] = tl
+
+    df["sunrise_local"] = su_full
+    df["sunset_local"] = sd_full
+    df["time_local"] = tl_full
 
     # --------------------------------------------
     # Export metadata file
