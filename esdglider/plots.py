@@ -353,7 +353,7 @@ def sci_gridded_loop(
             show=show,
         )
         with concurrent.futures.ProcessPoolExecutor(
-            max_workers=max_workers
+            max_workers=max_workers,
         ) as executor:
             executor.map(task_function, vars_toloop)
 
@@ -416,7 +416,7 @@ def eng_tvt_loop(
             show=show,
         )
         with concurrent.futures.ProcessPoolExecutor(
-            max_workers=max_workers
+            max_workers=max_workers,
         ) as executor:
             executor.map(task_function, vars_toloop)
 
@@ -501,7 +501,7 @@ def sci_timeseries_loop(
             show=show,
         )
         with concurrent.futures.ProcessPoolExecutor(
-            max_workers=max_workers
+            max_workers=max_workers,
         ) as executor:
             executor.map(task_function, vars_toloop)
 
@@ -564,7 +564,7 @@ def eng_timeseries_loop(
             show=show,
         )
         with concurrent.futures.ProcessPoolExecutor(
-            max_workers=max_workers
+            max_workers=max_workers,
         ) as executor:
             executor.map(task_function, vars_toloop)
 
@@ -709,7 +709,7 @@ def sci_surface_map_loop(
             figsize_y=figsize_y,
         )
         with concurrent.futures.ProcessPoolExecutor(
-            max_workers=max_workers
+            max_workers=max_workers,
         ) as executor:
             executor.map(task_function, vars_toloop)
 

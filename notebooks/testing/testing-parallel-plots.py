@@ -31,8 +31,8 @@ def main():
     }
     paths = glider.get_path_deployment(deployment_info, deployments_path)
 
-    ds_sci = xr.load_dataset(paths["tsscipath"])
-    ds_eng = xr.load_dataset(paths["tsengpath"])
+    # ds_sci = xr.load_dataset(paths["tsscipath"])
+    # ds_eng = xr.load_dataset(paths["tsengpath"])
     ds_g5 = xr.load_dataset(paths["gr5path"])
 
     # 2. Call the parallel function

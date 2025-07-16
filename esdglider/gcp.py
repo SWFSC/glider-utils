@@ -8,6 +8,7 @@ import subprocess
 
 import google_crc32c
 from google.cloud import secretmanager
+
 # from google.cloud import storage
 
 _log = logging.getLogger(__name__)

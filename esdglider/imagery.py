@@ -1,15 +1,17 @@
+import datetime
 import glob
 import logging
 import os
 import statistics
-import datetime
-# from glidertools.optics import sunset_sunrise
-# from timezonefinder import TimezoneFinder
 
 import numpy as np
 import pandas as pd
 
 import esdglider.utils as utils
+
+# from glidertools.optics import sunset_sunrise
+# from timezonefinder import TimezoneFinder
+
 
 _log = logging.getLogger(__name__)
 
@@ -234,16 +236,16 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
 
     _log.info("Determining mask for time things")
     time_mask = (
-        ~np.isnan(ds_interp["time"]) 
-        & ~np.isnan(ds_interp["latitude"]) 
+        ~np.isnan(ds_interp["time"])
+        & ~np.isnan(ds_interp["latitude"])
         & ~np.isnan(ds_interp["longitude"])
     )
     ds_interp_ll = ds_interp.where(time_mask, drop=True)
 
     # su, sd = sunset_sunrise(
-    #     ds_interp_ll.time.values, 
-    #     ds_interp_ll.latitude.values, 
-    #     ds_interp_ll.longitude.values, 
+    #     ds_interp_ll.time.values,
+    #     ds_interp_ll.latitude.values,
+    #     ds_interp_ll.longitude.values,
     # )
     # su_full = np.full(ds_interp.time.shape[0], np.nan, dtype='datetime64[us]')
     # su_full[ll_mask] = su
@@ -256,7 +258,7 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
     # _log.info("Calculating local timezone string")
     # tf = TimezoneFinder()
     # tz = [
-    #     tf.timezone_at(lat=i.item(), lng=j.item()) 
+    #     tf.timezone_at(lat=i.item(), lng=j.item())
     #     for i, j in zip(ds_interp_ll['latitude'], ds_interp_ll['longitude'])
     # ]
 
@@ -267,7 +269,7 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
     # # Calculate utc offset as an integer, based on date and local tz
     # _log.info("Calculating local utc offset as an integer")
     # utc_offset = np.array([
-    #     utils.get_utc_offset_integer(i, j.astype(datetime.datetime)) 
+    #     utils.get_utc_offset_integer(i, j.astype(datetime.datetime))
     #     for i, j in zip(tz, ds_interp_ll['time'].values)
     # ])
 
@@ -277,15 +279,15 @@ def imagery_timeseries(ds, paths, ext="jpg", dt_idx_start=None):
 
     # Calculate sunrise and sunset
     su, sd, tl = utils.get_sunrise_sunset(
-        time = ds_interp_ll["time"].values, 
-        lat = ds_interp_ll["latitude"].values, 
-        lon = ds_interp_ll["longitude"].values, 
+        time=ds_interp_ll["time"].values,
+        lat=ds_interp_ll["latitude"].values,
+        lon=ds_interp_ll["longitude"].values,
     )
 
-    su_full = np.full(ds_interp.time.shape[0], np.nan, dtype='datetime64[us]')
-    sd_full = np.full(ds_interp.time.shape[0], np.nan, dtype='datetime64[us]')
-    tl_full = np.full(ds_interp.time.shape[0], np.nan, dtype='datetime64[us]')
-    
+    su_full = np.full(ds_interp.time.shape[0], np.nan, dtype="datetime64[us]")
+    sd_full = np.full(ds_interp.time.shape[0], np.nan, dtype="datetime64[us]")
+    tl_full = np.full(ds_interp.time.shape[0], np.nan, dtype="datetime64[us]")
+
     su_full[time_mask] = su
     sd_full[time_mask] = sd
     tl_full[time_mask] = tl
