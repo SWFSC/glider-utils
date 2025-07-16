@@ -133,8 +133,10 @@ def get_path_deployment(
 def binary_to_nc(
     deployment_info: dict,
     paths: dict,
+    *, 
     write_raw: bool = True,
     write_timeseries: bool = True,
+    timeseries_pyglider: bool = True, 
     write_gridded: bool = True,
     file_info: str | None = None,
     **kwargs,
@@ -215,16 +217,17 @@ def binary_to_nc(
     else:
         raise ValueError("mode must be either 'rt' or 'delayed'")
 
+    # commonly used parameters in timeseries/gridded data
+    maxgap_esd = 60
+
     # Dictionary with info needed by post-processing functions
     postproc_info = deployment_info | {
         "file_info": file_info,
         "metadata_dict": {"deployment_name": deployment_name},
         "device_dict": {},
         "profile_summary_path": paths["profsummpath"],
+        "maxgap": maxgap_esd, 
     }
-
-    # commonly used parameters in timeseries/gridded data
-    maxgap_esd = 60
 
     # --------------------------------------------
     # Raw
@@ -286,39 +289,71 @@ def binary_to_nc(
         utils.remove_file(outname_gr5m)
         utils.makedirs_pass(tsdir)
 
-        # Engineering - uses m_depth as time base
-        _log.info("Generating engineering timeseries")
-        outname_tseng = pgslocum.binary_to_timeseries(
-            paths["binarydir"],
-            paths["cacdir"],
-            tsdir,
-            [deploymentyaml, paths["engyaml"]],
-            search=binary_search,
-            fnamesuffix=f"-{mode}-eng",
-            time_base="m_depth",
-            profile_filt_time=None,  # type: ignore
-            maxgap=maxgap_esd,
-        )
+        if timeseries_pyglider:
+            # Engineering - uses m_depth as time base
+            _log.info("Generating engineering timeseries")
+            outname_tseng = pgslocum.binary_to_timeseries(
+                paths["binarydir"],
+                paths["cacdir"],
+                tsdir,
+                [deploymentyaml, paths["engyaml"]],
+                search=binary_search,
+                fnamesuffix=f"-{mode}-eng",
+                time_base="m_depth",
+                profile_filt_time=None,  # type: ignore
+                maxgap=maxgap_esd,
+            )
 
-        _log.info(f"Post-processing engineering timeseries: {outname_tseng}")
-        tseng = postproc_eng_timeseries(outname_tseng, postproc_info, **kwargs)
+            _log.info(f"Post-processing engineering timeseries: {outname_tseng}")
+            tseng = xr.load_dataset(outname_tseng)
+            tseng = postproc_eng_timeseries(tseng, postproc_info, **kwargs)
+            utils.to_netcdf_esd(tseng, outname_tseng)
 
-        # Science - uses sci_water_temp as time_base sensor
-        _log.info("Generating science timeseries")
-        outname_tssci = pgslocum.binary_to_timeseries(
-            paths["binarydir"],
-            paths["cacdir"],
-            tsdir,
-            deploymentyaml,
-            search=binary_search,
-            fnamesuffix=f"-{mode}-sci",
-            time_base="sci_water_temp",
-            profile_filt_time=None,  # type: ignore
-            maxgap=maxgap_esd,
-        )
+            # Science - uses sci_water_temp as time_base sensor
+            _log.info("Generating science timeseries")
+            outname_tssci = pgslocum.binary_to_timeseries(
+                paths["binarydir"],
+                paths["cacdir"],
+                tsdir,
+                deploymentyaml,
+                search=binary_search,
+                fnamesuffix=f"-{mode}-sci",
+                time_base="sci_water_temp",
+                profile_filt_time=None,  # type: ignore
+                maxgap=maxgap_esd,
+            )
 
-        _log.info(f"Post-processing science timeseries: {outname_tssci}")
-        tssci = postproc_sci_timeseries(outname_tssci, postproc_info, **kwargs)
+            _log.info(f"Post-processing science timeseries: {outname_tssci}")
+            tssci = xr.load_dataset(outname_tssci)
+            tssci = postproc_sci_timeseries(tssci, postproc_info, **kwargs)
+            utils.to_netcdf_esd(tssci, outname_tssci)
+
+        else:
+            _log.info("Generating engineering timeseries, via raw_to_timeseries")
+            outname_tseng = raw_to_timeseries(
+                outname_tsraw, 
+                tsdir, 
+                deploymentyaml=[deploymentyaml, paths["engyaml"]],
+                ds_type = "eng", 
+                fnamesuffix=f"-{mode}-eng",
+                maxgap = maxgap_esd, 
+                pp=postproc_info, 
+                **kwargs
+            ) 
+            tseng = xr.load_dataset(outname_tseng)
+
+            _log.info("Generating science timeseries, via raw_to_timeseries")
+            outname_tssci = raw_to_timeseries(
+                outname_tsraw, 
+                tsdir, 
+                deploymentyaml=deploymentyaml,
+                ds_type = "eng", 
+                fnamesuffix=f"-{mode}-sci",
+                maxgap = maxgap_esd, 
+                pp=postproc_info, 
+                **kwargs
+            )             
+            tssci = xr.load_dataset(outname_tssci)
 
         _log.info("final eng/sci timeseries checks")
         # Brief profile sanity check - check_profiles done in postproc-general
@@ -438,7 +473,8 @@ def postproc_attrs(ds: xr.Dataset, pp: dict):
     # ds.attrs["id"] = utils.get_file_id_esd(ds)
     ds.attrs["title"] = ds.attrs["id"]
     ds.attrs["processing_level"] = (
-        "Minimal data screening. "
+        "Minimal data screening. Values have been interpolated "
+        + f"via linear fill, with a maxgap of {pp["maxgap"]} seconds. "
         + "Data provided as is, with no expressed or implied assurance "
         + "of quality assurance or quality control."
     )
@@ -529,7 +565,7 @@ def postproc_general(
     return ds
 
 
-def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
+def postproc_eng_timeseries(ds: xr.Dataset, pp: dict, **kwargs) -> xr.Dataset:
     """
     Engineering timeseries-specific post-processing, including:
         - Removing CTD vars
@@ -550,7 +586,7 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
         post-processed Dataset, after writing netCDF to ds_file
     """
 
-    ds = xr.load_dataset(ds_file)
+    # ds = xr.load_dataset(ds_file)
     _log.debug(f"begin eng postproc: ds has {len(ds.time)} values")
 
     # Drop CTD variables required or created by binary_to_timeseries,
@@ -569,7 +605,8 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     # )
 
     # With depth (CTD) gone, rename depth_measured
-    ds = ds.rename({"depth_measured": "depth"})
+    if ('depth_measured' in ds):
+        ds = ds.rename({"depth_measured": "depth"})
 
     # General updates
     ds = postproc_general(ds, pp, **kwargs)
@@ -587,12 +624,12 @@ def postproc_eng_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
         ds.attrs["comment"] = ds.attrs["comment"] + "; engineering-only time series"
 
     _log.debug(f"end eng postproc: ds has {len(ds.time)} values")
-    utils.to_netcdf_esd(ds, ds_file)
+    # utils.to_netcdf_esd(ds, ds_file)
 
     return ds
 
 
-def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
+def postproc_sci_timeseries(ds: xr.Dataset, pp: dict, **kwargs) -> xr.Dataset:
     """
     Science timeseries-specific post-processing, including:
         - remove bogus times. Eg, 1970, or before deployment start date
@@ -612,7 +649,7 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
         post-processed Dataset, after writing netCDF to ds_file
     """
 
-    ds = xr.load_dataset(ds_file)
+    # ds = xr.load_dataset(ds_file)
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
 
     # General updates
@@ -640,7 +677,7 @@ def postproc_sci_timeseries(ds_file: str, pp: dict, **kwargs) -> xr.Dataset:
     ds = utils.data_var_reorder(ds, new_start)
 
     _log.debug(f"end sci postproc: ds has {len(ds.time)} values")
-    utils.to_netcdf_esd(ds, ds_file)
+    # utils.to_netcdf_esd(ds, ds_file)
 
     return ds
 
@@ -970,7 +1007,7 @@ def binary_to_raw(
     if not have_dbdreader:
         raise ImportError("Cannot import dbdreader")
 
-    # Read and parts deployment yaml(s)
+    # Read and parse deployment yaml(s)
     deployment = pgutils._get_deployment(deploymentyaml)
 
     # Specific to this function: loop through deploymentyaml files,
@@ -1157,6 +1194,90 @@ def binary_to_raw(
 
     outname = outdir + "/" + ds.attrs["deployment_name"] + fnamesuffix + ".nc"
     _log.info("writing %s", outname)
+    utils.to_netcdf_esd(ds, outname)
+
+    return outname
+
+
+def raw_to_timeseries(
+    inname, 
+    outdir, 
+    deploymentyaml, 
+    ds_type, 
+    *,
+    fnamesuffix="", 
+    maxgap=300, 
+    pp: dict, 
+    **kwargs,
+):
+    
+    ds = xr.open_dataset(inname, decode_times=True)
+
+    # Read and parse deployment yaml(s), to get variables
+    deployment = pgutils._get_deployment(deploymentyaml)
+    netcdf_vars = deployment["netcdf_variables"].keys()
+    
+    if ds_type == "eng":
+        vars_tokeep = ["depth"]
+    elif ds_type == "sci":
+        vars_tokeep = ["depth_ctd"]
+    else:
+        _log.error("ds_type %s", ds_type)
+        raise ValueError("ds_type must be either 'sci' or 'eng'")
+    vars_tokeep += (
+        ["profile_index", "profile_direction"]
+        + [i for i in netcdf_vars if i in ds.keys()]
+    )
+
+    # Use deployment yaml(s) to specify the variables to keep and interpolate
+    ds = ds[vars_tokeep].dropna(dim="time", how="all")
+
+    # d1 = ds.interpolate_na(dim="time", method="linear", max_gap="60s")
+    # d2 = ds.interpolate_na(dim="time", method="linear")
+    
+
+    # For the remaining variables: interpolate and run max_gaps
+    # Note: this method does not make sense for some parameters, in particular 
+    # commanded parameters. However, calculations are done this way to 
+    # be consistent with pyglider output for other datasets
+    t = ds.time.values.astype(np.int64) / 1e9
+    for i in vars_tokeep:
+        print(f"variable {i}")
+        _log.debug("variable %s", i)
+        if i in ["time", "profile_index", "profile_direction"]:
+            continue
+
+        # interpolate and run max_gaps
+        da = ds[i].dropna(dim="time")
+        _t = da.time.values.astype(np.int64) / 1e9
+        val_interp = np.interp(t, _t, da.values, left=np.nan, right=np.nan)
+        tg_ind = pgutils.find_gaps(_t, t, maxgap)
+        val_interp[tg_ind] = np.nan
+        val_interp = pgutils._zero_screen(val_interp)
+        _log.debug('number of gaps %s', np.count_nonzero(tg_ind))
+
+        # Update ds object
+        ds[i].values = val_interp
+        ds[i].attrs["method"] = "linear fill"
+        #The var already has the yaml-specified attributes from binary_to_raw
+
+    if ('temperature' in ds) and ('conductivity' in ds) and ('pressure' in ds):
+        ds = pgutils.get_derived_eos_raw(ds)
+
+    # Perform ESD-specific post-processing
+    if ds_type == "eng":
+        _log.info(f"Post-processing engineering timeseries")
+        ds = postproc_eng_timeseries(ds, pp, **kwargs)
+    elif ds_type == "sci":
+        _log.info(f"Post-processing science timeseries")
+        ds = postproc_sci_timeseries(ds, pp, **kwargs)
+    else:
+        _log.error("ds_type %s", ds_type)
+        raise ValueError("ds_type must be either 'sci' or 'eng'")
+
+    # Write out to file
+    outname = f"{outdir}/{ds.attrs['deployment_name'] + fnamesuffix}.nc"
+    _log.info('writing %s', outname)
     utils.to_netcdf_esd(ds, outname)
 
     return outname

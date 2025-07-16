@@ -981,11 +981,11 @@ def check_depth(x: xr.DataArray, y: xr.DataArray, depth_ok=5) -> xr.Dataset:
     x : xarray DataArray
         DataArray of the glider measured depth (i.e., m_depth)
         Must have dimension 'time'.
-        For ESD, this argument will often be dseng["depth"] or dsraw["depth"]
+        For ESD, this argument will often be tseng["depth"] or tsraw["depth"]
     y : xarray DataArray
         DataArray of the CTD depth (i.e., depth calculated from sci_water_pressure).
         Must have dimension 'time'.
-        For ESD, this argument will often be dssci["depth"] or dsraw["depth_ctd"]
+        For ESD, this argument will often be tssci["depth"] or tsraw["depth_ctd"]
     depth_ok : numeric
         The maximum acceptable depth difference. If the absolute value of
         the difference between the measured depth and CTD-calcualted depth
