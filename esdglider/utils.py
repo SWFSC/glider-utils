@@ -1081,25 +1081,54 @@ def get_sunrise_sunset(time, lat, lon):
     However, it does not account for the local time, and thus the 
     joined sunrise/sunset times are often not right for the given local day
 
-    Steps:
-    1) Calculate local timezone string using timezonefinder, lat, and lon
-    2) Determine mean lat/lon for each local day
+    Currently, this function groups the timestamps by local day, 
+    and calculates the mean lat/lon. These are passed to the skyfield package
+    to calculate a single sunrise/sunset for each day, rather than calculating
+    sunrise/sunset for each individual point. Thus, this assumes the glider
+    doesn't travel far enough in one day to make the sunrise/sunset 
+    meaningfully different for different points during that day. 
+
+    If there is a 'polar' sunrise/sunset, i.e. the sun doesn't actually 
+    rise or set as defined by skyfield, 
+    then a nan is returned for sunrise/sunset for that day.     
+
+    Specificly:
+    1) Calculates local timezone string for each image using timezonefinder, 
+        lat, and lon. because of the grouping (described next), if there are 
+        multiple timezones the most common is chosen
+    2) Groups the image timestamps by local day, 
+        and calculates the mean lat/lon for each day.
+    3) For each day timestamp, which has a local time of 00:00:00:
+        - Calculate the UTC time. 
+        - Use skyfield to calculate any sunrises/sunsets for the given lat/lon,
+        between the UTC time, and the UTC time + one day. This guarantees 
+        there will be exactly one sunrise and one sunset in the given window.
+        If there is a 'polar' sunrise or sunset, return nan. 
+        Add these values to the grouped data frame.
+    4) Left join the original data frame and the grouped data frame 
+        (with sunrise/sunset times) by local day. 
+    5) Return sunrise_local, sunset_local, time_local        
 
     Parameters
     ----------
     time: numpy.ndarray or pandas.Series
         The date & time array in a numpy.datetime64 format, in UTC.
+        This parameter cannot have nans.
     lat: numpy.ndarray or pandas.Series
-        The latitude of the glider position.
+        The latitude of the glider position. This parameter cannot have nans.
     lon: numpy.ndarray or pandas.Series
-        The longitude of the glider position.
+        The longitude of the glider position. This parameter cannot have nans.
 
     Returns
     -------
+    All arrays are of the same length as input time, and of type datetime64[s]
+    
     sunrise: numpy.ndarray
-        An array of the sunrise times, in UTC.
+        An array of the sunrise times, in local time.
     sunset: numpy.ndarray
-        An array of the sunset times, in UTC.
+        An array of the sunset times, in local time.
+    local time: numpy.ndarray
+        An array of the calculated local times.
     """
 
     ts = api.load.timescale()
@@ -1120,14 +1149,16 @@ def get_sunrise_sunset(time, lat, lon):
     uq, counts = np.unique(tz_all, return_counts=True)
     if uq.shape[0] == 1:
         tz = uq[0]
-        df['time_local'] = df['time'].dt.tz_convert(tz.item())
     else:
-        _log.warning("The points span multiple timezones. Using the mode tz")
+        _log.warning("The points span multiple timezones. Using the most frequent tz")
+        _log.warning("unique %s ", uq)
+        _log.warning("counts %s ", counts)
         tz = uq[np.argmax(counts)]
     _log.info("Timezone '%s'", tz)
 
     # Calculate a column for local day
-    df['day_local'] = df.time_local.dt.tz_localize(None).values.astype("datetime64[D]")
+    df['time_local'] = df['time'].dt.tz_convert(tz.item())
+    df['day_local'] = df['time_local'].dt.tz_localize(None).values.astype("datetime64[D]")
 
     # Group by local day
     grp_avg = (
@@ -1162,7 +1193,6 @@ def get_sunrise_sunset(time, lat, lon):
         if yu:            
             su_local = pd.to_datetime(tu.utc_iso(' ')).tz_convert(tz)
         else:
-            # TODO polar
             _log.debug("polar sunrise")
             su_local= np.nan
         sunrise_list.append(su_local)
@@ -1171,7 +1201,6 @@ def get_sunrise_sunset(time, lat, lon):
         if yd:            
             sd_local = pd.to_datetime(td.utc_iso(' ')).tz_convert(tz)
         else:
-            # TODO polar
             _log.debug("polar sunset")
             sd_local= np.nan
         sunset_list.append(sd_local)

@@ -266,9 +266,10 @@ def binary_to_nc(
 
     else:
         _log.info("Not writing raw nc")
-        tsraw = xr.load_dataset(outname_tsraw)
-        postproc_info["deployment_start"] = tsraw.attrs["deployment_start"]
-        postproc_info["deployment_end"] = tsraw.attrs["deployment_end"]
+        with xr.open_dataset(outname_tsraw) as tsraw:
+            # tsraw = xr.load_dataset(outname_tsraw)
+            postproc_info["deployment_start"] = tsraw.attrs["deployment_start"]
+            postproc_info["deployment_end"] = tsraw.attrs["deployment_end"]
 
     # --------------------------------------------
     # Timeseries
