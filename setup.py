@@ -2,14 +2,13 @@ from setuptools import find_packages, setup
 
 setup(
     name="esdglider",
-    version="0.1.0-dev1",
+    version="0.1.0",
     description="Utility functions for processing ESD glider data",
     url="http://github.com/swfsc/glider-utils",
     author="Sam Woodman",
     author_email="sam.woodman@noaa.gov",
     license="Apache 2.0",
-    # packages=find_packages(exclude=('tests', 'docs')),
-    packages=find_packages(),
+    packages=find_packages(exclude=('tests', 'docs')),
     package_data={"esdglider": ["esdglider/data/*"]},
     include_package_data=True,
     python_requires=">=3.10",
@@ -28,6 +27,8 @@ setup(
         "cmocean",
         "matplotlib",
         "glidertools",
+        "skyfield", 
+        "timezonefinder", 
     ],
     zip_safe=False,
 )
