@@ -1033,7 +1033,8 @@ def check_depth(x: xr.DataArray, y: xr.DataArray, depth_ok=5) -> xr.Dataset:
             round(depth_diff_max, 1),
             depth_ok,
         )
-        _log.warning(depth_diff_abs.to_pandas().describe())
+        d = depth_diff_abs.to_pandas()
+        _log.warning(d[depth_diff_abs.values>depth_ok].describe())
 
     ds = xr.merge(
         [

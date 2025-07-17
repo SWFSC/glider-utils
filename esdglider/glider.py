@@ -363,8 +363,8 @@ def binary_to_nc(
         if prof_max_diff > 0.5:
             _log.warning(
                 "The max profile idx of eng and sci timeseries is different "
-                + "by more than 0.5. This means "
-                + "they have a different number of functional profiles",
+                + "by more than 0.5. This means they may have "
+                + "a different number of functional profiles",
             )
             _log.warning(f"Min idx for eng: {tseng.profile_index.values.min()}")
             _log.warning(f"Min idx for sci: {tssci.profile_index.values.min()}")
@@ -507,6 +507,7 @@ def postproc_general(
 
     # VALUES
     # Remove times that are nan or <min_dt, and drop other bogus values
+    _log.info("The given timeseries has %s data points", ds.time.shape[0])
     ds = utils.drop_bogus(ds, min_dt=ds.deployment_min_dt, max_drop=True)
 
     # Check for and verbosely remove any duplicated timestamps
@@ -651,6 +652,10 @@ def postproc_sci_timeseries(ds: xr.Dataset, pp: dict, **kwargs) -> xr.Dataset:
 
     # ds = xr.load_dataset(ds_file)
     _log.debug(f"begin sci postproc: ds has {len(ds.time)} values")
+
+    # In case ds is coming from raw_to_timeseries
+    if ('depth_ctd' in ds):
+        ds = ds.rename({"depth_ctd": "depth"})
 
     # General updates
     # NOTE: Drop rows in science where pressure is nan, because:
@@ -1160,6 +1165,7 @@ def binary_to_raw(
 
     # Drop rows with nan values across all data variables
     ds = ds.dropna("time", how="all")
+    _log.info("The raw timeseries has %s data points", ds.time.shape[0])
 
     # Depth calculation, and name management
     ds = pgutils.get_glider_depth(ds).rename({"depth": "depth_ctd"})
@@ -1269,6 +1275,7 @@ def raw_to_timeseries(
         ds = postproc_eng_timeseries(ds, pp, **kwargs)
     elif dstype == "sci":
         _log.info(f"Post-processing science timeseries")
+
         ds = postproc_sci_timeseries(ds, pp, **kwargs)
     else:
         _log.error("dstype %s", dstype)
