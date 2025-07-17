@@ -334,7 +334,7 @@ def binary_to_nc(
                 outname_tsraw, 
                 tsdir, 
                 deploymentyaml=[deploymentyaml, paths["engyaml"]],
-                ds_type = "eng", 
+                dstype = "eng", 
                 fnamesuffix=f"-{mode}-eng",
                 maxgap = maxgap_esd, 
                 pp=postproc_info, 
@@ -347,7 +347,7 @@ def binary_to_nc(
                 outname_tsraw, 
                 tsdir, 
                 deploymentyaml=deploymentyaml,
-                ds_type = "eng", 
+                dstype = "sci", 
                 fnamesuffix=f"-{mode}-sci",
                 maxgap = maxgap_esd, 
                 pp=postproc_info, 
@@ -685,7 +685,7 @@ def postproc_sci_timeseries(ds: xr.Dataset, pp: dict, **kwargs) -> xr.Dataset:
 def drop_ts_ranges(
     ds,
     drop_list,
-    ds_type,
+    dstype,
     plotdir=None,
     profsummdir=None,
     outname=None,
@@ -702,7 +702,7 @@ def drop_ts_ranges(
     1) Plotting the points that were dropped, if plotdir is not None
     2) Rerunning pgutils.get_distance_over_ground
     3a) Writing new profiles and calculating new profile summary,
-        if ds_type is "raw", or
+        if dstype is "raw", or
     3b) Reading in profile summary from profsummdir, and using summary
         to 'join' profile info to ds using utils.join_profiles
     4) Running utils.check_profiles
@@ -716,15 +716,15 @@ def drop_ts_ranges(
         A list of string tuples of time ranges to drop from ds.
         These strings will be processed by np.datetime64()
         If dropping a single time, use this value for both values of the tuple
-    ds_type : str
+    dstype : str
         String indicating if ds is a raw, eng, or sci timeseries;
         passed to plots.scatter_drop_plot
     plotdir : str | None (default None)
         Path to plot directory; passed to plots.scatter_drop_plot
         If None, then no plots are saved
     profsummdir : str | None (default None)
-        Path to profile summary CSV. Ignored if ds_type is raw.
-        If not None and ds_type is eng or sci, will join profiles
+        Path to profile summary CSV. Ignored if dstype is raw.
+        If not None and dstype is eng or sci, will join profiles
     outname : str | None (default None)
         If not None, then ds is written to this path using utils.to_netcdf_esd
 
@@ -734,7 +734,7 @@ def drop_ts_ranges(
         Input ds, with points within specified time ranges dropped.
         Also saves 'dropped' scatter plots to plotdir, if specified.
     """
-    _log.info(f"There are {len(ds.time)} points in the original {ds_type} dataset")
+    _log.info(f"There are {len(ds.time)} points in the original {dstype} dataset")
 
     # Create the mask framework
     todrop = np.full(len(ds.time), False)
@@ -750,7 +750,7 @@ def drop_ts_ranges(
 
     # Make plot
     if plotdir is not None:
-        plots.scatter_drop_plot(ds, todrop, ds_type, plotdir)
+        plots.scatter_drop_plot(ds, todrop, dstype, plotdir)
 
     # Drop time(s)
     todrop_mask = xr.DataArray(todrop, dims="time", coords={"time": ds.time})
@@ -763,7 +763,7 @@ def drop_ts_ranges(
         ds = pgutils.get_distance_over_ground(ds)
 
     # Profiles
-    if ds_type == "raw" and profsummdir is not None:
+    if dstype == "raw" and profsummdir is not None:
         _log.info("Calculating new profiles for raw dataset")
         tsraw = utils.get_fill_profiles(ds, "time", "depth", **kwargs)
         prof_summ = utils.calc_profile_summary(tsraw)
@@ -1203,7 +1203,7 @@ def raw_to_timeseries(
     inname, 
     outdir, 
     deploymentyaml, 
-    ds_type, 
+    dstype, 
     *,
     fnamesuffix="", 
     maxgap=300, 
@@ -1217,13 +1217,13 @@ def raw_to_timeseries(
     deployment = pgutils._get_deployment(deploymentyaml)
     netcdf_vars = deployment["netcdf_variables"].keys()
     
-    if ds_type == "eng":
+    if dstype == "eng":
         vars_tokeep = ["depth"]
-    elif ds_type == "sci":
+    elif dstype == "sci":
         vars_tokeep = ["depth_ctd"]
     else:
-        _log.error("ds_type %s", ds_type)
-        raise ValueError("ds_type must be either 'sci' or 'eng'")
+        _log.error("dstype %s", dstype)
+        raise ValueError("dstype must be either 'sci' or 'eng'")
     vars_tokeep += (
         ["profile_index", "profile_direction"]
         + [i for i in netcdf_vars if i in ds.keys()]
@@ -1242,7 +1242,7 @@ def raw_to_timeseries(
     # be consistent with pyglider output for other datasets
     t = ds.time.values.astype(np.int64) / 1e9
     for i in vars_tokeep:
-        _log.debug("variable %s", i)
+        _log.info("variable %s", i)
         if i in ["time", "profile_index", "profile_direction"]:
             continue
 
@@ -1264,15 +1264,15 @@ def raw_to_timeseries(
         ds = pgutils.get_derived_eos_raw(ds)
 
     # Perform ESD-specific post-processing
-    if ds_type == "eng":
+    if dstype == "eng":
         _log.info(f"Post-processing engineering timeseries")
         ds = postproc_eng_timeseries(ds, pp, **kwargs)
-    elif ds_type == "sci":
+    elif dstype == "sci":
         _log.info(f"Post-processing science timeseries")
         ds = postproc_sci_timeseries(ds, pp, **kwargs)
     else:
-        _log.error("ds_type %s", ds_type)
-        raise ValueError("ds_type must be either 'sci' or 'eng'")
+        _log.error("dstype %s", dstype)
+        raise ValueError("dstype must be either 'sci' or 'eng'")
 
     # Write out to file
     outname = f"{outdir}/{ds.attrs['deployment_name'] + fnamesuffix}.nc"
