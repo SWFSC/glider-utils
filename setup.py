@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="esdglider",
-    version="0.1.0",
+    version="0.2.0-dev",
     description="Utility functions for processing ESD glider data",
     url="http://github.com/swfsc/glider-utils",
     author="Sam Woodman",
