@@ -309,11 +309,14 @@ def drop_bogus_times(
 
     # For out of range or nan time/lat/lon, drop rows
     num_orig = len(ds.time)
+    num_orig_nan = np.count_nonzero(np.isnan(ds.time.values))
     ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
     if (num_orig - len(ds.time)) > 0:
         _log.info(
-            f"Dropped {num_orig - len(ds.time)} times "
-            + f"that were either nan or before {min_dt}",
+            "Dropped %s times that were either nan (n=%s) or before %s",
+            num_orig - len(ds.time), 
+            num_orig_nan, 
+            min_dt
         )
 
     if max_drop:
@@ -322,8 +325,9 @@ def drop_bogus_times(
         ds = ds.where(ds.time <= np.datetime64(max_dt), drop=True)
         if (num_orig - len(ds.time)) > 0:
             _log.info(
-                f"Dropped {num_orig - len(ds.time)} times "
-                + f"that were after the current UTC time {max_dt}",
+                "Dropped %s times that were after the current UTC time %s",
+                num_orig - len(ds.time), 
+                max_dt
             )
 
     return ds
@@ -378,7 +382,8 @@ def drop_bogus(
     ds = ds.where(ll_good, drop=True)
     if (num_orig - len(ds.time)) > 0:
         _log.info(
-            f"Dropped {num_orig - len(ds.time)} nan or out of range lat/lons",
+            "Dropped %s nan or out of range lat/lons",
+            num_orig - len(ds.time)
         )
 
     # For science variables, change out of range values to nan
@@ -398,15 +403,21 @@ def drop_bogus(
 
     for var, value in drop_values.items():
         if var not in list(ds.keys()):
-            _log.debug(f"{var} not present in ds - skipping drop_values check")
+            _log.debug(
+                "%s not present in ds - skipping drop_values check", 
+                num_orig - len(ds.time)
+            )
             continue
         num_orig = len(ds[var])
         good = (ds[var] >= value[0]) & (ds[var] <= value[1])
         ds[var] = ds[var].where(good, drop=False)
         if num_orig - len(ds[var]) > 0:
             _log.info(
-                f"Changed {num_orig - len(ds[var])} {var} values "
-                + f"outside range [{value[0]}, {value[1]}] to nan",
+                "Changed %s %s values outside range [%s, %s] to nan",
+                num_orig - len(ds[var]), 
+                var, 
+                value[0], 
+                value[1], 
             )
 
     return ds
@@ -424,7 +435,7 @@ def get_file_id_esd(ds) -> str:
         dt = ds.time.values[0].astype("timedelta64[s]") + np.datetime64("1970-01-01")
     else:
         dt = ds.time.values[0].astype("datetime64[s]")
-    _log.debug(f"dt, {dt}")
+    _log.debug("dt %s", dt)
     id = (
         ds.attrs["glider_name"]
         # + ds.attrs['glider_serial']
@@ -458,8 +469,8 @@ def data_var_reorder(ds, new_start):
 
     ds_vars_orig = list(ds.data_vars)
     if not all([i in ds_vars_orig for i in new_start]):
-        _log.error(f"new_start: {new_start}")
-        _log.error(f"ds.data_vars: {ds_vars_orig}")
+        _log.error("new_start %s", new_start)
+        _log.error("ds.data_vars %s", ds_vars_orig)
         raise ValueError("All values of new_start must be in ds.data_vars")
 
     new_order = new_start + [i for i in ds.data_vars if i not in new_start]
@@ -1017,9 +1028,9 @@ def check_depth(x: xr.DataArray, y: xr.DataArray, depth_ok=5) -> xr.Dataset:
     _log.debug(depth_diff.to_pandas().describe())
     if depth_diff_max > depth_ok:
         _log.warning(
-            "The max, absolute difference between the glider measured depth "
-            + "and depth calculated from the CTD of %sm is greater than %sm",
-            depth_diff_max,
+            "The max absolute difference between the glider measured depth "
+            + "and depth calculated from the CTD (%sm) is greater than %sm",
+            round(depth_diff_max, 1),
             depth_ok,
         )
         _log.warning(depth_diff_abs.to_pandas().describe())

@@ -1242,7 +1242,6 @@ def raw_to_timeseries(
     # be consistent with pyglider output for other datasets
     t = ds.time.values.astype(np.int64) / 1e9
     for i in vars_tokeep:
-        print(f"variable {i}")
         _log.debug("variable %s", i)
         if i in ["time", "profile_index", "profile_direction"]:
             continue
