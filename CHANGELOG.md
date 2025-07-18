@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed the name of the measured depth in the raw data file to 'depth_measured'. This is consistent with 'depth_ctd', and will hopefully minimize confusion if 'depth_measured' is included in the science timeseries
 - Changed `utils.calc_profile_summary` so that the user must 
 - Changed `utils.check_profiles` so that it now takes a DataFrame (the output of `utils.calc_profile_summary`) as it's input, rather than the Dataset
+- Changed tvt plots to use the raw dataset, so that all relevant sensors are present with new system
 
 
 ## [0.1.0] - 2025-07-17
