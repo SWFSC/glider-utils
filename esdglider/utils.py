@@ -328,7 +328,7 @@ def drop_bogus_times(
         max_dt = np.datetime64(datetime_now_utc("%Y-%m-%dT%H:%M:%S"))
         ds = ds.where(ds.time <= np.datetime64(max_dt), drop=True)
         if (num_orig - len(ds.time)) > 0:
-            _log.info(
+            _log.warning(
                 "Dropped %s times that were after the current UTC time %s",
                 num_orig - len(ds.time), 
                 max_dt

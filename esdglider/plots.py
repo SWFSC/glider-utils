@@ -9,8 +9,10 @@ import cmocean.cm as cmo
 import glidertools as gt
 import matplotlib
 import matplotlib.dates as mdates
+import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy.typing import NDArray
 import xarray as xr
 from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Patch
@@ -150,19 +152,19 @@ or that most closely matched variables colors in the R package oce
 (eg, https://dankelley.github.io/oce/reference/oceColorsOxygen.html)
 """
 sci_vars = {
-    "temperature": cmo.thermal,
-    "potential_temperature": cmo.thermal,
-    "conductivity": cmo.tempo,
-    "salinity": cmo.haline,
-    "density": cmo.dense,  # colormaps["cividis"],
-    "potential_density": cmo.dense,
-    "oxygen_concentration": cmo.oxy,  # cmo.tempo,
-    "oxygen_saturation": cmo.oxy,
-    "chlorophyll": cmo.algae,
-    "cdom": cmo.matter,
-    "backscatter_700": cmo.delta,  # colormaps["terrain"],
-    "par": cmo.turbid,
-    "profile_index": cmo.gray,
+    "temperature": cmo.thermal, # type: ignore
+    "potential_temperature": cmo.thermal, # type: ignore
+    "conductivity": cmo.tempo, # type: ignore
+    "salinity": cmo.haline, # type: ignore
+    "density": cmo.dense,  #colormaps["cividis"], # type: ignore
+    "potential_density": cmo.dense, # type: ignore
+    "oxygen_concentration": cmo.oxy,  #cmo.tempo, # type: ignore
+    "oxygen_saturation": cmo.oxy, # type: ignore
+    "chlorophyll": cmo.algae, # type: ignore
+    "cdom": cmo.matter, # type: ignore
+    "backscatter_700": cmo.delta, #colormaps["terrain"], # type: ignore 
+    "par": cmo.turbid, # type: ignore
+    "profile_index": cmo.gray, # type: ignore
 }
 
 """
@@ -240,9 +242,11 @@ def esd_all_plots(
     ds_gr5m = xr.load_dataset(ds_paths["outname_gr5m"])
     ds_raw = xr.load_dataset(ds_paths["outname_tsraw"])
 
-    # Scatter plots
+    # Delete old plots
     if base_path is not None:
-        utils.rmtree(os.path.join(base_path, scatter_path))
+        utils.rmtree(os.path.join(base_path))
+
+    # Scatter plots
     scatter_plot(ds_eng, "eng", base_path)
     scatter_plot(ds_sci, "sci", base_path)
     ll_good = ~(np.isnan(ds_raw.longitude) | np.isnan(ds_raw.latitude))
@@ -799,7 +803,7 @@ def scatter_plot(
 
 def scatter_drop_plot(
     ds: xr.Dataset,
-    todrop: np.array,
+    todrop: NDArray[np.bool_], 
     ds_type: str,
     base_path: str | None = None,
     show: bool = False,
@@ -991,10 +995,11 @@ def sci_spatialsection_plot(
     mean = np.nanmean(ds[var])
 
     ### Lon
+    ds0 = ds.sortby('longitude')
     axs[0].pcolormesh(
-        ds.longitude,
-        ds.depth,
-        adj_var(ds, var),
+        ds0.longitude,
+        ds0.depth,
+        adj_var(ds0, var),
         cmap=sci_vars[var],
     )
     axs[0].invert_yaxis()
@@ -1013,13 +1018,13 @@ def sci_spatialsection_plot(
     )
 
     ### Lat
+    ds1 = ds.sortby('latitude')
     p2 = axs[1].pcolormesh(
-        ds.latitude,
-        ds.depth,
-        adj_var(ds, var),
+        ds1.latitude,
+        ds1.depth,
+        adj_var(ds1, var),
         cmap=sci_vars[var],
     )
-    # p2 = axs[1].pcolormesh(sci_ds_g.latitude, sci_ds_g.depth, sci_ds_g[var], cmap=sci_vars[var])
     fig.colorbar(p2).set_label(label=adj_var_label(ds, var), size=label_size)
     # axs[1].invert_yaxis()
 
@@ -1137,16 +1142,19 @@ def sci_spatialgrid_plot(
     ax0.set_xticklabels([])
 
     # ax0.scatter(sci_ds.longitude, sci_ds.latitude, c=sci_ds[var], cmap=sci_vars[var])
-    ax1.pcolormesh(ds.longitude, ds.depth, adj_var(ds, var), cmap=sci_vars[var])
+    ds1 = ds.sortby('longitude')
+    ax1.pcolormesh(ds1.longitude, ds1.depth, adj_var(ds1, var), cmap=sci_vars[var])
     ax1.set_ylabel("Depth [m]", size=label_size)
     ax1.set_xlabel("Longitude [Deg]", size=label_size)
     ax1.invert_yaxis()
 
+    ds2 = ds.sortby('latitude')
     ax2.pcolormesh(
-        ds.depth,
-        ds.latitude,
-        np.transpose(adj_var(ds, var).values),
+        ds2.depth,
+        ds2.latitude,
+        np.transpose(adj_var(ds2, var).values),
         cmap=sci_vars[var],
+        # shading="gouraud", 
     )
     ax2.set_xlabel("Depth [m]", size=label_size)
     ax2.set_yticks([])
@@ -1189,52 +1197,55 @@ def eng_plots_to_make(ds: xr.Dataset):
     Dictionary used by eng_tvt_plot to make plots 
     """
     
+    da_c_depth = ds["target_depth"].dropna(dim="time")
+    da_m_depth = ds["depth_measured"].interp(time=da_c_depth.time)
+    
     plots_to_make = {
         "oilVol": {
             "X": ds["commanded_oil_volume"],
             "Y": [ds["measured_oil_volume"]],
             "C": ["C0"],
-            "cb": False,
+            "cb": None,
         },
         "diveEnergy": {
             "X": ds["total_num_inflections"],
             "Y": [ds["amphr"], ds["total_amphr"]],
             "C": ["C0", "C1"],
-            "cb": False,
+            "cb": None,
         },
         "diveDepth": {
-            "X": ds["target_depth"],
-            "Y": [ds["depth_measured"]],
+            "X": da_c_depth,
+            "Y": [da_m_depth],
             "C": ["C0"],
-            "cb": False,
+            "cb": None,
         },
         "inflections": {
             "X": ds["total_num_inflections"],
             "Y": [ds["total_amphr"]],
             "C": ["C0"],
-            "cb": False,
+            "cb": None,
         },
         "diveAmpHr": {
             "X": ds["depth_measured"],
             "Y": [ds["amphr"]],
             "C": ["C0"],
-            "cb": False,
+            "cb": None,
         },
         "leakDetect": {
             "X": ds["time"],
             "Y": [
-                ds["leak_detect"].rolling(time=900).mean(),
-                ds["leak_detect_forward"].rolling(time=900).mean(),
-                ds["leak_detect_science"].rolling(time=900).mean(),
+                ds["leak_detect"].rolling(time=900, min_periods=10).mean(),
+                ds["leak_detect_forward"].rolling(time=900, min_periods=10).mean(),
+                ds["leak_detect_science"].rolling(time=900, min_periods=10).mean(),
             ],
             "C": ["C0", "C1", "C2"],
-            "cb": False,
+            "cb": None,
         },
         "vacuumDepth": {
             "X": ds["time"],
             "Y": [ds["vacuum"]],
             "C": [ds["depth_measured"]],
-            "cb": True,
+            "cb": "depth",
         },
     }
 
@@ -1292,8 +1303,9 @@ def eng_tvt_plot(
                 c=eng_dict[key]["C"][i],
             )
 
-        if eng_dict[key]["cb"]:
-            fig.colorbar(plot)
+        if eng_dict[key]["cb"] is not None:
+            cbar = fig.colorbar(plot)
+            cbar.set_label(eng_dict[key]["cb"])
 
     ax.set_xlabel(eng_dict[key]["X"].name, size=label_size)
     ax.set_ylabel(eng_dict[key]["Y"][0].name, size=label_size)
