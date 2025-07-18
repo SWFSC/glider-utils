@@ -29,9 +29,12 @@ dependencies:
   - pip:
     - dbdreader
     - gspread #conda-forge version is not the latest
-    - git+https://github.com/c-proof/pyglider.git@main
+    - git+https://github.com/smwoodman/pyglider.git@main
+    # - git+https://github.com/c-proof/pyglider.git@main
 
 # conda env create -f glider-utils/environment.yml
 # conda deactivate && conda env update -f glider-utils/environment.yml --prune
 # Within active conda env, run to install esdglider as editable:
-# pip install -e glider-utils
+#   conda activate esdglider && pip install -e glider-utils
+# Within active conda env, run the following to for install
+#   pip install --force-reinstall --no-deps git+https://github.com/smwoodman/pyglider.git@main

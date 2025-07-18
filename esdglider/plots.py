@@ -253,7 +253,7 @@ def esd_all_plots(
     sci_gridded_loop(ds_gr5m, base_path, max_workers=max_workers)
     sci_timeseries_loop(ds_sci, base_path, max_workers=max_workers)
     eng_timeseries_loop(ds_eng, base_path, max_workers=max_workers)
-    eng_tvt_loop(ds_eng, base_path, max_workers=max_workers)
+    eng_tvt_loop(ds_raw, base_path, max_workers=max_workers)
     # sci_ts_loop(ds_sci, base_path, max_workers=max_workers)
 
     if bar_file is not None:
@@ -376,7 +376,7 @@ def eng_tvt_loop(
     Parameters
     ----------
     ds : xarray Dataset
-        Timeseries engineering dataset
+        Raw engineering dataset
     base_path : str
         The 'base' of the plot path. If None, then the plot will not be saved
         Intended to be the 'plotdir' output of slocum.get_path_deployments
@@ -1178,13 +1178,17 @@ def eng_plots_to_make(ds: xr.Dataset):
     Create dictionary used to make engineering plots.
     This output is intended to be passed to eng_tvt_plot()
 
-    ------
     Parameters
-
+    ----------
     ds : xarray dataset
-        Timeseries glider engineering dataset.
+        Timeseries glider raw dataset.
         This is intended to be produced by slocum.binary_to_nc
+
+    Returns
+    -------
+    Dictionary used by eng_tvt_plot to make plots 
     """
+    
     plots_to_make = {
         "oilVol": {
             "X": ds["commanded_oil_volume"],
@@ -1200,7 +1204,7 @@ def eng_plots_to_make(ds: xr.Dataset):
         },
         "diveDepth": {
             "X": ds["target_depth"],
-            "Y": [ds["depth"]],
+            "Y": [ds["depth_measured"]],
             "C": ["C0"],
             "cb": False,
         },
@@ -1211,7 +1215,7 @@ def eng_plots_to_make(ds: xr.Dataset):
             "cb": False,
         },
         "diveAmpHr": {
-            "X": ds["depth"],
+            "X": ds["depth_measured"],
             "Y": [ds["amphr"]],
             "C": ["C0"],
             "cb": False,
@@ -1229,7 +1233,7 @@ def eng_plots_to_make(ds: xr.Dataset):
         "vacuumDepth": {
             "X": ds["time"],
             "Y": [ds["vacuum"]],
-            "C": [ds["depth"]],
+            "C": [ds["depth_measured"]],
             "cb": True,
         },
     }

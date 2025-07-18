@@ -134,7 +134,7 @@ par:
   observation_type: "measured"
   instrument:   "instrument_par"
 
-# Engineering variables needed for eg acoustics
+# Engineering variables commonly needed, for instance for acoustics
 heading:
   source:  m_heading
   long_name:    glider heading angle
@@ -152,19 +152,6 @@ roll:
   long_name:    glider roll angle
   standard_name: platform_roll_angle
   units:        rad
-
-# profile info:
-waypoint_latitude:
-  source:  c_wpt_lat
-  long_name:    waypoint latitude
-  standard_name: latitude
-  units:        degree_north
-
-waypoint_longitude:
-  source:  c_wpt_lon
-  long_name:    waypoint longitude
-  standard_name: longitude
-  units:        degree_east
 
 # derived water speed:
 water_velocity_eastward:

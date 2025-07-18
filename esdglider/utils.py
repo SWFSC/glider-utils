@@ -103,6 +103,9 @@ def findProfiles(stamp: np.ndarray, depth: np.ndarray, **kwargs):
         "stall": 3,
         "shake": 20,
     }
+    # Filter for relevant kwards, in case any others got passed in
+    # Added because optionsList is now returned 
+    kwargs = {key: value for key, value in kwargs.items() if key in optionsList.keys()}
     optionsList.update(kwargs)
     _log.info(
         "Running findProfiles with the following kwargs: %s",
@@ -313,10 +316,11 @@ def drop_bogus_times(
     ds = ds.where(ds.time >= np.datetime64(min_dt), drop=True)
     if (num_orig - len(ds.time)) > 0:
         _log.info(
-            "Dropped %s times that were either nan (n=%s) or before %s",
+            "Dropped %s times that were either nan (n=%s) or before '%s'",
             num_orig - len(ds.time), 
             num_orig_nan, 
-            min_dt
+            min_dt, 
+
         )
 
     if max_drop:
@@ -785,7 +789,7 @@ def calc_profile_phase(profile_index, profile_direction, min_depth):
 #     return prof_description
 
 
-def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
+def calc_profile_summary(ds: xr.Dataset, depth_var: str) -> pd.DataFrame:
     """
     For each profile, ie after grouping by profile_index,
     calculate summary information.
@@ -794,28 +798,32 @@ def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
     ----------
     ds : xarray Dataset
         Dataset with glider timeseries data. Can be raw, eng, or sci
+    depth_var: str
+        Variable names of depth in ds
 
     Returns
     -------
     pandas Dataframe
         'profile summary' data frame. All data are on a by-profile basis.
         Columns include:
-        - profile_index: The profile index
-        - profile_direction: 1/-1/0, indicating dive/climb/between profiles
-        - profile_phase: See documentation for 'calc_profile_phase'
-        - start/end time: the minimum/maximum timestamps
-        - start/end depth: the first/last non-nan depth value
-        - depth_range: the abs value of the difference between the depth min/max
-        - min/max lat/lon: the minimum/maximum latitudes and longitudes
-        - distance_traveled: the distance traveled during that profile (max-min)
-        - num_points: the number of records during that profile
-        - time_at_surface_s: the time at the surface, in integer seconds.
-            The amount of time during the profile the glider was at a depth <5m.
-            In seconds, not timedelta, for more intuitive writing to CSV files
-        - profile_duration_s: the difference between the time max/min.
-            In seconds, not timedelta, for more intuitive writing to CSV files
+            - profile_index: The profile index
+            - profile_direction: 1/-1/0, indicating dive/climb/between profiles
+            - profile_phase: See documentation for 'calc_profile_phase'
+            - start/end time: the minimum/maximum timestamps
+            - start/end depth: the first/last non-nan depth value
+            - depth_range: the abs value of the difference between the depth min/max
+            - min/max lat/lon: the minimum/maximum latitudes and longitudes
+            - distance_traveled: the distance traveled during that profile (max-min)
+            - num_points: the number of records during that profile
+            - time_at_surface_s: the time at the surface, in integer seconds.
+                The amount of time during the profile the glider was at a depth <5m.
+                In seconds, not timedelta, for more intuitive writing to CSV files
+            - profile_duration_s: the difference between the time max/min.
+                In seconds, not timedelta, for more intuitive writing to CSV files
     """
     # Minimum columns needed by aggregation function
+    _log.info("Calculating profile summary using var %s", depth_var)
+    ds = ds.rename({depth_var: "depth"})    
     grouped_columns = [
         "time",
         "depth",
@@ -844,11 +852,12 @@ def calc_profile_summary(ds: xr.Dataset) -> pd.DataFrame:
 
     new_start = ["profile_index", "profile_direction", "profile_phase"]
     df_cols = new_start + [i for i in df.columns if i not in new_start]
+    df = df[df_cols]
 
-    return df[df_cols]
+    return df
 
 
-def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
+def check_profiles(df: pd.DataFrame) -> pd.DataFrame:
     """
     Perform profile sanity checks, including:
     - Check for the same numbers of dive and climb profiles
@@ -858,18 +867,20 @@ def check_profiles(ds: xr.Dataset) -> pd.DataFrame:
 
     Parameters
     ----------
-    ds : xarray Dataset
-        Dataset with glider timeseries data. Can be raw, eng, or sci
+    df : pandas DataFrame
+        Output of calc_profile_summary()
 
     Returns
     -------
     pandas Dataframe
-        output of calc_profile_summary(ds)
+        The unchanged input df
     """
+
+    # _log.info("Calculating profile summaries")
+    # df = calc_profile_summary(ds, depth_var)
 
     # Generate profile summary data frame, other products
     _log.info("Starting profile checks")
-    df = calc_profile_summary(ds)
     diveclimb_df = df[df["profile_index"] % 1 == 0.0]
     between_df = df[df["profile_index"] % 1 == 0.5]
     between_surf = between_df[between_df.profile_phase == "surfacing"]
@@ -1012,8 +1023,6 @@ def check_depth(x: xr.DataArray, y: xr.DataArray, depth_ok=5) -> xr.Dataset:
     """
 
     _log.info("Starting depth checks (measured vs CTD)")
-    # da1 = ds["depth"]
-    # da2 = ds["depth_ctd"]
 
     # Interpolate x onto the time points of y, and get the differences
     x_interp = x.dropna("time").interp(time=y["time"])
