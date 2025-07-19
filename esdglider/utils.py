@@ -1030,16 +1030,14 @@ def check_depth(x: xr.DataArray, y: xr.DataArray, depth_ok=5) -> xr.Dataset:
     depth_diff_abs = abs(depth_diff)
     depth_diff_max = np.nanmax(depth_diff_abs)
     _log.info(
-        "The max difference between the glider measured depth and "
+        "The max absolute difference between the glider measured depth and "
         + "depth calculated from the CTD is %sm",
-        np.round(depth_diff_max, 2),
+        np.round(depth_diff_max, 1),
     )
     _log.debug(depth_diff.to_pandas().describe())
     if depth_diff_max > depth_ok:
         _log.warning(
-            "The max absolute difference between the glider measured depth "
-            + "and depth calculated from the CTD (%sm) is greater than %sm",
-            round(depth_diff_max, 1),
+            "The max absolute depth difference is greater than %sm",
             depth_ok,
         )
         d = depth_diff_abs.to_pandas()
